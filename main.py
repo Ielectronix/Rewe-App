@@ -1,10 +1,6 @@
 import flet as ft
-import traceback
 
 def main(page: ft.Page):
-    # =========================================================
-    # DAS ABSOLUTE SICHERHEITSNETZ: ALLES IST IM TRY-BLOCK
-    # =========================================================
     try:
         # 1. Grund-Setup
         page.title = "Rewe Monitoring"
@@ -12,8 +8,7 @@ def main(page: ft.Page):
         page.scroll = ft.ScrollMode.AUTO
         page.padding = 20
 
-        # Teste, ob das PDF-Modul da ist
-        import pypdf
+        # WIR HABEN DAS PDF-MODUL HIER ENTFERNT (Das kommt erst später!)
 
         # 2. Speicher-Helfer
         def lade_maerkte():
@@ -198,25 +193,13 @@ def main(page: ft.Page):
         # START DER APP!
         zeige_startbildschirm()
 
-    # =========================================================
-    # HIER LANDEN WIR, WENN IRGENDETWAS SCHIEFGEHT
-    # =========================================================
     except Exception as e:
+        # ABSOLUTER NOTFALL-BILDSCHIRM (ohne komplizierte Formatierungen)
         page.clean()
         page.bgcolor = "black"
-        
-        # Sicherstellen, dass keine kaputte Navigation stört
-        try:
-            page.navigation_bar.visible = False
-        except:
-            pass
-            
-        error_details = traceback.format_exc()
         page.add(
-            ft.Icon(ft.icons.WARNING_AMBER_ROUNDED, color="red", size=60),
-            ft.Text("SYSTEM-ABSTURZ", color="red", size=25, weight="bold"),
-            ft.Text("Bitte schick mir einen Screenshot hiervon:", color="white"),
-            ft.Text(error_details, color="yellow", size=14, selectable=True)
+            ft.Text("FEHLER GEFUNDEN:", color="red", size=30, weight="bold"),
+            ft.Text(str(e), color="yellow", size=20)
         )
         page.update()
 
