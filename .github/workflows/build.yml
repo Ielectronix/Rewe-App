@@ -1,1 +1,22 @@
+name: Flet APK Build
+on: [push]
 
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+      - name: Install Flet
+        run: pip install flet
+      - name: Build APK
+        run: |
+          flet build apk --no-docker
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: LIMS-App-APK
+          path: build/apk/*.apk
