@@ -32,7 +32,6 @@ def main(page: ft.Page):
             elif index == 2:
                 zeige_archiv()
 
-        # HIER DER TRICK: Wir schreiben die Icon-Namen als simplen Text ("list")!
         page.navigation_bar = ft.NavigationBar(
             bgcolor="#001100",
             selected_index=0,
@@ -66,8 +65,8 @@ def main(page: ft.Page):
                 ft.Container(height=50),
                 ft.Row([header], alignment=ft.MainAxisAlignment.CENTER),
                 ft.Container(height=30),
-                # Auch hier: Text statt fehlerhaftem Flet-Katalog
-                ft.Icon(name="check_circle", size=100, color="white"),
+                # Korrektur: Kein "name=" mehr!
+                ft.Icon("check_circle", size=100, color="white"),
                 ft.Container(height=30),
                 ft.Row([
                     ft.ElevatedButton(
@@ -172,7 +171,8 @@ def main(page: ft.Page):
                 ft.Divider(color="white"),
                 
                 ft.ListTile(
-                    leading=ft.Icon(name="picture_as_pdf", color="red"),
+                    # Korrektur: Kein "name=" mehr!
+                    leading=ft.Icon("picture_as_pdf", color="red"),
                     title=ft.Text("Test_Protokoll.pdf", color="white"),
                     subtitle=ft.Text("Heute generiert - Bereit", color="grey")
                 )
@@ -189,7 +189,8 @@ def main(page: ft.Page):
                 ft.Divider(color="white"),
                 
                 ft.ListTile(
-                    leading=ft.Icon(name="archive", color="green"),
+                    # Korrektur: Kein "name=" mehr!
+                    leading=ft.Icon("archive", color="green"),
                     title=ft.Text("Rewe Musterstadt", color="white"),
                     subtitle=ft.Text("Abgeschlossen", color="grey"),
                     trailing=ft.IconButton(icon="edit", icon_color="yellow")
