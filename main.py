@@ -1,24 +1,27 @@
 import flet as ft
 import traceback
+import json
+import os
 
 def main(page: ft.Page):
     page.title = "Rewe Monitoring System"
     page.bgcolor = "#003300" 
-    page.scroll = ft.ScrollMode.AUTO
     page.padding = 20
+    page.scroll = ft.ScrollMode.AUTO
 
     # =========================================================
-    # DER ZENTRALE FEHLER-FÄNGER FÜR ALLES
+    # 1. DER CONTAINER-TRICK (Verhindert den grünen Absturz)
     # =========================================================
+    ansicht = ft.Column(expand=True)
+    page.add(ansicht)
+
     def zeige_fehler(e):
-        page.clean()
+        ansicht.controls.clear()
         page.bgcolor = "black"
-        page.add(
-            ft.Text("FEHLER GEFUNDEN:", color="red", size=30, weight="bold"),
-            ft.Text(str(e), color="yellow", size=20)
-        )
+        ansicht.controls.append(ft.Text("FEHLER GEFUNDEN:", color="red", size=30, weight="bold"))
+        ansicht.controls.append(ft.Text(str(e), color="yellow", size=20))
         try:
-            page.add(ft.Text(traceback.format_exc(), color="white", size=12))
+            ansicht.controls.append(ft.Text(traceback.format_exc(), color="white", size=12))
         except:
             pass
         page.update()
@@ -26,14 +29,30 @@ def main(page: ft.Page):
     try:
         import pypdf
 
-        # 2. Speicher-Helfer
+        # =========================================================
+        # 2. NEUER SPEICHER-HELFER (Bulletproof mit JSON-Datei)
+        # =========================================================
+        SPEICHER_DATEI = "meine_maerkte_daten.json"
+
         def lade_maerkte():
-            return page.client_storage.get("meine_maerkte") or []
+            try:
+                # Prüfen, ob unsere Tresor-Datei schon existiert
+                if os.path.exists(SPEICHER_DATEI):
+                    with open(SPEICHER_DATEI, "r", encoding="utf-8") as datei:
+                        return json.load(datei)
+                return []
+            except Exception as e:
+                return [] # Falls was schiefgeht, starten wir mit einer leeren Liste
 
         def speichere_maerkte(maerkte_liste):
-            page.client_storage.set("meine_maerkte", maerkte_liste)
+            try:
+                # Daten sicher in die Datei schreiben
+                with open(SPEICHER_DATEI, "w", encoding="utf-8") as datei:
+                    json.dump(maerkte_liste, datei)
+            except:
+                pass
 
-        # 3. KUGELSICHERE NAVIGATION (Einfache ElevatedButtons)
+        # 3. Navigation (Die Leiste oben)
         def nav_leiste():
             return ft.Container(
                 bgcolor="#001100",
@@ -53,8 +72,7 @@ def main(page: ft.Page):
 
         def zeige_startbildschirm():
             try:
-                page.clean()
-                page.bgcolor = "#003300"
+                ansicht.controls.clear()
                 
                 header = ft.Text(
                     spans=[
@@ -63,19 +81,17 @@ def main(page: ft.Page):
                     ], text_align=ft.TextAlign.CENTER
                 )
                 
-                def start_klick(e):
-                    zeige_dashboard()
-
-                page.add(
-                    ft.Container(height=50),
-                    ft.Row([header], alignment=ft.MainAxisAlignment.CENTER),
-                    ft.Container(height=30),
-                    ft.Text("Protokollierung", size=20, color="white", weight="bold", text_align=ft.TextAlign.CENTER),
-                    ft.Container(height=30),
+                ansicht.controls.append(ft.Container(height=50))
+                ansicht.controls.append(ft.Row([header], alignment=ft.MainAxisAlignment.CENTER))
+                
+                # WUNSCH ERFÜLLT: "Protokollierung" wurde hier gelöscht!
+                ansicht.controls.append(ft.Container(height=60)) # Etwas mehr Platz statt des Textes
+                
+                ansicht.controls.append(
                     ft.Row([
                         ft.ElevatedButton(
                             "Neuen Tag starten", 
-                            on_click=start_klick, 
+                            on_click=lambda e: zeige_dashboard(), 
                             bgcolor="red", 
                             color="white",
                             width=250,
@@ -89,25 +105,22 @@ def main(page: ft.Page):
 
         def zeige_dashboard():
             try:
-                page.clean()
-                page.bgcolor = "#003300"
+                ansicht.controls.clear()
                 maerkte = lade_maerkte()
 
-                page.add(nav_leiste())
-                page.add(ft.Divider(color="transparent"))
-                
-                page.add(ft.Text("Meine heutigen Touren", size=25, weight="bold", color="white"))
+                ansicht.controls.append(nav_leiste())
+                ansicht.controls.append(ft.Divider(color="transparent"))
+                ansicht.controls.append(ft.Text("Meine heutigen Touren", size=25, weight="bold", color="white"))
                 
                 if not maerkte:
-                    page.add(ft.Text("Noch keine Märkte angelegt. Leg direkt los!", color="grey", size=16))
+                    ansicht.controls.append(ft.Text("Noch keine Märkte angelegt. Leg direkt los!", color="grey", size=16))
                 else:
                     for index, markt in enumerate(maerkte):
-                        # Falls noch ein altes Format gespeichert ist, fangen wir das hier ab!
                         anzeige_name = markt.get("adresse", "")
                         if anzeige_name == "":
                             anzeige_name = "Unbenannter Markt"
 
-                        page.add(
+                        ansicht.controls.append(
                             ft.ElevatedButton(
                                 f"Tour: {anzeige_name}", 
                                 on_click=lambda e, i=index: zeige_maske(i),
@@ -115,8 +128,8 @@ def main(page: ft.Page):
                             )
                         )
 
-                page.add(
-                    ft.Divider(color="white"),
+                ansicht.controls.append(ft.Divider(color="white"))
+                ansicht.controls.append(
                     ft.Row([ft.ElevatedButton("Tour voranlegen", on_click=lambda e: zeige_maske(None), bgcolor="red", color="white", height=50)], alignment=ft.MainAxisAlignment.CENTER)
                 )
                 page.update()
@@ -125,17 +138,17 @@ def main(page: ft.Page):
 
         def zeige_maske(markt_index):
             try:
-                page.clean()
-                page.bgcolor = "#003300"
+                ansicht.controls.clear()
                 maerkte = lade_maerkte()
                 
                 if markt_index is None:
                     aktuelle_daten = {"adresse": "", "marktnummer": "", "datum": "", "auftragsnummer": ""}
+                    titel = "Neue Tour anlegen"
                 else:
                     aktuelle_daten = maerkte[markt_index]
+                    titel = "Tour bearbeiten"
 
                 untermenue = ft.Row(
-                    scroll=ft.ScrollMode.AUTO,
                     controls=[
                         ft.ElevatedButton("STAMMDATEN", bgcolor="red", color="white"),
                         ft.ElevatedButton("MESSWERTE (Bald)", bgcolor="grey", color="white", disabled=True),
@@ -162,12 +175,9 @@ def main(page: ft.Page):
                     speichere_maerkte(maerkte)
                     zeige_dashboard()
 
-                def zurueck_klick(e):
-                    zeige_dashboard()
-
                 button_reihe = [
                     ft.ElevatedButton("Speichern", on_click=speichere_klick, bgcolor="green", color="white"),
-                    ft.ElevatedButton("Zurück", on_click=zurueck_klick, bgcolor="grey", color="white")
+                    ft.ElevatedButton("Zurück", on_click=lambda e: zeige_dashboard(), bgcolor="grey", color="white")
                 ]
 
                 if markt_index is not None:
@@ -177,32 +187,30 @@ def main(page: ft.Page):
                         zeige_dashboard()
                     button_reihe.append(ft.ElevatedButton("Löschen", bgcolor="red", color="white", on_click=loeschen_klick))
 
-                page.add(
-                    untermenue,
-                    ft.Divider(color="white"),
-                    adresse_input, 
-                    marktnummer_input, 
-                    datum_input,
-                    auftrag_input,
-                    ft.Container(height=20),
-                    ft.Row(button_reihe)
-                )
+                ansicht.controls.append(untermenue)
+                ansicht.controls.append(ft.Divider(color="white"))
+                ansicht.controls.append(ft.Text(titel, size=20, weight="bold", color="white"))
+                ansicht.controls.append(adresse_input)
+                ansicht.controls.append(marktnummer_input)
+                ansicht.controls.append(datum_input)
+                ansicht.controls.append(auftrag_input)
+                ansicht.controls.append(ft.Container(height=20))
+                ansicht.controls.append(ft.Row(button_reihe))
                 page.update()
             except Exception as e:
                 zeige_fehler(e)
 
         def zeige_postausgang():
             try:
-                page.clean()
-                page.bgcolor = "#003300"
-                page.add(nav_leiste())
-                page.add(ft.Divider(color="transparent"))
+                ansicht.controls.clear()
+                ansicht.controls.append(nav_leiste())
+                ansicht.controls.append(ft.Divider(color="transparent"))
                 
-                page.add(
-                    ft.Text("Postausgang", size=25, weight="bold", color="white"),
-                    ft.Text("Hier landen die fertigen PDFs.", color="grey"),
-                    ft.Divider(color="white"),
-                    
+                ansicht.controls.append(ft.Text("Postausgang", size=25, weight="bold", color="white"))
+                ansicht.controls.append(ft.Text("Hier landen die fertigen PDFs.", color="grey"))
+                ansicht.controls.append(ft.Divider(color="white"))
+                
+                ansicht.controls.append(
                     ft.ListTile(
                         leading=ft.Text("P", size=30, color="red"),
                         title=ft.Text("Protokoll.pdf", color="white"),
@@ -215,16 +223,15 @@ def main(page: ft.Page):
 
         def zeige_archiv():
             try:
-                page.clean()
-                page.bgcolor = "#003300"
-                page.add(nav_leiste())
-                page.add(ft.Divider(color="transparent"))
+                ansicht.controls.clear()
+                ansicht.controls.append(nav_leiste())
+                ansicht.controls.append(ft.Divider(color="transparent"))
                 
-                page.add(
-                    ft.Text("Archiv", size=25, weight="bold", color="white"),
-                    ft.Text("Tippe auf 'Bearbeiten', um Daten nachträglich zu ändern.", color="grey"),
-                    ft.Divider(color="white"),
-                    
+                ansicht.controls.append(ft.Text("Archiv", size=25, weight="bold", color="white"))
+                ansicht.controls.append(ft.Text("Tippe auf 'Bearbeiten', um Daten nachträglich zu ändern.", color="grey"))
+                ansicht.controls.append(ft.Divider(color="white"))
+                
+                ansicht.controls.append(
                     ft.ListTile(
                         leading=ft.Text("A", size=30, color="green"),
                         title=ft.Text("Beispiel Filiale", color="white"),
