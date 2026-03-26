@@ -1,73 +1,236 @@
 import flet as ft
-import traceback # Das ist unser "Flugschreiber" für genaue Zeilennummern
+import traceback
+import os
 
 def main(page: ft.Page):
-    # Wenn die Fehlermeldung lang wird, können wir jetzt scrollen!
-    page.scroll = ft.ScrollMode.AUTO 
-    
-    try:
-        # 1. Grunddesign setzen
-        page.title = "Rewe Monitoring"
-        page.bgcolor = "#003300"
-        page.vertical_alignment = ft.MainAxisAlignment.CENTER
-        page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
-        page.padding = 20
+    # 1. Grund-Setup
+    page.title = "Rewe Monitoring"
+    page.bgcolor = "#003300"
+    page.scroll = ft.ScrollMode.AUTO
+    page.padding = 20
 
-        # 2. Testen, ob das PDF-Werkzeug der Übeltäter ist
-        import pypdf
+    # 2. System-Dienste laden (Teilen-Funktion für OneDrive)
+    teilen_dienst = ft.Share()
+    page.overlay.append(teilen_dienst)
 
-        # 3. UI Elemente bauen
+    # Wir erzeugen eine Dummy-Datei, damit wir den OneDrive-Button sofort testen können!
+    test_datei_pfad = os.path.abspath("Test_Protokoll.txt")
+    with open(test_datei_pfad, "w") as f:
+        f.write("Test-Upload: Das Teilen an OneDrive funktioniert!")
+
+    # 3. Speicher-Helfer (Das App-Gedächtnis)
+    def lade_maerkte():
+        return page.client_storage.get("meine_maerkte") or []
+
+    def speichere_maerkte(maerkte_liste):
+        page.client_storage.set("meine_maerkte", maerkte_liste)
+
+    # 4. Navigation (Die Leiste unten)
+    def tab_gewechselt(e):
+        index = e.control.selected_index
+        if index == 0:
+            zeige_dashboard()
+        elif index == 1:
+            zeige_postausgang()
+        elif index == 2:
+            zeige_archiv()
+
+    page.navigation_bar = ft.NavigationBar(
+        bgcolor="#001100",
+        selected_index=0,
+        on_change=tab_gewechselt,
+        destinations=[
+            ft.NavigationDestination(icon=ft.icons.ASSIGNMENT, label="Märkte"),
+            ft.NavigationDestination(icon=ft.icons.OUTBOX, label="Postausgang"),
+            ft.NavigationDestination(icon=ft.icons.HISTORY, label="Archiv"),
+        ]
+    )
+    # Erstmal unsichtbar machen, bis man auf "Neuen Tag starten" drückt
+    page.navigation_bar.visible = False
+
+    # ---------------- DIE VERSCHIEDENEN SEITEN ----------------
+
+    # SEITE: Der Startbildschirm
+    def zeige_startbildschirm():
+        page.clean()
+        page.navigation_bar.visible = False
+        
         header = ft.Text(
             spans=[
-                ft.TextSpan("Rewe ", ft.TextStyle(color="red", weight="bold", size=40)),
-                ft.TextSpan("Monitoring", ft.TextStyle(color="white", weight="bold", size=40)),
-            ],
-            text_align=ft.TextAlign.CENTER
+                ft.TextSpan("Rewe ", ft.TextStyle(color="red", weight="bold", size=45)),
+                ft.TextSpan("Monitoring", ft.TextStyle(color="white", weight="bold", size=45)),
+            ], text_align=ft.TextAlign.CENTER
         )
         
-        user_input = ft.TextField(label="Benutzername", text_align=ft.TextAlign.CENTER, color="white", border_color="white")
-        pass_input = ft.TextField(label="Passwort", password=True, text_align=ft.TextAlign.CENTER, color="white", border_color="white")
-        
-        def dummy_login(e):
-            try:
-                page.add(ft.Text("Login erfolgreich! Keine Fehler gefunden.", color="green", size=20))
-                page.update()
-            except Exception as ex:
-                show_error_screen(page, ex)
+        def start_klick(e):
+            page.navigation_bar.visible = True
+            zeige_dashboard()
 
-        # 4. Alles auf den Bildschirm packen
         page.add(
-            header,
-            ft.Text("App erfolgreich geladen!", color="white70"),
-            ft.Divider(color="transparent"),
-            user_input,
-            pass_input,
-            ft.ElevatedButton("Einloggen", on_click=dummy_login, bgcolor="red", color="white")
+            ft.Container(height=50),
+            ft.Row([header], alignment=ft.MainAxisAlignment.CENTER),
+            ft.Container(height=30),
+            ft.Icon(ft.icons.ASSIGNMENT_TURNED_IN, size=100, color="white"),
+            ft.Container(height=30),
+            ft.Row([
+                ft.ElevatedButton(
+                    "Neuen Tag starten", 
+                    on_click=start_klick, 
+                    bgcolor="red", 
+                    color="white",
+                    width=250,
+                    height=60,
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=15), text_style=ft.TextStyle(size=20, weight="bold"))
+                )
+            ], alignment=ft.MainAxisAlignment.CENTER)
         )
+        page.update()
 
+    # SEITE 1: Dashboard (Märkte voranlegen)
+    def zeige_dashboard():
+        page.clean()
+        page.navigation_bar.selected_index = 0
+        maerkte = lade_maerkte()
+
+        page.add(ft.Text("Meine heutigen Märkte", size=25, weight="bold", color="white"))
+        
+        if not maerkte:
+            page.add(ft.Text("Noch keine Märkte für heute geplant. Leg direkt los!", color="grey", size=16))
+        else:
+            for index, markt in enumerate(maerkte):
+                page.add(
+                    ft.ElevatedButton(
+                        f"🏪 {markt['name']} ({markt['ort']})", 
+                        on_click=lambda e, i=index: zeige_maske(i),
+                        width=300, height=50, bgcolor="#005500", color="white"
+                    )
+                )
+
+        page.add(
+            ft.Divider(color="white"),
+            ft.ElevatedButton("+ Neuen Markt voranlegen", on_click=lambda e: zeige_maske(None), bgcolor="red", color="white", height=50)
+        )
+        page.update()
+
+    # UNTERSEITE: Eingabe-Maske (Vorbereitung / Bearbeitung)
+    def zeige_maske(markt_index):
+        page.clean()
+        page.navigation_bar.visible = False # Navi verstecken beim Tippen
+        maerkte = lade_maerkte()
+        
+        if markt_index is None:
+            aktuelle_daten = {"name": "", "rewe_id": "", "ort": ""}
+            titel = "Neuen Markt anlegen"
+        else:
+            aktuelle_daten = maerkte[markt_index]
+            titel = "Markt-Daten bearbeiten"
+
+        name_input = ft.TextField(label="Filialname / Bezeichner", value=aktuelle_daten["name"], color="white", border_color="white")
+        id_input = ft.TextField(label="REWE-ID (z.B. 12345)", value=aktuelle_daten["rewe_id"], color="white", border_color="white")
+        ort_input = ft.TextField(label="Ort", value=aktuelle_daten["ort"], color="white", border_color="white")
+
+        def speichere_klick(e):
+            neue_daten = {"name": name_input.value, "rewe_id": id_input.value, "ort": ort_input.value}
+            if markt_index is None:
+                maerkte.append(neue_daten)
+            else:
+                maerkte[markt_index] = neue_daten
+                
+            speichere_maerkte(maerkte)
+            page.navigation_bar.visible = True
+            zeige_dashboard()
+
+        def zurueck_klick(e):
+            page.navigation_bar.visible = True
+            zeige_dashboard()
+
+        button_reihe = [
+            ft.ElevatedButton("Speichern", on_click=speichere_klick, bgcolor="green", color="white"),
+            ft.TextButton("Zurück", on_click=zurueck_klick, icon=ft.icons.ARROW_BACK, icon_color="white")
+        ]
+
+        if markt_index is not None:
+            def loeschen_klick(e):
+                maerkte.pop(markt_index)
+                speichere_maerkte(maerkte)
+                page.navigation_bar.visible = True
+                zeige_dashboard()
+                
+            button_reihe.append(ft.IconButton(icon=ft.icons.DELETE_FOREVER, icon_color="red", on_click=loeschen_klick))
+
+        page.add(
+            ft.Text(titel, size=25, weight="bold", color="white"),
+            ft.Divider(color="transparent"),
+            name_input, id_input, ort_input,
+            ft.Container(height=20),
+            ft.Row(button_reihe)
+        )
+        page.update()
+
+    # SEITE 2: Postausgang (Share / OneDrive)
+    def zeige_postausgang():
+        page.clean()
+        page.navigation_bar.selected_index = 1
+
+        def datei_teilen(e):
+            try:
+                # Hier rufen wir das Android-Menü auf und übergeben unsere Test-Datei!
+                teilen_dienst.share_files([test_datei_pfad])
+            except Exception as ex:
+                show_error_screen(ex)
+
+        page.add(
+            ft.Text("Postausgang", size=25, weight="bold", color="white"),
+            ft.Text("Klicke auf die blaue Wolke, um die Datei an OneDrive oder per Mail zu senden.", color="grey"),
+            ft.Divider(color="white"),
+            
+            ft.ListTile(
+                leading=ft.Icon(ft.icons.PICTURE_AS_PDF, color="red"),
+                title=ft.Text("Test_Protokoll.pdf", color="white"),
+                subtitle=ft.Text("Heute generiert - Bereit", color="grey"),
+                trailing=ft.IconButton(ft.icons.CLOUD_UPLOAD, icon_color="blue", on_click=datei_teilen)
+            )
+        )
+        page.update()
+
+    # SEITE 3: Archiv
+    def zeige_archiv():
+        page.clean()
+        page.navigation_bar.selected_index = 2
+        
+        page.add(
+            ft.Text("Archiv (Letzte 7 Tage)", size=25, weight="bold", color="white"),
+            ft.Text("Tippe auf das gelbe Stift-Symbol, um alte Daten nachträglich zu ändern.", color="grey"),
+            ft.Divider(color="white"),
+            
+            ft.ListTile(
+                leading=ft.Icon(ft.icons.HISTORY, color="green"),
+                title=ft.Text("Rewe Musterstadt", color="white"),
+                subtitle=ft.Text("Abgeschlossen", color="grey"),
+                trailing=ft.IconButton(ft.icons.EDIT, icon_color="yellow")
+            )
+        )
+        page.update()
+
+    # ---- NOTFALL-BILDSCHIRM (Wie immer unser treuer Helfer) ----
+    def show_error_screen(error: Exception):
+        page.clean()
+        page.bgcolor = "black"
+        page.navigation_bar.visible = False
+        error_details = traceback.format_exc()
+        page.add(
+            ft.Icon(ft.icons.WARNING_AMBER_ROUNDED, color="red", size=60),
+            ft.Text("SYSTEM-ABSTURZ", color="red", size=25, weight="bold"),
+            ft.Text(error_details, color="yellow", size=12, selectable=True)
+        )
+        page.update()
+
+    # ---- START-CHECK ----
+    try:
+        import pypdf
+        zeige_startbildschirm()
     except Exception as e:
-        # WENN HIER IRGENDWAS SCHIEFGEHT, STARTET DER NOTFALL-BILDSCHIRM
-        show_error_screen(page, e)
-
-def show_error_screen(page: ft.Page, error: Exception):
-    # Bildschirm leeren und auf "Alarm" schalten
-    page.clean()
-    page.bgcolor = "black"
-    page.vertical_alignment = ft.MainAxisAlignment.START
-    page.horizontal_alignment = ft.CrossAxisAlignment.START
-    
-    # Den genauen Fehlertext holen (inklusive Zeilennummer!)
-    error_details = traceback.format_exc()
-    
-    page.add(
-        ft.Icon(ft.icons.WARNING_AMBER_ROUNDED, color="red", size=60),
-        ft.Text("SYSTEM-ABSTURZ", color="red", size=25, weight="bold"),
-        ft.Text("Bitte mach einen Screenshot von diesem Text:", color="white", size=16),
-        ft.Divider(color="white"),
-        # Dieser Text zeigt uns jedes Detail des Fehlers:
-        ft.Text(error_details, color="yellow", size=12, selectable=True)
-    )
-    page.update()
+        show_error_screen(e)
 
 if __name__ == "__main__":
     ft.app(target=main)
