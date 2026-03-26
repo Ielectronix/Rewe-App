@@ -6,11 +6,12 @@ def main(page: ft.Page):
     # DAS ABSOLUTE SICHERHEITSNETZ
     # =========================================================
     try:
-        page.title = "Rewe Monitoring"
-        page.bgcolor = "#003300"
+        page.title = "Rewe Monitoring System"
+        page.bgcolor = "#003300" # Dunkelgrün
         page.scroll = ft.ScrollMode.AUTO
         page.padding = 20
 
+        # PDF-Werkzeug laden (lassen wir zur Sicherheit mal drin)
         import pypdf
 
         # 2. Speicher-Helfer
@@ -20,7 +21,7 @@ def main(page: ft.Page):
         def speichere_maerkte(maerkte_liste):
             page.client_storage.set("meine_maerkte", maerkte_liste)
 
-        # 3. UNSERE EIGENE, KUGELSICHERE NAVIGATION (Reiner Text & Emojis)
+        # 3. UNSERE TEXT-BASIERTE NAVIGATION (Sicherer als Emojis!)
         def nav_leiste():
             return ft.Container(
                 bgcolor="#001100",
@@ -29,9 +30,10 @@ def main(page: ft.Page):
                 content=ft.Row(
                     alignment=ft.MainAxisAlignment.SPACE_EVENLY,
                     controls=[
-                        ft.TextButton("📋 Märkte", on_click=lambda e: zeige_dashboard(), style=ft.ButtonStyle(color="white")),
-                        ft.TextButton("📤 Senden", on_click=lambda e: zeige_postausgang(), style=ft.ButtonStyle(color="white")),
-                        ft.TextButton("🗄️ Archiv", on_click=lambda e: zeige_archiv(), style=ft.ButtonStyle(color="white")),
+                        # Alle Emojis und Icons wurden entfernt
+                        ft.TextButton("Märkte", on_click=lambda e: zeige_dashboard(), style=ft.ButtonStyle(color="white")),
+                        ft.TextButton("Postausgang", on_click=lambda e: zeige_postausgang(), style=ft.ButtonStyle(color="white")),
+                        ft.TextButton("Archiv", on_click=lambda e: zeige_archiv(), style=ft.ButtonStyle(color="white")),
                     ]
                 )
             )
@@ -51,13 +53,14 @@ def main(page: ft.Page):
             def start_klick(e):
                 zeige_dashboard()
 
+            # BEHOBEN: Der große grüne Haken wurde entfernt
             page.add(
                 ft.Container(height=50),
                 ft.Row([header], alignment=ft.MainAxisAlignment.CENTER),
                 ft.Container(height=30),
                 
-                # DER FEHLER WURDE BEHOBEN: Wir nutzen ein riesiges Text-Emoji!
-                ft.Text("✅", size=100, text_align=ft.TextAlign.CENTER),
+                # Wir fügen hier stattdessen einen beschreibenden Text hinzu
+                ft.Text("Protokollierung", size=20, color="white", weight="bold", text_align=ft.TextAlign.CENTER),
                 
                 ft.Container(height=30),
                 ft.Row([
@@ -88,17 +91,19 @@ def main(page: ft.Page):
                 page.add(ft.Text("Noch keine Märkte für heute geplant. Leg direkt los!", color="grey", size=16))
             else:
                 for index, markt in enumerate(maerkte):
+                    # Button für bestehenden Markt
                     page.add(
                         ft.ElevatedButton(
-                            f"🏪 {markt['name']} ({markt['ort']})", 
+                            f"Filiale: {markt['name']} ({markt['ort']})", 
                             on_click=lambda e, i=index: zeige_maske(i),
                             width=300, height=50, bgcolor="#005500", color="white"
                         )
                     )
 
+            # BEHOBEN: Emoji aus dem Button entfernt
             page.add(
                 ft.Divider(color="white"),
-                ft.ElevatedButton("➕ Neuen Markt voranlegen", on_click=lambda e: zeige_maske(None), bgcolor="red", color="white", height=50)
+                ft.Row([ft.ElevatedButton("Markt anlegen", on_click=lambda e: zeige_maske(None), bgcolor="red", color="white", height=50)], alignment=ft.MainAxisAlignment.CENTER)
             )
             page.update()
 
@@ -130,9 +135,10 @@ def main(page: ft.Page):
             def zurueck_klick(e):
                 zeige_dashboard()
 
+            # BEHOBEN: Emojis aus den Buttons entfernt
             button_reihe = [
-                ft.ElevatedButton("💾 Speichern", on_click=speichere_klick, bgcolor="green", color="white"),
-                ft.TextButton("🔙 Zurück", on_click=zurueck_klick, style=ft.ButtonStyle(color="white"))
+                ft.ElevatedButton("Speichern", on_click=speichere_klick, bgcolor="green", color="white"),
+                ft.TextButton("Zurück", on_click=zurueck_klick, style=ft.ButtonStyle(color="white"))
             ]
 
             if markt_index is not None:
@@ -141,7 +147,8 @@ def main(page: ft.Page):
                     speichere_maerkte(maerkte)
                     zeige_dashboard()
                     
-                button_reihe.append(ft.ElevatedButton("🗑️ Löschen", bgcolor="red", color="white", on_click=loeschen_klick))
+                # BEHOBEN: Emoji aus dem Button entfernt
+                button_reihe.append(ft.ElevatedButton("Löschen", bgcolor="red", color="white", on_click=loeschen_klick))
 
             page.add(
                 ft.Text(titel, size=25, weight="bold", color="white"),
@@ -163,8 +170,8 @@ def main(page: ft.Page):
                 ft.Divider(color="white"),
                 
                 ft.ListTile(
-                    leading=ft.Text("📄", size=30),
-                    title=ft.Text("Test_Protokoll.pdf", color="white"),
+                    leading=ft.Text("P", size=30, color="red"), # Platzhalter statt Emoji
+                    title=ft.Text("Protokoll.pdf", color="white"),
                     subtitle=ft.Text("Heute generiert - Bereit", color="grey")
                 )
             )
@@ -176,15 +183,16 @@ def main(page: ft.Page):
             page.add(ft.Divider(color="transparent"))
             
             page.add(
-                ft.Text("Archiv (Letzte 7 Tage)", size=25, weight="bold", color="white"),
-                ft.Text("Tippe auf das Stift-Symbol, um alte Daten nachträglich zu ändern.", color="grey"),
+                ft.Text("Archiv", size=25, weight="bold", color="white"),
+                ft.Text("Tippe auf 'Bearbeiten', um Daten nachträglich zu ändern.", color="grey"),
                 ft.Divider(color="white"),
                 
                 ft.ListTile(
-                    leading=ft.Text("🗂️", size=30),
-                    title=ft.Text("Rewe Musterstadt", color="white"),
+                    leading=ft.Text("A", size=30, color="green"), # Platzhalter statt Emoji
+                    title=ft.Text("Beispiel Filiale", color="white"),
                     subtitle=ft.Text("Abgeschlossen", color="grey"),
-                    trailing=ft.TextButton("✏️ Bearbeiten")
+                    # BEHOBEN: Emoji entfernt
+                    trailing=ft.TextButton("Bearbeiten")
                 )
             )
             page.update()
