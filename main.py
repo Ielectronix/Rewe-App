@@ -2,20 +2,26 @@ import flet as ft
 import traceback
 import json
 import os
+import datetime # NEU: Für das automatische Datum
 
 def main(page: ft.Page):
     page.title = "Rewe Monitoring System"
-    page.bgcolor = "#003300" # Dunkelgrün
+    page.bgcolor = "#003300" 
     page.padding = 20
     page.scroll = ft.ScrollMode.AUTO
 
     # =========================================================
-    # 1. DER CONTAINER-TRICK (Verhindert Abstürze beim Seitenwechsel)
+    # KALENDER-WERKZEUG (Unsichtbar im Hintergrund laden)
+    # =========================================================
+    page.date_picker = ft.DatePicker()
+    page.overlay.append(page.date_picker)
+
+    # =========================================================
+    # DER CONTAINER-TRICK
     # =========================================================
     ansicht = ft.Column(expand=True)
     page.add(ansicht)
 
-    # Der zentrale Fehlerfänger tauscht nur den Inhalt im Container aus
     def zeige_fehler(e):
         ansicht.controls.clear()
         page.bgcolor = "black"
@@ -28,11 +34,10 @@ def main(page: ft.Page):
         page.update()
 
     try:
-        # Pypdf lassen wir sicherheitshalber im Hintergrund geladen
         import pypdf
 
         # =========================================================
-        # 2. DATEI-TRESOR (Speichert Daten in JSON-Datei auf dem Handy)
+        # DATEI-TRESOR
         # =========================================================
         SPEICHER_DATEI = "meine_monitoring_daten.json"
 
@@ -52,10 +57,10 @@ def main(page: ft.Page):
             except:
                 pass
 
-        # 3. HAUPT-NAVIGATION (Die Leiste ganz oben)
+        # 3. HAUPT-NAVIGATION
         def nav_leiste():
             return ft.Container(
-                bgcolor="#001100", # Sehr dunkles Grün
+                bgcolor="#001100", 
                 padding=10,
                 border_radius=10,
                 content=ft.Row(
@@ -69,7 +74,6 @@ def main(page: ft.Page):
             )
 
         # ---------------- DIE VERSCHIEDENEN SEITEN ----------------
-        # Wir nutzen IMMER ansicht.controls.clear() und .append(), kein page.clean()
 
         def zeige_startbildschirm():
             try:
@@ -84,8 +88,6 @@ def main(page: ft.Page):
                 
                 ansicht.controls.append(ft.Container(height=50))
                 ansicht.controls.append(ft.Row([header], alignment=ft.MainAxisAlignment.CENTER))
-                
-                # Platzhalter (Wort Protokollierung wurde entfernt)
                 ansicht.controls.append(ft.Container(height=60)) 
                 
                 ansicht.controls.append(
@@ -117,7 +119,6 @@ def main(page: ft.Page):
                     ansicht.controls.append(ft.Text("Noch keine Märkte angelegt. Leg direkt los!", color="grey", size=16))
                 else:
                     for index, markt in enumerate(maerkte):
-                        # Wir nutzen die Adresse als Anzeigenamen
                         anzeige_name = markt.get("adresse", "")
                         if anzeige_name == "":
                             anzeige_name = "Unbenannter Markt"
@@ -139,27 +140,32 @@ def main(page: ft.Page):
                 zeige_fehler(e)
 
         # =========================================================
-        # 4. DIE TOUR-MASKE (Stammdaten & neue Navigation)
+        # 4. DIE TOUR-MASKE (Stammdaten)
         # =========================================================
         def zeige_maske(markt_index):
             try:
                 ansicht.controls.clear()
                 maerkte = lade_maerkte()
                 
+                # Wir holen uns das exakte heutige Datum
+                heute_str = datetime.datetime.now().strftime("%d.%m.%Y")
+                
                 if markt_index is None:
-                    aktuelle_daten = {"adresse": "", "marktnummer": "", "datum": "", "auftragsnummer": ""}
+                    # BEHOBEN: Setzt beim Neu-Anlegen automatisch das heutige Datum ein!
+                    aktuelle_daten = {"adresse": "", "marktnummer": "", "datum": heute_str, "auftragsnummer": ""}
                     titel = "Neue Tour anlegen"
                 else:
                     aktuelle_daten = maerkte[markt_index]
+                    # Falls alte Daten kein Datum haben, füllen wir es auf
+                    if not aktuelle_daten.get("datum"):
+                        aktuelle_daten["datum"] = heute_str
                     titel = "Tour bearbeiten"
 
-                # --- NEU: SUB-NAVIGATION (Karteikarten-Reiter) ---
-                # WUNSCH: Linksbündig (START) und Horizontal Scrollbar (AUTO)
+                # --- BEHOBEN: HIDDEN lässt das Menü scrollen, ohne die hässliche Linie zu zeigen! ---
                 untermenue = ft.Row(
-                    alignment=ft.MainAxisAlignment.START, # Linksbündig
-                    scroll=ft.ScrollMode.AUTO, # Wischbar (horizontales Scrollen)
+                    alignment=ft.MainAxisAlignment.START,
+                    scroll=ft.ScrollMode.HIDDEN, 
                     controls=[
-                        # Der aktive Bereich ist rot, die anderen grau
                         ft.ElevatedButton("STAMMDATEN", bgcolor="red", color="white"),
                         ft.ElevatedButton("1.HFM", bgcolor="grey", color="white"),
                         ft.ElevatedButton("OKZ -HFM", bgcolor="grey", color="white"),
@@ -170,35 +176,44 @@ def main(page: ft.Page):
                     ]
                 )
 
-                # --- Die 4 Eingabefelder (Stammdaten) ---
-                # WUNSCH: Schriftfarbe weiß (color="white")
+                # --- BEHOBEN: Text-Styling ist jetzt absolut auf "Weiß" gezwungen ---
+                weisser_stil = ft.TextStyle(color="white")
+
                 adresse_input = ft.TextField(
-                    label="1. Adresse Markt", 
-                    value=aktuelle_daten.get("adresse", ""), 
-                    color="white", # Tipp-Schrift ist weiß
-                    border_color="white"
+                    label="1. Adresse Markt", value=aktuelle_daten.get("adresse", ""), 
+                    color="white", text_style=weisser_stil, label_style=weisser_stil, border_color="white", cursor_color="white"
                 )
                 marktnummer_input = ft.TextField(
-                    label="2. Marktnummer", 
-                    value=aktuelle_daten.get("marktnummer", ""), 
-                    color="white", 
-                    border_color="white"
-                )
-                datum_input = ft.TextField(
-                    label="3. Datum der Probenahme", 
-                    value=aktuelle_daten.get("datum", ""), 
-                    color="white", 
-                    border_color="white"
+                    label="2. Marktnummer", value=aktuelle_daten.get("marktnummer", ""), 
+                    color="white", text_style=weisser_stil, label_style=weisser_stil, border_color="white", cursor_color="white"
                 )
                 auftrag_input = ft.TextField(
-                    label="4. Auftragsnummer", 
-                    value=aktuelle_daten.get("auftragsnummer", ""), 
-                    color="white", 
-                    border_color="white"
+                    label="4. Auftragsnummer", value=aktuelle_daten.get("auftragsnummer", ""), 
+                    color="white", text_style=weisser_stil, label_style=weisser_stil, border_color="white", cursor_color="white"
                 )
 
+                # --- DER NEUE KALENDER (Date Picker) ---
+                datum_input = ft.TextField(
+                    label="3. Datum der Probenahme", value=aktuelle_daten.get("datum", ""), 
+                    color="white", text_style=weisser_stil, label_style=weisser_stil, border_color="white", 
+                    expand=True # Macht das Feld so breit wie möglich
+                )
+                
+                def datum_gewaehlt(e):
+                    if page.date_picker.value:
+                        # Schreibt das ausgewählte Datum im Format TT.MM.JJJJ in das Textfeld
+                        datum_input.value = page.date_picker.value.strftime("%d.%m.%Y")
+                        page.update()
+
+                page.date_picker.on_change = datum_gewaehlt
+
+                # Ein kleiner Button neben dem Feld, der den Kalender öffnet
+                datum_zeile = ft.Row([
+                    datum_input,
+                    ft.ElevatedButton("📅", on_click=lambda e: page.date_picker.pick_date(), bgcolor="grey", color="white")
+                ])
+
                 def speichere_klick(e):
-                    # Daten aus den Feldern auslesen
                     neue_daten = {
                         "adresse": adresse_input.value,
                         "marktnummer": marktnummer_input.value,
@@ -206,19 +221,18 @@ def main(page: ft.Page):
                         "auftragsnummer": auftrag_input.value
                     }
                     if markt_index is None:
-                        maerkte.append(neue_daten) # Neu anlegen
+                        maerkte.append(neue_daten)
                     else:
-                        maerkte[markt_index] = neue_daten # Bestehenden überschreiben
+                        maerkte[markt_index] = neue_daten
                         
                     speichere_maerkte(maerkte)
-                    zeige_dashboard() # Zurück zur Übersicht
+                    zeige_dashboard()
 
                 button_reihe = [
                     ft.ElevatedButton("Speichern", on_click=speichere_klick, bgcolor="green", color="white"),
                     ft.ElevatedButton("Zurück", on_click=lambda e: zeige_dashboard(), bgcolor="grey", color="white")
                 ]
 
-                # Löschen-Button nur anzeigen, wenn es keine neue Tour ist
                 if markt_index is not None:
                     def loeschen_klick(e):
                         maerkte.pop(markt_index)
@@ -226,13 +240,12 @@ def main(page: ft.Page):
                         zeige_dashboard()
                     button_reihe.append(ft.ElevatedButton("Löschen", bgcolor="red", color="white", on_click=loeschen_klick))
 
-                # Alles dem Container hinzufügen
-                ansicht.controls.append(untermenue) # Die neue Leiste ganz oben
+                ansicht.controls.append(untermenue)
                 ansicht.controls.append(ft.Divider(color="white"))
                 ansicht.controls.append(ft.Text(titel, size=20, weight="bold", color="white"))
                 ansicht.controls.append(adresse_input)
                 ansicht.controls.append(marktnummer_input)
-                ansicht.controls.append(datum_input)
+                ansicht.controls.append(datum_zeile) # Die Zeile mit dem Feld und dem Kalender-Button
                 ansicht.controls.append(auftrag_input)
                 ansicht.controls.append(ft.Container(height=20))
                 ansicht.controls.append(ft.Row(button_reihe))
