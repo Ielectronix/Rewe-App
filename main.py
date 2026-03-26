@@ -1,6 +1,5 @@
 import flet as ft
 import traceback
-import os
 
 def main(page: ft.Page):
     # 1. Grund-Setup
@@ -9,23 +8,14 @@ def main(page: ft.Page):
     page.scroll = ft.ScrollMode.AUTO
     page.padding = 20
 
-    # 2. System-Dienste laden (Teilen-Funktion für OneDrive)
-    teilen_dienst = ft.Share()
-    page.overlay.append(teilen_dienst)
-
-    # Wir erzeugen eine Dummy-Datei, damit wir den OneDrive-Button sofort testen können!
-    test_datei_pfad = os.path.abspath("Test_Protokoll.txt")
-    with open(test_datei_pfad, "w") as f:
-        f.write("Test-Upload: Das Teilen an OneDrive funktioniert!")
-
-    # 3. Speicher-Helfer (Das App-Gedächtnis)
+    # 2. Speicher-Helfer (Das App-Gedächtnis)
     def lade_maerkte():
         return page.client_storage.get("meine_maerkte") or []
 
     def speichere_maerkte(maerkte_liste):
         page.client_storage.set("meine_maerkte", maerkte_liste)
 
-    # 4. Navigation (Die Leiste unten)
+    # 3. Navigation (Die Leiste unten)
     def tab_gewechselt(e):
         index = e.control.selected_index
         if index == 0:
@@ -167,21 +157,19 @@ def main(page: ft.Page):
         )
         page.update()
 
-    # SEITE 2: Postausgang (Share / OneDrive)
+    # SEITE 2: Postausgang
     def zeige_postausgang():
         page.clean()
         page.navigation_bar.selected_index = 1
 
         def datei_teilen(e):
-            try:
-                # Hier rufen wir das Android-Menü auf und übergeben unsere Test-Datei!
-                teilen_dienst.share_files([test_datei_pfad])
-            except Exception as ex:
-                show_error_screen(ex)
+            # Platzhalter für die spätere OneDrive-Integration
+            page.add(ft.Text("PDF wird im Hintergrundordner gespeichert...", color="green"))
+            page.update()
 
         page.add(
             ft.Text("Postausgang", size=25, weight="bold", color="white"),
-            ft.Text("Klicke auf die blaue Wolke, um die Datei an OneDrive oder per Mail zu senden.", color="grey"),
+            ft.Text("Hier landen die fertigen PDFs. (Upload-Funktion in Arbeit)", color="grey"),
             ft.Divider(color="white"),
             
             ft.ListTile(
@@ -212,7 +200,7 @@ def main(page: ft.Page):
         )
         page.update()
 
-    # ---- NOTFALL-BILDSCHIRM (Wie immer unser treuer Helfer) ----
+    # ---- NOTFALL-BILDSCHIRM ----
     def show_error_screen(error: Exception):
         page.clean()
         page.bgcolor = "black"
