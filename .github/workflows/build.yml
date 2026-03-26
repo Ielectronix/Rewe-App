@@ -17,12 +17,11 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Flet installieren
-        run: pip install flet
+      - name: Installiere Flet und PDF-Tool
+        run: pip install flet pypdf
 
-      - name: APK bauen
-        # Der reparierte Befehl: Nur --project (ohne -name)
-        run: flet build apk --project "ReweMonitoring" --org "com.lelectronix.rewe"
+      - name: APK bauen (vollautomatisch)
+        run: yes | flet build apk --project "rewe_app" --org "com.rewe.app"
 
       - name: APK hochladen
         uses: actions/upload-artifact@v4
