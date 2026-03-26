@@ -3,7 +3,7 @@ import traceback
 
 def main(page: ft.Page):
     # =========================================================
-    # DAS ABSOLUTE SICHERHEITSNETZ (Bleibt ab jetzt immer drin!)
+    # DAS ABSOLUTE SICHERHEITSNETZ
     # =========================================================
     try:
         # 1. Grund-Setup
@@ -12,7 +12,7 @@ def main(page: ft.Page):
         page.scroll = ft.ScrollMode.AUTO
         page.padding = 20
 
-        # PDF-Werkzeug laden (Wir testen, ob es jetzt mitmacht)
+        # PDF-Werkzeug laden
         import pypdf
 
         # 2. Speicher-Helfer
@@ -32,15 +32,15 @@ def main(page: ft.Page):
             elif index == 2:
                 zeige_archiv()
 
-        # HIER IST DIE FEHLERBEHEBUNG: NavigationBarDestination
+        # SICHERE STANDARD-ICONS EINGEBAUT (LIST, UPLOAD, ARCHIVE)
         page.navigation_bar = ft.NavigationBar(
             bgcolor="#001100",
             selected_index=0,
             on_change=tab_gewechselt,
             destinations=[
-                ft.NavigationBarDestination(icon=ft.icons.ASSIGNMENT, label="Märkte"),
-                ft.NavigationBarDestination(icon=ft.icons.SEND, label="Postausgang"),
-                ft.NavigationBarDestination(icon=ft.icons.HISTORY, label="Archiv"),
+                ft.NavigationBarDestination(icon=ft.icons.LIST, label="Märkte"),
+                ft.NavigationBarDestination(icon=ft.icons.UPLOAD, label="Postausgang"),
+                ft.NavigationBarDestination(icon=ft.icons.ARCHIVE, label="Archiv"),
             ]
         )
         page.navigation_bar.visible = False
@@ -66,7 +66,8 @@ def main(page: ft.Page):
                 ft.Container(height=50),
                 ft.Row([header], alignment=ft.MainAxisAlignment.CENTER),
                 ft.Container(height=30),
-                ft.Icon(ft.icons.ASSIGNMENT_TURNED_IN, size=100, color="white"),
+                # SICHERES START-ICON
+                ft.Icon(ft.icons.CHECK_CIRCLE, size=100, color="white"),
                 ft.Container(height=30),
                 ft.Row([
                     ft.ElevatedButton(
@@ -188,7 +189,7 @@ def main(page: ft.Page):
                 ft.Divider(color="white"),
                 
                 ft.ListTile(
-                    leading=ft.Icon(ft.icons.HISTORY, color="green"),
+                    leading=ft.Icon(ft.icons.ARCHIVE, color="green"),
                     title=ft.Text("Rewe Musterstadt", color="white"),
                     subtitle=ft.Text("Abgeschlossen", color="grey"),
                     trailing=ft.IconButton(ft.icons.EDIT, icon_color="yellow")
