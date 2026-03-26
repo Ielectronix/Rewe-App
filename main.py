@@ -7,11 +7,10 @@ def main(page: ft.Page):
     # =========================================================
     try:
         page.title = "Rewe Monitoring System"
-        page.bgcolor = "#003300" # Dunkelgrün
+        page.bgcolor = "#003300" 
         page.scroll = ft.ScrollMode.AUTO
         page.padding = 20
 
-        # PDF-Werkzeug laden (lassen wir zur Sicherheit mal drin)
         import pypdf
 
         # 2. Speicher-Helfer
@@ -21,7 +20,7 @@ def main(page: ft.Page):
         def speichere_maerkte(maerkte_liste):
             page.client_storage.set("meine_maerkte", maerkte_liste)
 
-        # 3. UNSERE TEXT-BASIERTE NAVIGATION (Sicherer als Emojis!)
+        # 3. HAUPT-NAVIGATION (Die Leiste oben für die App-Bereiche)
         def nav_leiste():
             return ft.Container(
                 bgcolor="#001100",
@@ -30,7 +29,6 @@ def main(page: ft.Page):
                 content=ft.Row(
                     alignment=ft.MainAxisAlignment.SPACE_EVENLY,
                     controls=[
-                        # Alle Emojis und Icons wurden entfernt
                         ft.TextButton("Märkte", on_click=lambda e: zeige_dashboard(), style=ft.ButtonStyle(color="white")),
                         ft.TextButton("Postausgang", on_click=lambda e: zeige_postausgang(), style=ft.ButtonStyle(color="white")),
                         ft.TextButton("Archiv", on_click=lambda e: zeige_archiv(), style=ft.ButtonStyle(color="white")),
@@ -53,13 +51,11 @@ def main(page: ft.Page):
             def start_klick(e):
                 zeige_dashboard()
 
-            # BEHOBEN: Der große grüne Haken wurde entfernt
             page.add(
                 ft.Container(height=50),
                 ft.Row([header], alignment=ft.MainAxisAlignment.CENTER),
                 ft.Container(height=30),
                 
-                # Wir fügen hier stattdessen einen beschreibenden Text hinzu
                 ft.Text("Protokollierung", size=20, color="white", weight="bold", text_align=ft.TextAlign.CENTER),
                 
                 ft.Container(height=30),
@@ -81,49 +77,92 @@ def main(page: ft.Page):
             page.clean()
             maerkte = lade_maerkte()
 
-            # Navigation wird ganz oben als "Tab-Leiste" eingefügt
             page.add(nav_leiste())
             page.add(ft.Divider(color="transparent"))
             
-            page.add(ft.Text("Meine heutigen Märkte", size=25, weight="bold", color="white"))
+            page.add(ft.Text("Meine heutigen Touren", size=25, weight="bold", color="white"))
             
             if not maerkte:
-                page.add(ft.Text("Noch keine Märkte für heute geplant. Leg direkt los!", color="grey", size=16))
+                page.add(ft.Text("Noch keine Märkte angelegt. Leg direkt los!", color="grey", size=16))
             else:
                 for index, markt in enumerate(maerkte):
-                    # Button für bestehenden Markt
+                    # Zeigt die Adresse als Button-Namen an (oder "Neuer Markt", falls leer)
+                    anzeige_name = markt.get("adresse", "")
+                    if anzeige_name == "":
+                        anzeige_name = "Unbenannter Markt"
+
                     page.add(
                         ft.ElevatedButton(
-                            f"Filiale: {markt['name']} ({markt['ort']})", 
+                            f"Tour: {anzeige_name}", 
                             on_click=lambda e, i=index: zeige_maske(i),
                             width=300, height=50, bgcolor="#005500", color="white"
                         )
                     )
 
-            # BEHOBEN: Emoji aus dem Button entfernt
             page.add(
                 ft.Divider(color="white"),
-                ft.Row([ft.ElevatedButton("Markt anlegen", on_click=lambda e: zeige_maske(None), bgcolor="red", color="white", height=50)], alignment=ft.MainAxisAlignment.CENTER)
+                ft.Row([ft.ElevatedButton("Tour voranlegen", on_click=lambda e: zeige_maske(None), bgcolor="red", color="white", height=50)], alignment=ft.MainAxisAlignment.CENTER)
             )
             page.update()
 
+        # =========================================================
+        # DIE NEUE STAMMDATEN-MASKE
+        # =========================================================
         def zeige_maske(markt_index):
             page.clean()
             maerkte = lade_maerkte()
             
+            # 1. Daten laden (oder leere Felder erstellen)
             if markt_index is None:
-                aktuelle_daten = {"name": "", "rewe_id": "", "ort": ""}
-                titel = "Neuen Markt anlegen"
+                aktuelle_daten = {
+                    "adresse": "", 
+                    "marktnummer": "", 
+                    "datum": "", 
+                    "auftragsnummer": ""
+                }
             else:
                 aktuelle_daten = maerkte[markt_index]
-                titel = "Markt-Daten bearbeiten"
 
-            name_input = ft.TextField(label="Filialname / Bezeichner", value=aktuelle_daten["name"], color="white", border_color="white")
-            id_input = ft.TextField(label="REWE-ID (z.B. 12345)", value=aktuelle_daten["rewe_id"], color="white", border_color="white")
-            ort_input = ft.TextField(label="Ort", value=aktuelle_daten["ort"], color="white", border_color="white")
+            # 2. UNTERMENÜ FÜR DIE MARKT-ANSICHT (Stammdaten, Messwerte etc.)
+            untermenue = ft.Row(
+                scroll=ft.ScrollMode.AUTO,
+                controls=[
+                    ft.ElevatedButton("STAMMDATEN", bgcolor="red", color="white"), # Aktueller Bereich
+                    ft.ElevatedButton("MESSWERTE (Bald)", bgcolor="grey", color="white", disabled=True),
+                ]
+            )
 
+            # 3. Die 4 neuen Eingabefelder (mit .get() als Fallback für alte Speicherstände)
+            adresse_input = ft.TextField(
+                label="1. Adresse Markt", 
+                value=aktuelle_daten.get("adresse", aktuelle_daten.get("name", "")), 
+                color="white", border_color="white"
+            )
+            marktnummer_input = ft.TextField(
+                label="2. Marktnummer", 
+                value=aktuelle_daten.get("marktnummer", aktuelle_daten.get("rewe_id", "")), 
+                color="white", border_color="white"
+            )
+            datum_input = ft.TextField(
+                label="3. Datum der Probenahme", 
+                value=aktuelle_daten.get("datum", ""), 
+                color="white", border_color="white"
+            )
+            auftrag_input = ft.TextField(
+                label="4. Auftragsnummer", 
+                value=aktuelle_daten.get("auftragsnummer", ""), 
+                color="white", border_color="white"
+            )
+
+            # 4. Speicher-Logik
             def speichere_klick(e):
-                neue_daten = {"name": name_input.value, "rewe_id": id_input.value, "ort": ort_input.value}
+                neue_daten = {
+                    "adresse": adresse_input.value,
+                    "marktnummer": marktnummer_input.value,
+                    "datum": datum_input.value,
+                    "auftragsnummer": auftrag_input.value
+                }
+                
                 if markt_index is None:
                     maerkte.append(neue_daten)
                 else:
@@ -135,7 +174,6 @@ def main(page: ft.Page):
             def zurueck_klick(e):
                 zeige_dashboard()
 
-            # BEHOBEN: Emojis aus den Buttons entfernt
             button_reihe = [
                 ft.ElevatedButton("Speichern", on_click=speichere_klick, bgcolor="green", color="white"),
                 ft.TextButton("Zurück", on_click=zurueck_klick, style=ft.ButtonStyle(color="white"))
@@ -147,17 +185,22 @@ def main(page: ft.Page):
                     speichere_maerkte(maerkte)
                     zeige_dashboard()
                     
-                # BEHOBEN: Emoji aus dem Button entfernt
                 button_reihe.append(ft.ElevatedButton("Löschen", bgcolor="red", color="white", on_click=loeschen_klick))
 
+            # Alles auf den Bildschirm packen
             page.add(
-                ft.Text(titel, size=25, weight="bold", color="white"),
-                ft.Divider(color="transparent"),
-                name_input, id_input, ort_input,
+                untermenue,
+                ft.Divider(color="white"),
+                adresse_input, 
+                marktnummer_input, 
+                datum_input,
+                auftrag_input,
                 ft.Container(height=20),
                 ft.Row(button_reihe)
             )
             page.update()
+
+        # ---------------- RESTLICHE SEITEN ----------------
 
         def zeige_postausgang():
             page.clean()
@@ -170,7 +213,7 @@ def main(page: ft.Page):
                 ft.Divider(color="white"),
                 
                 ft.ListTile(
-                    leading=ft.Text("P", size=30, color="red"), # Platzhalter statt Emoji
+                    leading=ft.Text("P", size=30, color="red"),
                     title=ft.Text("Protokoll.pdf", color="white"),
                     subtitle=ft.Text("Heute generiert - Bereit", color="grey")
                 )
@@ -188,10 +231,9 @@ def main(page: ft.Page):
                 ft.Divider(color="white"),
                 
                 ft.ListTile(
-                    leading=ft.Text("A", size=30, color="green"), # Platzhalter statt Emoji
+                    leading=ft.Text("A", size=30, color="green"),
                     title=ft.Text("Beispiel Filiale", color="white"),
                     subtitle=ft.Text("Abgeschlossen", color="grey"),
-                    # BEHOBEN: Emoji entfernt
                     trailing=ft.TextButton("Bearbeiten")
                 )
             )
