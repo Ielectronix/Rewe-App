@@ -32,15 +32,15 @@ def main(page: ft.Page):
             elif index == 2:
                 zeige_archiv()
 
-        # SICHERE STANDARD-ICONS EINGEBAUT (LIST, UPLOAD, ARCHIVE)
+        # HIER DER TRICK: Wir schreiben die Icon-Namen als simplen Text ("list")!
         page.navigation_bar = ft.NavigationBar(
             bgcolor="#001100",
             selected_index=0,
             on_change=tab_gewechselt,
             destinations=[
-                ft.NavigationBarDestination(icon=ft.icons.LIST, label="Märkte"),
-                ft.NavigationBarDestination(icon=ft.icons.UPLOAD, label="Postausgang"),
-                ft.NavigationBarDestination(icon=ft.icons.ARCHIVE, label="Archiv"),
+                ft.NavigationBarDestination(icon="list", label="Märkte"),
+                ft.NavigationBarDestination(icon="upload", label="Postausgang"),
+                ft.NavigationBarDestination(icon="archive", label="Archiv"),
             ]
         )
         page.navigation_bar.visible = False
@@ -66,8 +66,8 @@ def main(page: ft.Page):
                 ft.Container(height=50),
                 ft.Row([header], alignment=ft.MainAxisAlignment.CENTER),
                 ft.Container(height=30),
-                # SICHERES START-ICON
-                ft.Icon(ft.icons.CHECK_CIRCLE, size=100, color="white"),
+                # Auch hier: Text statt fehlerhaftem Flet-Katalog
+                ft.Icon(name="check_circle", size=100, color="white"),
                 ft.Container(height=30),
                 ft.Row([
                     ft.ElevatedButton(
@@ -141,7 +141,7 @@ def main(page: ft.Page):
 
             button_reihe = [
                 ft.ElevatedButton("Speichern", on_click=speichere_klick, bgcolor="green", color="white"),
-                ft.TextButton("Zurück", on_click=zurueck_klick, icon=ft.icons.ARROW_BACK, icon_color="white")
+                ft.TextButton("Zurück", on_click=zurueck_klick, icon="arrow_back", icon_color="white")
             ]
 
             if markt_index is not None:
@@ -151,7 +151,7 @@ def main(page: ft.Page):
                     page.navigation_bar.visible = True
                     zeige_dashboard()
                     
-                button_reihe.append(ft.IconButton(icon=ft.icons.DELETE_FOREVER, icon_color="red", on_click=loeschen_klick))
+                button_reihe.append(ft.IconButton(icon="delete_forever", icon_color="red", on_click=loeschen_klick))
 
             page.add(
                 ft.Text(titel, size=25, weight="bold", color="white"),
@@ -172,7 +172,7 @@ def main(page: ft.Page):
                 ft.Divider(color="white"),
                 
                 ft.ListTile(
-                    leading=ft.Icon(ft.icons.PICTURE_AS_PDF, color="red"),
+                    leading=ft.Icon(name="picture_as_pdf", color="red"),
                     title=ft.Text("Test_Protokoll.pdf", color="white"),
                     subtitle=ft.Text("Heute generiert - Bereit", color="grey")
                 )
@@ -189,10 +189,10 @@ def main(page: ft.Page):
                 ft.Divider(color="white"),
                 
                 ft.ListTile(
-                    leading=ft.Icon(ft.icons.ARCHIVE, color="green"),
+                    leading=ft.Icon(name="archive", color="green"),
                     title=ft.Text("Rewe Musterstadt", color="white"),
                     subtitle=ft.Text("Abgeschlossen", color="grey"),
-                    trailing=ft.IconButton(ft.icons.EDIT, icon_color="yellow")
+                    trailing=ft.IconButton(icon="edit", icon_color="yellow")
                 )
             )
             page.update()
