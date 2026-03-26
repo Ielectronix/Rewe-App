@@ -21,9 +21,8 @@ jobs:
         run: pip install flet
 
       - name: APK bauen
-        # Hier geben wir Name und Organisation direkt an, damit er nicht nachfragt!
-        run: |
-          flet build apk --project-name "ReweMonitoring" --org "com.lelectronix.rewe"
+        # Der reparierte Befehl: Nur --project (ohne -name)
+        run: flet build apk --project "ReweMonitoring" --org "com.lelectronix.rewe"
 
       - name: APK hochladen
         uses: actions/upload-artifact@v4
