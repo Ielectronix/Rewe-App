@@ -6,13 +6,11 @@ def main(page: ft.Page):
     # DAS ABSOLUTE SICHERHEITSNETZ
     # =========================================================
     try:
-        # 1. Grund-Setup
         page.title = "Rewe Monitoring"
         page.bgcolor = "#003300"
         page.scroll = ft.ScrollMode.AUTO
         page.padding = 20
 
-        # PDF-Werkzeug laden
         import pypdf
 
         # 2. Speicher-Helfer
@@ -22,33 +20,26 @@ def main(page: ft.Page):
         def speichere_maerkte(maerkte_liste):
             page.client_storage.set("meine_maerkte", maerkte_liste)
 
-        # 3. Navigation
-        def tab_gewechselt(e):
-            index = e.control.selected_index
-            if index == 0:
-                zeige_dashboard()
-            elif index == 1:
-                zeige_postausgang()
-            elif index == 2:
-                zeige_archiv()
-
-        page.navigation_bar = ft.NavigationBar(
-            bgcolor="#001100",
-            selected_index=0,
-            on_change=tab_gewechselt,
-            destinations=[
-                ft.NavigationBarDestination(icon="list", label="Märkte"),
-                ft.NavigationBarDestination(icon="upload", label="Postausgang"),
-                ft.NavigationBarDestination(icon="archive", label="Archiv"),
-            ]
-        )
-        page.navigation_bar.visible = False
+        # 3. UNSERE EIGENE, KUGELSICHERE NAVIGATION (Reiner Text & Emojis)
+        def nav_leiste():
+            return ft.Container(
+                bgcolor="#001100",
+                padding=10,
+                border_radius=10,
+                content=ft.Row(
+                    alignment=ft.MainAxisAlignment.SPACE_EVENLY,
+                    controls=[
+                        ft.TextButton("📋 Märkte", on_click=lambda e: zeige_dashboard(), style=ft.ButtonStyle(color="white")),
+                        ft.TextButton("📤 Senden", on_click=lambda e: zeige_postausgang(), style=ft.ButtonStyle(color="white")),
+                        ft.TextButton("🗄️ Archiv", on_click=lambda e: zeige_archiv(), style=ft.ButtonStyle(color="white")),
+                    ]
+                )
+            )
 
         # ---------------- DIE VERSCHIEDENEN SEITEN ----------------
 
         def zeige_startbildschirm():
             page.clean()
-            page.navigation_bar.visible = False
             
             header = ft.Text(
                 spans=[
@@ -58,15 +49,16 @@ def main(page: ft.Page):
             )
             
             def start_klick(e):
-                page.navigation_bar.visible = True
                 zeige_dashboard()
 
             page.add(
                 ft.Container(height=50),
                 ft.Row([header], alignment=ft.MainAxisAlignment.CENTER),
                 ft.Container(height=30),
-                # Korrektur: Kein "name=" mehr!
-                ft.Icon("check_circle", size=100, color="white"),
+                
+                # DER FEHLER WURDE BEHOBEN: Wir nutzen ein riesiges Text-Emoji!
+                ft.Text("✅", size=100, text_align=ft.TextAlign.CENTER),
+                
                 ft.Container(height=30),
                 ft.Row([
                     ft.ElevatedButton(
@@ -84,9 +76,12 @@ def main(page: ft.Page):
 
         def zeige_dashboard():
             page.clean()
-            page.navigation_bar.selected_index = 0
             maerkte = lade_maerkte()
 
+            # Navigation wird ganz oben als "Tab-Leiste" eingefügt
+            page.add(nav_leiste())
+            page.add(ft.Divider(color="transparent"))
+            
             page.add(ft.Text("Meine heutigen Märkte", size=25, weight="bold", color="white"))
             
             if not maerkte:
@@ -103,13 +98,12 @@ def main(page: ft.Page):
 
             page.add(
                 ft.Divider(color="white"),
-                ft.ElevatedButton("+ Neuen Markt voranlegen", on_click=lambda e: zeige_maske(None), bgcolor="red", color="white", height=50)
+                ft.ElevatedButton("➕ Neuen Markt voranlegen", on_click=lambda e: zeige_maske(None), bgcolor="red", color="white", height=50)
             )
             page.update()
 
         def zeige_maske(markt_index):
             page.clean()
-            page.navigation_bar.visible = False
             maerkte = lade_maerkte()
             
             if markt_index is None:
@@ -131,26 +125,23 @@ def main(page: ft.Page):
                     maerkte[markt_index] = neue_daten
                     
                 speichere_maerkte(maerkte)
-                page.navigation_bar.visible = True
                 zeige_dashboard()
 
             def zurueck_klick(e):
-                page.navigation_bar.visible = True
                 zeige_dashboard()
 
             button_reihe = [
-                ft.ElevatedButton("Speichern", on_click=speichere_klick, bgcolor="green", color="white"),
-                ft.TextButton("Zurück", on_click=zurueck_klick, icon="arrow_back", icon_color="white")
+                ft.ElevatedButton("💾 Speichern", on_click=speichere_klick, bgcolor="green", color="white"),
+                ft.TextButton("🔙 Zurück", on_click=zurueck_klick, style=ft.ButtonStyle(color="white"))
             ]
 
             if markt_index is not None:
                 def loeschen_klick(e):
                     maerkte.pop(markt_index)
                     speichere_maerkte(maerkte)
-                    page.navigation_bar.visible = True
                     zeige_dashboard()
                     
-                button_reihe.append(ft.IconButton(icon="delete_forever", icon_color="red", on_click=loeschen_klick))
+                button_reihe.append(ft.ElevatedButton("🗑️ Löschen", bgcolor="red", color="white", on_click=loeschen_klick))
 
             page.add(
                 ft.Text(titel, size=25, weight="bold", color="white"),
@@ -163,16 +154,16 @@ def main(page: ft.Page):
 
         def zeige_postausgang():
             page.clean()
-            page.navigation_bar.selected_index = 1
-
+            page.add(nav_leiste())
+            page.add(ft.Divider(color="transparent"))
+            
             page.add(
                 ft.Text("Postausgang", size=25, weight="bold", color="white"),
                 ft.Text("Hier landen die fertigen PDFs.", color="grey"),
                 ft.Divider(color="white"),
                 
                 ft.ListTile(
-                    # Korrektur: Kein "name=" mehr!
-                    leading=ft.Icon("picture_as_pdf", color="red"),
+                    leading=ft.Text("📄", size=30),
                     title=ft.Text("Test_Protokoll.pdf", color="white"),
                     subtitle=ft.Text("Heute generiert - Bereit", color="grey")
                 )
@@ -181,19 +172,19 @@ def main(page: ft.Page):
 
         def zeige_archiv():
             page.clean()
-            page.navigation_bar.selected_index = 2
+            page.add(nav_leiste())
+            page.add(ft.Divider(color="transparent"))
             
             page.add(
                 ft.Text("Archiv (Letzte 7 Tage)", size=25, weight="bold", color="white"),
-                ft.Text("Tippe auf das gelbe Stift-Symbol, um alte Daten nachträglich zu ändern.", color="grey"),
+                ft.Text("Tippe auf das Stift-Symbol, um alte Daten nachträglich zu ändern.", color="grey"),
                 ft.Divider(color="white"),
                 
                 ft.ListTile(
-                    # Korrektur: Kein "name=" mehr!
-                    leading=ft.Icon("archive", color="green"),
+                    leading=ft.Text("🗂️", size=30),
                     title=ft.Text("Rewe Musterstadt", color="white"),
                     subtitle=ft.Text("Abgeschlossen", color="grey"),
-                    trailing=ft.IconButton(icon="edit", icon_color="yellow")
+                    trailing=ft.TextButton("✏️ Bearbeiten")
                 )
             )
             page.update()
@@ -202,7 +193,6 @@ def main(page: ft.Page):
         zeige_startbildschirm()
 
     except Exception as e:
-        # ABSOLUTER NOTFALL-BILDSCHIRM
         page.clean()
         page.bgcolor = "black"
         page.add(
