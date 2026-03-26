@@ -1,6 +1,10 @@
 import flet as ft
+import traceback
 
 def main(page: ft.Page):
+    # =========================================================
+    # DAS ABSOLUTE SICHERHEITSNETZ (Bleibt ab jetzt immer drin!)
+    # =========================================================
     try:
         # 1. Grund-Setup
         page.title = "Rewe Monitoring"
@@ -8,7 +12,8 @@ def main(page: ft.Page):
         page.scroll = ft.ScrollMode.AUTO
         page.padding = 20
 
-        # WIR HABEN DAS PDF-MODUL HIER ENTFERNT (Das kommt erst später!)
+        # PDF-Werkzeug laden (Wir testen, ob es jetzt mitmacht)
+        import pypdf
 
         # 2. Speicher-Helfer
         def lade_maerkte():
@@ -27,14 +32,15 @@ def main(page: ft.Page):
             elif index == 2:
                 zeige_archiv()
 
+        # HIER IST DIE FEHLERBEHEBUNG: NavigationBarDestination
         page.navigation_bar = ft.NavigationBar(
             bgcolor="#001100",
             selected_index=0,
             on_change=tab_gewechselt,
             destinations=[
-                ft.NavigationDestination(icon=ft.icons.ASSIGNMENT, label="Märkte"),
-                ft.NavigationDestination(icon=ft.icons.SEND, label="Postausgang"),
-                ft.NavigationDestination(icon=ft.icons.HISTORY, label="Archiv"),
+                ft.NavigationBarDestination(icon=ft.icons.ASSIGNMENT, label="Märkte"),
+                ft.NavigationBarDestination(icon=ft.icons.SEND, label="Postausgang"),
+                ft.NavigationBarDestination(icon=ft.icons.HISTORY, label="Archiv"),
             ]
         )
         page.navigation_bar.visible = False
@@ -194,13 +200,17 @@ def main(page: ft.Page):
         zeige_startbildschirm()
 
     except Exception as e:
-        # ABSOLUTER NOTFALL-BILDSCHIRM (ohne komplizierte Formatierungen)
+        # ABSOLUTER NOTFALL-BILDSCHIRM
         page.clean()
         page.bgcolor = "black"
         page.add(
             ft.Text("FEHLER GEFUNDEN:", color="red", size=30, weight="bold"),
             ft.Text(str(e), color="yellow", size=20)
         )
+        try:
+            page.add(ft.Text(traceback.format_exc(), color="white", size=12))
+        except:
+            pass
         page.update()
 
 if __name__ == "__main__":
