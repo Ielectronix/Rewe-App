@@ -100,7 +100,6 @@ def main(page: ft.Page):
                 weisser_stil = ft.TextStyle(color="white")
                 gespeicherter_vorname, gespeicherter_zuname = lade_benutzer()
                 
-                # FELDER SIND ZENTRIERT UND OHNE DAS WORT "PROBENEHMER"
                 vorname_input = ft.TextField(
                     label="Vorname",
                     value=gespeicherter_vorname, 
@@ -208,6 +207,8 @@ def main(page: ft.Page):
                 voller_name = f"{gespeicherter_vorname} {gespeicherter_zuname}".strip()
                 
                 heute = datetime.datetime.now()
+                
+                # Wir gehen IMMER erstmal vom exakt heutigen Datum aus!
                 tag_wert = f"{heute.day:02d}"
                 monat_wert = f"{heute.month:02d}"
                 jahr_wert = str(heute.year)
@@ -225,18 +226,20 @@ def main(page: ft.Page):
                     aktuelle_daten = maerkte[markt_index]
                     titel = "Tour bearbeiten"
                     
-                    # SICHERHEITS-CHECK FÜR DAS DATUM (Blockiert Zeichen wie ";" oder "(")
+                    # =========================================================
+                    # DER DATEN-SCHREDDER (Löscht Hieroglyphen gnadenlos)
+                    # =========================================================
                     gespeichertes_datum = aktuelle_daten.get("datum", "")
                     if gespeichertes_datum:
                         teile = gespeichertes_datum.split(".")
                         if len(teile) == 3:
-                            try:
-                                # Prüft, ob es WIRKLICH Zahlen sind
-                                if teile[0].isdigit(): tag_wert = str(int(teile[0])).zfill(2)
-                                if teile[1].isdigit(): monat_wert = str(int(teile[1])).zfill(2)
-                                if teile[2].isdigit(): jahr_wert = str(int(teile[2]))
-                            except:
-                                pass
+                            # Wir prüfen, ob da wirklich NUR Zahlen drin sind!
+                            if teile[0].isdigit() and teile[1].isdigit() and teile[2].isdigit():
+                                tag_wert = f"{int(teile[0]):02d}"
+                                monat_wert = f"{int(teile[1]):02d}"
+                                jahr_wert = str(int(teile[2]))
+                            # Wenn "isdigit" fehlschlägt (weil eine Klammer drin ist), 
+                            # macht er gar nichts und behält einfach das heutige Datum!
 
                 untermenue = ft.Row(
                     alignment=ft.MainAxisAlignment.START,
@@ -270,16 +273,12 @@ def main(page: ft.Page):
                     border_color="white", cursor_color="white"
                 )
                 
-                # FELD HEISST NUR NOCH "NAME"
                 name_input = ft.TextField(
                     label="Name", value=aktuelle_daten.get("mitarbeiter_name", voller_name), 
                     color="white", text_style=weisser_stil, label_style=weisser_stil, 
                     border_color="white", cursor_color="white"
                 )
 
-                # =========================================================
-                # DROPDOWN MIT TEXT-PFEIL (Ohne Farb-Befehl, der Android abstürzen lässt)
-                # =========================================================
                 auftraggeber_dd = ft.Dropdown(
                     label="Auftraggeber (Hier auswählen ▼)", 
                     value=aktuelle_daten.get("auftraggeber", "03509 - REWE Hackfleischmonitoring"),
@@ -297,7 +296,7 @@ def main(page: ft.Page):
                 )
 
                 # =========================================================
-                # DATUMSWÄHLER (Breit genug, damit nichts abgeschnitten wird)
+                # UNSER SELBSTGEBAUTER KALENDER (Aus drei sicheren Feldern)
                 # =========================================================
                 tag_dd = ft.Dropdown(
                     label="Tag", value=tag_wert, expand=1, 
