@@ -10,6 +10,9 @@ def main(page: ft.Page):
     page.padding = 20
     page.scroll = ft.ScrollMode.AUTO
 
+    # =========================================================
+    # DER CONTAINER-TRICK
+    # =========================================================
     ansicht = ft.Column(expand=True)
     page.add(ansicht)
 
@@ -28,7 +31,7 @@ def main(page: ft.Page):
         import pypdf
 
         # =========================================================
-        # DATEI-TRESORE
+        # DIE ZWEI DATEI-TRESORE
         # =========================================================
         SPEICHER_DATEI = "meine_monitoring_daten.json"
         BENUTZER_DATEI = "benutzer_daten.json"
@@ -67,7 +70,7 @@ def main(page: ft.Page):
                 pass
 
         # =========================================================
-        # HAUPT-NAVIGATION
+        # 3. HAUPT-NAVIGATION
         # =========================================================
         def nav_leiste():
             return ft.Container(
@@ -277,12 +280,13 @@ def main(page: ft.Page):
                 )
 
                 # =========================================================
-                # DROPDOWN MIT FETTEM PFEIL IM TEXT (▼)
+                # DROPDOWN MIT ROTEM PFEIL (▼)
                 # =========================================================
                 auftraggeber_dd = ft.Dropdown(
                     label="Auftraggeber (Hier auswählen ▼)", 
                     value=aktuelle_daten.get("auftraggeber", "03509 - REWE Hackfleischmonitoring"),
                     color="white", border_color="white", text_style=weisser_stil, label_style=weisser_stil,
+                    icon_color="red", # <- Dieser Befehl zaubert das Pfeil-Symbol in Rot!
                     options=[
                         ft.dropdown.Option(
                             key="03509 - REWE Hackfleischmonitoring", 
