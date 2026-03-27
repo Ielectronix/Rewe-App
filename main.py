@@ -11,7 +11,7 @@ def main(page: ft.Page):
     page.scroll = ft.ScrollMode.AUTO
 
     # =========================================================
-    # KALENDER-WERKZEUG (wird im Hintergrund bereitgehalten)
+    # KALENDER-WERKZEUG
     # =========================================================
     page.date_picker = ft.DatePicker()
     page.overlay.append(page.date_picker)
@@ -218,30 +218,32 @@ def main(page: ft.Page):
                 page.date_picker.on_change = datum_gewaehlt
 
                 # =========================================================
-                # EXTREM-FEHLER-FÄNGER FÜR DEN KALENDER
+                # DIE DREIFACH-ZÜNDUNG FÜR DEN KALENDER
                 # =========================================================
                 def oeffne_kalender(e):
                     try:
-                        # Datum einlesen
-                        try:
-                            aktuelles_datum = datetime.datetime.strptime(datum_input.value, "%d.%m.%Y")
-                            page.date_picker.value = aktuelles_datum
-                        except:
-                            page.date_picker.value = datetime.datetime.now()
-                        
-                        page.update()
-                        
-                        # Absolut sicherer Startversuch für den Kalender
+                        aktuelles_datum = datetime.datetime.strptime(datum_input.value, "%d.%m.%Y")
+                        page.date_picker.value = aktuelles_datum
+                    except:
+                        page.date_picker.value = datetime.datetime.now()
+                    
+                    try:
+                        # Versuch 1: Der neueste Befehl
                         if hasattr(page, 'open'):
                             page.open(page.date_picker)
+                        # Versuch 2: Der Standard-Befehl
                         elif hasattr(page.date_picker, 'pick_date'):
                             page.date_picker.pick_date()
+                        # Versuch 3: Der ganz alte Befehl
                         else:
-                            raise Exception("Das Handy verweigert das Öffnen des Kalenders komplett!")
-                            
-                    except Exception as ex:
-                        # WENN ES HIER KNALLT, LANDEN WIR SOFORT IM SCHWARZEN BILDSCHIRM
-                        zeige_fehler(f"Kalender-Absturz: {ex}")
+                            page.date_picker.open = True
+                            page.update()
+                    except Exception:
+                        # FALLBACK: Wenn das Handy sich komplett weigert, 
+                        # zeigen wir einfach einen kleinen Hinweis-Text im Feld an,
+                        # ABER DIE APP STÜRZT NICHT MEHR AB!
+                        datum_input.hint_text = "(Bitte über Tastatur tippen)"
+                        datum_input.update()
 
                 datum_zeile = ft.Row([
                     datum_input,
