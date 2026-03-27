@@ -10,9 +10,6 @@ def main(page: ft.Page):
     page.padding = 20
     page.scroll = ft.ScrollMode.AUTO
 
-    # =========================================================
-    # DER CONTAINER-TRICK
-    # =========================================================
     ansicht = ft.Column(expand=True)
     page.add(ansicht)
 
@@ -31,7 +28,7 @@ def main(page: ft.Page):
         import pypdf
 
         # =========================================================
-        # DIE ZWEI DATEI-TRESORE
+        # DATEI-TRESORE
         # =========================================================
         SPEICHER_DATEI = "meine_monitoring_daten.json"
         BENUTZER_DATEI = "benutzer_daten.json"
@@ -70,7 +67,7 @@ def main(page: ft.Page):
                 pass
 
         # =========================================================
-        # 3. HAUPT-NAVIGATION
+        # HAUPT-NAVIGATION
         # =========================================================
         def nav_leiste():
             return ft.Container(
@@ -103,13 +100,13 @@ def main(page: ft.Page):
                 weisser_stil = ft.TextStyle(color="white")
                 gespeicherter_vorname, gespeicherter_zuname = lade_benutzer()
                 
-                # BEHOBEN: Felder "Vorname" und "Zuname" - Schrift und Box absolut mittig zentriert
+                # KOMPLETT SAUBERE FELDER OHNE "PROBENEHMER" UND ZENTRIERT
                 vorname_input = ft.TextField(
                     label="Vorname",
                     value=gespeicherter_vorname, 
                     color="white", text_style=weisser_stil, label_style=weisser_stil, 
                     border_color="white", cursor_color="white",
-                    text_align=ft.TextAlign.CENTER # Text wird mittig getippt
+                    text_align=ft.TextAlign.CENTER
                 )
                 
                 zuname_input = ft.TextField(
@@ -117,7 +114,7 @@ def main(page: ft.Page):
                     value=gespeicherter_zuname, 
                     color="white", text_style=weisser_stil, label_style=weisser_stil, 
                     border_color="white", cursor_color="white",
-                    text_align=ft.TextAlign.CENTER # Text wird mittig getippt
+                    text_align=ft.TextAlign.CENTER
                 )
 
                 def start_klick(e):
@@ -126,16 +123,16 @@ def main(page: ft.Page):
                 
                 ansicht.controls.append(ft.Container(height=50))
                 ansicht.controls.append(ft.Row([header], alignment=ft.MainAxisAlignment.CENTER))
-                ansicht.controls.append(ft.Container(height=30)) 
+                ansicht.controls.append(ft.Container(height=40)) 
                 
-                # BEHOBEN: Wir packen die Felder in eine Spalte und zentrieren diese auf dem Bildschirm
+                # ZENTRIERTE SPALTE FÜR DIE NAMENS-FELDER
                 eingabe_spalte = ft.Column(
                     controls=[vorname_input, zuname_input],
                     horizontal_alignment=ft.CrossAxisAlignment.CENTER
                 )
                 ansicht.controls.append(eingabe_spalte)
                 
-                ansicht.controls.append(ft.Container(height=30)) 
+                ansicht.controls.append(ft.Container(height=40)) 
                 
                 ansicht.controls.append(
                     ft.Row([
@@ -209,7 +206,7 @@ def main(page: ft.Page):
                 maerkte = lade_maerkte()
                 
                 gespeicherter_vorname, gespeicherter_zuname = lade_benutzer()
-                voller_probenehmer_name = f"{gespeicherter_vorname} {gespeicherter_zuname}".strip()
+                voller_name = f"{gespeicherter_vorname} {gespeicherter_zuname}".strip()
                 
                 heute = datetime.datetime.now()
                 tag_wert = f"{heute.day:02d}"
@@ -221,7 +218,7 @@ def main(page: ft.Page):
                         "adresse": "", 
                         "marktnummer": "", 
                         "auftragsnummer": "", 
-                        "probenehmer": voller_probenehmer_name,
+                        "mitarbeiter_name": voller_name,
                         "auftraggeber": "03509 - REWE Hackfleischmonitoring"
                     }
                     titel = "Neue Tour anlegen"
@@ -229,13 +226,10 @@ def main(page: ft.Page):
                     aktuelle_daten = maerkte[markt_index]
                     titel = "Tour bearbeiten"
                     
-                    # BEHOBEN: "Waschstraßen-Code" für alte, fehlerhafte Datums-Einträge
                     gespeichertes_datum = aktuelle_daten.get("datum", "")
                     if gespeichertes_datum:
                         teile = gespeichertes_datum.split(".")
                         if len(teile) == 3:
-                            # zfill(2) zwingt alte Einträge wie "2" in das Format "02"
-                            # Dadurch stürzt das Dropdown nicht mehr ab und rastet sofort ein!
                             try:
                                 tag_wert = str(teile[0]).zfill(2)
                                 monat_wert = str(teile[1]).zfill(2)
@@ -274,21 +268,21 @@ def main(page: ft.Page):
                     color="white", text_style=weisser_stil, label_style=weisser_stil, 
                     border_color="white", cursor_color="white"
                 )
-                probenehmer_input = ft.TextField(
-                    label="Probenehmer", value=aktuelle_daten.get("probenehmer", voller_probenehmer_name), 
+                
+                # FELD HEISST JETZT NUR NOCH "NAME"
+                name_input = ft.TextField(
+                    label="Name", value=aktuelle_daten.get("mitarbeiter_name", voller_name), 
                     color="white", text_style=weisser_stil, label_style=weisser_stil, 
                     border_color="white", cursor_color="white"
                 )
 
                 # =========================================================
-                # BEHOBEN: AUFTRAGGEBER-DROPDOWN JETZT MIT DEUTLICHEM PFEIL
+                # DROPDOWN MIT FETTEM PFEIL IM TEXT (▼)
                 # =========================================================
                 auftraggeber_dd = ft.Dropdown(
-                    label="Auftraggeber (bitte hier auswählen)", 
+                    label="Auftraggeber (Hier auswählen ▼)", 
                     value=aktuelle_daten.get("auftraggeber", "03509 - REWE Hackfleischmonitoring"),
                     color="white", border_color="white", text_style=weisser_stil, label_style=weisser_stil,
-                    icon=ft.icons.ARROW_DROP_DOWN_CIRCLE, # <- Dieser Befehl zaubert ein fettes Pfeil-Symbol daneben!
-                    icon_color="white",
                     options=[
                         ft.dropdown.Option(
                             key="03509 - REWE Hackfleischmonitoring", 
@@ -302,7 +296,7 @@ def main(page: ft.Page):
                 )
 
                 # =========================================================
-                # DATUMSWÄHLER (Wie gewünscht OHNE Extra-Pfeile)
+                # DATUMSWÄHLER (OHNE Pfeile)
                 # =========================================================
                 tag_dd = ft.Dropdown(
                     label="Tag", value=tag_wert, expand=1, 
@@ -327,8 +321,6 @@ def main(page: ft.Page):
                     ]
                 )
 
-                # =========================================================
-
                 def speichere_klick(e):
                     zusammengesetztes_datum = f"{tag_dd.value}.{monat_dd.value}.{jahr_dd.value}"
                     
@@ -337,7 +329,7 @@ def main(page: ft.Page):
                         "marktnummer": marktnummer_input.value,
                         "datum": zusammengesetztes_datum,
                         "auftragsnummer": auftrag_input.value,
-                        "probenehmer": probenehmer_input.value,
+                        "mitarbeiter_name": name_input.value,
                         "auftraggeber": auftraggeber_dd.value 
                     }
                     if markt_index is None:
@@ -359,8 +351,8 @@ def main(page: ft.Page):
                 ansicht.controls.append(adresse_input)
                 ansicht.controls.append(marktnummer_input)
                 ansicht.controls.append(auftrag_input)
-                ansicht.controls.append(auftraggeber_dd) # Das Dropdown-Menü MIT dem neuen Pfeil
-                ansicht.controls.append(probenehmer_input)
+                ansicht.controls.append(auftraggeber_dd) 
+                ansicht.controls.append(name_input)
                 ansicht.controls.append(datum_zeile) 
                 ansicht.controls.append(ft.Container(height=20))
                 ansicht.controls.append(ft.Row(button_reihe))
