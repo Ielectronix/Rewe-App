@@ -11,12 +11,6 @@ def main(page: ft.Page):
     page.scroll = ft.ScrollMode.AUTO
 
     # =========================================================
-    # KALENDER-WERKZEUG
-    # =========================================================
-    page.date_picker = ft.DatePicker()
-    page.overlay.append(page.date_picker)
-
-    # =========================================================
     # DER CONTAINER-TRICK
     # =========================================================
     ansicht = ft.Column(expand=True)
@@ -154,22 +148,21 @@ def main(page: ft.Page):
                 zeige_fehler(e)
 
         # =========================================================
-        # 4. DIE TOUR-MASKE (Stammdaten)
+        # 4. DIE TOUR-MASKE (Stammdaten mit manuellem Kalender)
         # =========================================================
         def zeige_maske(markt_index):
             try:
                 ansicht.controls.clear()
                 maerkte = lade_maerkte()
                 
-                heute_str = datetime.datetime.now().strftime("%d.%m.%Y")
+                # Wir holen uns das exakt heutige Datum
+                heute = datetime.datetime.now()
                 
                 if markt_index is None:
-                    aktuelle_daten = {"adresse": "", "marktnummer": "", "datum": heute_str, "auftragsnummer": ""}
+                    aktuelle_daten = {"adresse": "", "marktnummer": "", "datum": "", "auftragsnummer": ""}
                     titel = "Neue Tour anlegen"
                 else:
                     aktuelle_daten = maerkte[markt_index]
-                    if not aktuelle_daten.get("datum"):
-                        aktuelle_daten["datum"] = heute_str
                     titel = "Tour bearbeiten"
 
                 untermenue = ft.Row(
@@ -204,57 +197,64 @@ def main(page: ft.Page):
                     border_color="white", cursor_color="white"
                 )
 
-                datum_input = ft.TextField(
-                    label="3. Datum der Probenahme", value=aktuelle_daten.get("datum", ""), 
-                    color="white", text_style=weisser_stil, label_style=weisser_stil, 
-                    border_color="white", cursor_color="white", expand=True 
-                )
+                # =========================================================
+                # UNSER EIGENER, UNZERSTÖRBARER DATUMSWÄHLER
+                # =========================================================
+                gespeichertes_datum = aktuelle_daten.get("datum", "")
                 
-                def datum_gewaehlt(e):
-                    if page.date_picker.value:
-                        datum_input.value = page.date_picker.value.strftime("%d.%m.%Y")
-                        page.update()
-
-                page.date_picker.on_change = datum_gewaehlt
-
-                # =========================================================
-                # DIE DREIFACH-ZÜNDUNG FÜR DEN KALENDER
-                # =========================================================
-                def oeffne_kalender(e):
+                # Wenn schon ein Datum da ist, zerlegen wir es (TT.MM.JJJJ)
+                if gespeichertes_datum != "":
                     try:
-                        aktuelles_datum = datetime.datetime.strptime(datum_input.value, "%d.%m.%Y")
-                        page.date_picker.value = aktuelles_datum
+                        t, m, j = gespeichertes_datum.split(".")
+                        tag_wert = t
+                        monat_wert = m
+                        jahr_wert = j
                     except:
-                        page.date_picker.value = datetime.datetime.now()
-                    
-                    try:
-                        # Versuch 1: Der neueste Befehl
-                        if hasattr(page, 'open'):
-                            page.open(page.date_picker)
-                        # Versuch 2: Der Standard-Befehl
-                        elif hasattr(page.date_picker, 'pick_date'):
-                            page.date_picker.pick_date()
-                        # Versuch 3: Der ganz alte Befehl
-                        else:
-                            page.date_picker.open = True
-                            page.update()
-                    except Exception:
-                        # FALLBACK: Wenn das Handy sich komplett weigert, 
-                        # zeigen wir einfach einen kleinen Hinweis-Text im Feld an,
-                        # ABER DIE APP STÜRZT NICHT MEHR AB!
-                        datum_input.hint_text = "(Bitte über Tastatur tippen)"
-                        datum_input.update()
+                        # Fallback bei Quatsch-Daten
+                        tag_wert = str(heute.day).zfill(2)
+                        monat_wert = str(heute.month).zfill(2)
+                        jahr_wert = str(heute.year)
+                else:
+                    # Wenn neu, nehmen wir den heutigen Tag!
+                    tag_wert = str(heute.day).zfill(2)
+                    monat_wert = str(heute.month).zfill(2)
+                    jahr_wert = str(heute.year)
 
-                datum_zeile = ft.Row([
-                    datum_input,
-                    ft.ElevatedButton("📆", on_click=oeffne_kalender, bgcolor="grey", color="white")
-                ])
+                # Die Dropdown-Rädchen
+                tag_dd = ft.Dropdown(
+                    label="Tag", value=tag_wert, width=90, 
+                    color="white", border_color="white", text_style=weisser_stil, label_style=weisser_stil,
+                    options=[ft.dropdown.Option(str(i).zfill(2)) for i in range(1, 32)]
+                )
+                monat_dd = ft.Dropdown(
+                    label="Monat", value=monat_wert, width=90, 
+                    color="white", border_color="white", text_style=weisser_stil, label_style=weisser_stil,
+                    options=[ft.dropdown.Option(str(i).zfill(2)) for i in range(1, 13)]
+                )
+                jahr_dd = ft.Dropdown(
+                    label="Jahr", value=jahr_wert, width=120, 
+                    color="white", border_color="white", text_style=weisser_stil, label_style=weisser_stil,
+                    # Zeigt die Jahre von letztem Jahr bis in 4 Jahren an
+                    options=[ft.dropdown.Option(str(i)) for i in range(heute.year - 1, heute.year + 5)]
+                )
+
+                datum_zeile = ft.Column(
+                    controls=[
+                        ft.Text("3. Datum der Probenahme", color="white", weight="bold"),
+                        ft.Row([tag_dd, monat_dd, jahr_dd])
+                    ]
+                )
+
+                # =========================================================
 
                 def speichere_klick(e):
+                    # Wir kleben das Datum aus den Rädchen wieder zusammen!
+                    zusammengesetztes_datum = f"{tag_dd.value}.{monat_dd.value}.{jahr_dd.value}"
+                    
                     neue_daten = {
                         "adresse": adresse_input.value,
                         "marktnummer": marktnummer_input.value,
-                        "datum": datum_input.value,
+                        "datum": zusammengesetztes_datum,
                         "auftragsnummer": auftrag_input.value
                     }
                     if markt_index is None:
@@ -275,7 +275,7 @@ def main(page: ft.Page):
                 ansicht.controls.append(ft.Text(titel, size=20, weight="bold", color="white"))
                 ansicht.controls.append(adresse_input)
                 ansicht.controls.append(marktnummer_input)
-                ansicht.controls.append(datum_zeile) 
+                ansicht.controls.append(datum_zeile) # Hier bauen wir die Dropdowns ein
                 ansicht.controls.append(auftrag_input)
                 ansicht.controls.append(ft.Container(height=20))
                 ansicht.controls.append(ft.Row(button_reihe))
