@@ -11,7 +11,7 @@ def main(page: ft.Page):
     page.scroll = ft.ScrollMode.AUTO
 
     # =========================================================
-    # DER CONTAINER-TRICK
+    # DER CONTAINER-TRICK (Verhindert Abstürze beim Seitenwechsel)
     # =========================================================
     ansicht = ft.Column(expand=True)
     page.add(ansicht)
@@ -155,15 +155,27 @@ def main(page: ft.Page):
                 ansicht.controls.clear()
                 maerkte = lade_maerkte()
                 
-                # Wir holen uns das exakt heutige Datum
+                # Exakt aktuelles Datum holen
                 heute = datetime.datetime.now()
                 
+                # Wir zwingen Tag und Monat in das exakte 2-stellige Format (z.B. "05", "27")
+                tag_wert = f"{heute.day:02d}"
+                monat_wert = f"{heute.month:02d}"
+                jahr_wert = str(heute.year)
+                
                 if markt_index is None:
-                    aktuelle_daten = {"adresse": "", "marktnummer": "", "datum": "", "auftragsnummer": ""}
+                    aktuelle_daten = {"adresse": "", "marktnummer": "", "auftragsnummer": ""}
                     titel = "Neue Tour anlegen"
                 else:
                     aktuelle_daten = maerkte[markt_index]
                     titel = "Tour bearbeiten"
+                    
+                    # Wenn wir einen alten Markt bearbeiten, holen wir sein gespeichertes Datum
+                    gespeichertes_datum = aktuelle_daten.get("datum", "")
+                    if gespeichertes_datum:
+                        teile = gespeichertes_datum.split(".")
+                        if len(teile) == 3:
+                            tag_wert, monat_wert, jahr_wert = teile
 
                 untermenue = ft.Row(
                     alignment=ft.MainAxisAlignment.START,
@@ -181,66 +193,48 @@ def main(page: ft.Page):
 
                 weisser_stil = ft.TextStyle(color="white")
 
+                # BEHOBEN: Die Zahlen 1., 2., 4. wurden hier in den Labels entfernt
                 adresse_input = ft.TextField(
-                    label="1. Adresse Markt", value=aktuelle_daten.get("adresse", ""), 
+                    label="Adresse Markt", value=aktuelle_daten.get("adresse", ""), 
                     color="white", text_style=weisser_stil, label_style=weisser_stil, 
                     border_color="white", cursor_color="white"
                 )
                 marktnummer_input = ft.TextField(
-                    label="2. Marktnummer", value=aktuelle_daten.get("marktnummer", ""), 
+                    label="Marktnummer", value=aktuelle_daten.get("marktnummer", ""), 
                     color="white", text_style=weisser_stil, label_style=weisser_stil, 
                     border_color="white", cursor_color="white"
                 )
                 auftrag_input = ft.TextField(
-                    label="4. Auftragsnummer", value=aktuelle_daten.get("auftragsnummer", ""), 
+                    label="Auftragsnummer", value=aktuelle_daten.get("auftragsnummer", ""), 
                     color="white", text_style=weisser_stil, label_style=weisser_stil, 
                     border_color="white", cursor_color="white"
                 )
 
                 # =========================================================
-                # UNSER EIGENER, UNZERSTÖRBARER DATUMSWÄHLER
+                # UNSER EIGENER DATUMSWÄHLER (Sichere Zuweisung)
                 # =========================================================
-                gespeichertes_datum = aktuelle_daten.get("datum", "")
                 
-                # Wenn schon ein Datum da ist, zerlegen wir es (TT.MM.JJJJ)
-                if gespeichertes_datum != "":
-                    try:
-                        t, m, j = gespeichertes_datum.split(".")
-                        tag_wert = t
-                        monat_wert = m
-                        jahr_wert = j
-                    except:
-                        # Fallback bei Quatsch-Daten
-                        tag_wert = str(heute.day).zfill(2)
-                        monat_wert = str(heute.month).zfill(2)
-                        jahr_wert = str(heute.year)
-                else:
-                    # Wenn neu, nehmen wir den heutigen Tag!
-                    tag_wert = str(heute.day).zfill(2)
-                    monat_wert = str(heute.month).zfill(2)
-                    jahr_wert = str(heute.year)
-
-                # Die Dropdown-Rädchen
+                # Wir setzen explizit die Schlüssel (key) und Anzeige (text), damit es zu 100% einrastet
                 tag_dd = ft.Dropdown(
                     label="Tag", value=tag_wert, width=90, 
                     color="white", border_color="white", text_style=weisser_stil, label_style=weisser_stil,
-                    options=[ft.dropdown.Option(str(i).zfill(2)) for i in range(1, 32)]
+                    options=[ft.dropdown.Option(key=f"{i:02d}", text=f"{i:02d}") for i in range(1, 32)]
                 )
                 monat_dd = ft.Dropdown(
                     label="Monat", value=monat_wert, width=90, 
                     color="white", border_color="white", text_style=weisser_stil, label_style=weisser_stil,
-                    options=[ft.dropdown.Option(str(i).zfill(2)) for i in range(1, 13)]
+                    options=[ft.dropdown.Option(key=f"{i:02d}", text=f"{i:02d}") for i in range(1, 13)]
                 )
                 jahr_dd = ft.Dropdown(
                     label="Jahr", value=jahr_wert, width=120, 
                     color="white", border_color="white", text_style=weisser_stil, label_style=weisser_stil,
-                    # Zeigt die Jahre von letztem Jahr bis in 4 Jahren an
-                    options=[ft.dropdown.Option(str(i)) for i in range(heute.year - 1, heute.year + 5)]
+                    options=[ft.dropdown.Option(key=str(i), text=str(i)) for i in range(heute.year - 1, heute.year + 5)]
                 )
 
                 datum_zeile = ft.Column(
                     controls=[
-                        ft.Text("3. Datum der Probenahme", color="white", weight="bold"),
+                        # BEHOBEN: Die Zahl 3. wurde hier entfernt
+                        ft.Text("Datum der Probenahme", color="white", weight="bold"),
                         ft.Row([tag_dd, monat_dd, jahr_dd])
                     ]
                 )
@@ -248,7 +242,7 @@ def main(page: ft.Page):
                 # =========================================================
 
                 def speichere_klick(e):
-                    # Wir kleben das Datum aus den Rädchen wieder zusammen!
+                    # Wir kleben das Datum aus den Rädchen wieder zusammen
                     zusammengesetztes_datum = f"{tag_dd.value}.{monat_dd.value}.{jahr_dd.value}"
                     
                     neue_daten = {
@@ -275,7 +269,7 @@ def main(page: ft.Page):
                 ansicht.controls.append(ft.Text(titel, size=20, weight="bold", color="white"))
                 ansicht.controls.append(adresse_input)
                 ansicht.controls.append(marktnummer_input)
-                ansicht.controls.append(datum_zeile) # Hier bauen wir die Dropdowns ein
+                ansicht.controls.append(datum_zeile) 
                 ansicht.controls.append(auftrag_input)
                 ansicht.controls.append(ft.Container(height=20))
                 ansicht.controls.append(ft.Row(button_reihe))
