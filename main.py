@@ -97,24 +97,25 @@ def main(page: ft.Page):
                     ], text_align=ft.TextAlign.CENTER
                 )
                 
-                weisser_stil = ft.TextStyle(color="white")
+                weisser_stil_klein = ft.TextStyle(color="white", size=10)
                 gespeicherter_vorname, gespeicherter_zuname = lade_benutzer()
                 
-                # FELDER SIND ZENTRIERT UND OHNE DAS WORT "PROBENEHMER"
                 vorname_input = ft.TextField(
                     label="Vorname",
                     value=gespeicherter_vorname, 
-                    color="white", text_style=weisser_stil, label_style=weisser_stil, 
+                    color="white", text_style=weisser_stil_klein, label_style=weisser_stil_klein, 
                     border_color="white", cursor_color="white",
-                    text_align=ft.TextAlign.CENTER
+                    text_align=ft.TextAlign.CENTER,
+                    text_size=10
                 )
                 
                 zuname_input = ft.TextField(
                     label="Nachname",
                     value=gespeicherter_zuname, 
-                    color="white", text_style=weisser_stil, label_style=weisser_stil, 
+                    color="white", text_style=weisser_stil_klein, label_style=weisser_stil_klein, 
                     border_color="white", cursor_color="white",
-                    text_align=ft.TextAlign.CENTER
+                    text_align=ft.TextAlign.CENTER,
+                    text_size=10
                 )
 
                 def start_klick(e):
@@ -207,12 +208,16 @@ def main(page: ft.Page):
                 gespeicherter_vorname, gespeicherter_zuname = lade_benutzer()
                 voller_name = f"{gespeicherter_vorname} {gespeicherter_zuname}".strip()
                 
+                # Wir zwingen das Programm, das aktuelle Datum zu holen und als Text zu speichern
                 heute = datetime.datetime.now()
+                aktueller_tag = f"{heute.day:02d}"
+                aktueller_monat = f"{heute.month:02d}"
+                aktuelles_jahr = str(heute.year)
                 
-                # Wir gehen IMMER erstmal vom exakt heutigen Datum aus!
-                tag_wert = f"{heute.day:02d}"
-                monat_wert = f"{heute.month:02d}"
-                jahr_wert = str(heute.year)
+                # Standardmäßig nehmen wir immer erst das heutige Datum
+                tag_wert = aktueller_tag
+                monat_wert = aktueller_monat
+                jahr_wert = aktuelles_jahr
                 
                 if markt_index is None:
                     aktuelle_daten = {
@@ -227,20 +232,15 @@ def main(page: ft.Page):
                     aktuelle_daten = maerkte[markt_index]
                     titel = "Tour bearbeiten"
                     
-                    # =========================================================
-                    # DER DATEN-SCHREDDER (Löscht Hieroglyphen gnadenlos)
-                    # =========================================================
+                    # Wenn es eine alte Tour ist, versuchen wir das Datum auszulesen,
+                    # falls es Quatsch ist, bleibt es einfach beim heutigen Datum!
                     gespeichertes_datum = aktuelle_daten.get("datum", "")
                     if gespeichertes_datum:
                         teile = gespeichertes_datum.split(".")
-                        if len(teile) == 3:
-                            # Wir prüfen, ob da wirklich NUR Zahlen drin sind!
-                            if teile[0].isdigit() and teile[1].isdigit() and teile[2].isdigit():
-                                tag_wert = f"{int(teile[0]):02d}"
-                                monat_wert = f"{int(teile[1]):02d}"
-                                jahr_wert = str(int(teile[2]))
-                            # Wenn "isdigit" fehlschlägt (weil eine Klammer drin ist), 
-                            # macht er gar nichts und behält einfach das heutige Datum!
+                        if len(teile) == 3 and teile[0].isdigit() and teile[1].isdigit() and teile[2].isdigit():
+                            tag_wert = f"{int(teile[0]):02d}"
+                            monat_wert = f"{int(teile[1]):02d}"
+                            jahr_wert = str(int(teile[2]))
 
                 untermenue = ft.Row(
                     alignment=ft.MainAxisAlignment.START,
@@ -256,34 +256,36 @@ def main(page: ft.Page):
                     ]
                 )
 
-                weisser_stil = ft.TextStyle(color="white")
+                # NEU: Der Stil für die Formularfelder mit Schriftgröße 10
+                weisser_stil_klein = ft.TextStyle(color="white", size=10)
 
                 adresse_input = ft.TextField(
                     label="Adresse Markt", value=aktuelle_daten.get("adresse", ""), 
-                    color="white", text_style=weisser_stil, label_style=weisser_stil, 
-                    border_color="white", cursor_color="white"
+                    color="white", text_style=weisser_stil_klein, label_style=weisser_stil_klein, 
+                    border_color="white", cursor_color="white", text_size=10
                 )
                 marktnummer_input = ft.TextField(
                     label="Marktnummer", value=aktuelle_daten.get("marktnummer", ""), 
-                    color="white", text_style=weisser_stil, label_style=weisser_stil, 
-                    border_color="white", cursor_color="white"
+                    color="white", text_style=weisser_stil_klein, label_style=weisser_stil_klein, 
+                    border_color="white", cursor_color="white", text_size=10
                 )
                 auftrag_input = ft.TextField(
                     label="Auftragsnummer", value=aktuelle_daten.get("auftragsnummer", ""), 
-                    color="white", text_style=weisser_stil, label_style=weisser_stil, 
-                    border_color="white", cursor_color="white"
+                    color="white", text_style=weisser_stil_klein, label_style=weisser_stil_klein, 
+                    border_color="white", cursor_color="white", text_size=10
                 )
                 
                 name_input = ft.TextField(
                     label="Name", value=aktuelle_daten.get("mitarbeiter_name", voller_name), 
-                    color="white", text_style=weisser_stil, label_style=weisser_stil, 
-                    border_color="white", cursor_color="white"
+                    color="white", text_style=weisser_stil_klein, label_style=weisser_stil_klein, 
+                    border_color="white", cursor_color="white", text_size=10
                 )
 
                 auftraggeber_dd = ft.Dropdown(
                     label="Auftraggeber (Hier auswählen ▼)", 
                     value=aktuelle_daten.get("auftraggeber", "03509 - REWE Hackfleischmonitoring"),
-                    color="white", border_color="white", text_style=weisser_stil, label_style=weisser_stil,
+                    color="white", border_color="white", text_style=weisser_stil_klein, label_style=weisser_stil_klein,
+                    text_size=10,
                     options=[
                         ft.dropdown.Option(
                             key="03509 - REWE Hackfleischmonitoring", 
@@ -297,27 +299,30 @@ def main(page: ft.Page):
                 )
 
                 # =========================================================
-                # UNSER SELBSTGEBAUTER KALENDER (Aus drei sicheren Feldern)
+                # UNSER SELBSTGEBAUTER KALENDER (mit Schriftgröße 10)
                 # =========================================================
                 tag_dd = ft.Dropdown(
                     label="Tag", value=tag_wert, expand=1, 
-                    color="white", border_color="white", text_style=weisser_stil, label_style=weisser_stil,
+                    color="white", border_color="white", text_style=weisser_stil_klein, label_style=weisser_stil_klein,
+                    text_size=10,
                     options=[ft.dropdown.Option(key=f"{i:02d}", text=f"{i:02d}") for i in range(1, 32)]
                 )
                 monat_dd = ft.Dropdown(
                     label="Monat", value=monat_wert, expand=1, 
-                    color="white", border_color="white", text_style=weisser_stil, label_style=weisser_stil,
+                    color="white", border_color="white", text_style=weisser_stil_klein, label_style=weisser_stil_klein,
+                    text_size=10,
                     options=[ft.dropdown.Option(key=f"{i:02d}", text=f"{i:02d}") for i in range(1, 13)]
                 )
                 jahr_dd = ft.Dropdown(
                     label="Jahr", value=jahr_wert, expand=2, 
-                    color="white", border_color="white", text_style=weisser_stil, label_style=weisser_stil,
+                    color="white", border_color="white", text_style=weisser_stil_klein, label_style=weisser_stil_klein,
+                    text_size=10,
                     options=[ft.dropdown.Option(key=str(i), text=str(i)) for i in range(heute.year - 1, heute.year + 5)]
                 )
 
                 datum_zeile = ft.Column(
                     controls=[
-                        ft.Text("Datum der Probenahme", color="white", weight="bold"),
+                        ft.Text("Datum der Probenahme", color="white", weight="bold", size=10),
                         ft.Row([tag_dd, monat_dd, jahr_dd])
                     ]
                 )
