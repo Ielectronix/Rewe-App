@@ -31,12 +31,11 @@ def main(page: ft.Page):
         import pypdf
 
         # =========================================================
-        # DIE ZWEI DATEI-TRESORE (Märkte & Benutzername)
+        # DIE ZWEI DATEI-TRESORE
         # =========================================================
         SPEICHER_DATEI = "meine_monitoring_daten.json"
         BENUTZER_DATEI = "benutzer_daten.json"
 
-        # 1. Gedächtnis für die Touren
         def lade_maerkte():
             try:
                 if os.path.exists(SPEICHER_DATEI):
@@ -53,7 +52,6 @@ def main(page: ft.Page):
             except:
                 pass
 
-        # 2. NEU: Gedächtnis für den Probenehmer-Namen
         def lade_benutzer():
             try:
                 if os.path.exists(BENUTZER_DATEI):
@@ -103,16 +101,14 @@ def main(page: ft.Page):
                 
                 weisser_stil = ft.TextStyle(color="white")
                 
-                # NEU: Das Eingabefeld auf dem Startbildschirm
                 name_input = ft.TextField(
                     label="Bitte kompletten Probenehmer-Namen eingeben (Vorname und Zuname)",
-                    value=lade_benutzer(), # Zieht sich den Namen, falls gestern schon eingetippt!
+                    value=lade_benutzer(), 
                     color="white", text_style=weisser_stil, label_style=weisser_stil, 
                     border_color="white", cursor_color="white"
                 )
 
                 def start_klick(e):
-                    # Speichert den Namen in den Tresor, bevor wir weitergehen
                     speichere_benutzer(name_input.value)
                     zeige_dashboard()
                 
@@ -120,7 +116,7 @@ def main(page: ft.Page):
                 ansicht.controls.append(ft.Row([header], alignment=ft.MainAxisAlignment.CENTER))
                 ansicht.controls.append(ft.Container(height=30)) 
                 
-                ansicht.controls.append(name_input) # Das Feld einfügen
+                ansicht.controls.append(name_input)
                 ansicht.controls.append(ft.Container(height=30)) 
                 
                 ansicht.controls.append(
@@ -187,13 +183,13 @@ def main(page: ft.Page):
                 zeige_fehler(e)
 
         # =========================================================
-        # 4. DIE TOUR-MASKE (inkl. Probenehmer-Feld)
+        # 4. DIE TOUR-MASKE 
         # =========================================================
         def zeige_maske(markt_index):
             try:
                 ansicht.controls.clear()
                 maerkte = lade_maerkte()
-                gespeicherter_probenehmer = lade_benutzer() # Wir rufen das Gedächtnis ab!
+                gespeicherter_probenehmer = lade_benutzer()
                 
                 heute = datetime.datetime.now()
                 tag_wert = f"{heute.day:02d}"
@@ -201,8 +197,13 @@ def main(page: ft.Page):
                 jahr_wert = str(heute.year)
                 
                 if markt_index is None:
-                    # BEHOBEN: Wir legen die neue Tour direkt mit dem Probenehmer-Namen an
-                    aktuelle_daten = {"adresse": "", "marktnummer": "", "auftragsnummer": "", "probenehmer": gespeicherter_probenehmer}
+                    aktuelle_daten = {
+                        "adresse": "", 
+                        "marktnummer": "", 
+                        "auftragsnummer": "", 
+                        "probenehmer": gespeicherter_probenehmer,
+                        "auftraggeber": "03509 - REWE Hackfleischmonitoring" # NEU: Standardwert
+                    }
                     titel = "Neue Tour anlegen"
                 else:
                     aktuelle_daten = maerkte[markt_index]
@@ -245,8 +246,6 @@ def main(page: ft.Page):
                     color="white", text_style=weisser_stil, label_style=weisser_stil, 
                     border_color="white", cursor_color="white"
                 )
-                
-                # NEU: Das Probenehmer-Feld
                 probenehmer_input = ft.TextField(
                     label="Probenehmer", value=aktuelle_daten.get("probenehmer", gespeicherter_probenehmer), 
                     color="white", text_style=weisser_stil, label_style=weisser_stil, 
@@ -254,9 +253,27 @@ def main(page: ft.Page):
                 )
 
                 # =========================================================
+                # NEU: DROPDOWN FÜR AUFTRAGGEBER
+                # =========================================================
+                auftraggeber_dd = ft.Dropdown(
+                    label="Auftraggeber", 
+                    value=aktuelle_daten.get("auftraggeber", "03509 - REWE Hackfleischmonitoring"),
+                    color="white", border_color="white", text_style=weisser_stil, label_style=weisser_stil,
+                    options=[
+                        ft.dropdown.Option(
+                            key="03509 - REWE Hackfleischmonitoring", 
+                            text="03509 - REWE Hackfleischmonitoring"
+                        ),
+                        ft.dropdown.Option(
+                            key="3001767 - REWE Dortmund (Hackfleischmonitoring)", 
+                            text="3001767 - REWE Dortmund (Hackfleischmonitoring)"
+                        )
+                    ]
+                )
+
+                # =========================================================
                 # DATUMSWÄHLER
                 # =========================================================
-                
                 tag_dd = ft.Dropdown(
                     label="Tag", value=tag_wert, width=90, 
                     color="white", border_color="white", text_style=weisser_stil, label_style=weisser_stil,
@@ -290,7 +307,8 @@ def main(page: ft.Page):
                         "marktnummer": marktnummer_input.value,
                         "datum": zusammengesetztes_datum,
                         "auftragsnummer": auftrag_input.value,
-                        "probenehmer": probenehmer_input.value # Wir speichern auch den Namen im Datensatz der Tour ab!
+                        "probenehmer": probenehmer_input.value,
+                        "auftraggeber": auftraggeber_dd.value # Speichert die Auswahl des Auftraggebers!
                     }
                     if markt_index is None:
                         maerkte.append(neue_daten)
@@ -311,7 +329,8 @@ def main(page: ft.Page):
                 ansicht.controls.append(adresse_input)
                 ansicht.controls.append(marktnummer_input)
                 ansicht.controls.append(auftrag_input)
-                ansicht.controls.append(probenehmer_input) # Das Probenehmer-Feld anzeigen
+                ansicht.controls.append(auftraggeber_dd) # Das neue Dropdown-Menü hinzugefügt
+                ansicht.controls.append(probenehmer_input)
                 ansicht.controls.append(datum_zeile) 
                 ansicht.controls.append(ft.Container(height=20))
                 ansicht.controls.append(ft.Row(button_reihe))
