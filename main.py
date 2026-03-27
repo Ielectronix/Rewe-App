@@ -253,7 +253,8 @@ def main(page: ft.Page):
                 )
 
                 weisser_stil_klein = ft.TextStyle(color="white", size=8)
-                roter_stil_klein = ft.TextStyle(color="red", size=8) # NEU: Für den roten Text beim Auftraggeber
+                roter_stil_klein = ft.TextStyle(color="red", size=8) 
+                roter_stil_auffaellig = ft.TextStyle(color="red", size=14, weight="bold")
 
                 adresse_input = ft.TextField(
                     label="Adresse Markt", value=aktuelle_daten.get("adresse", ""), 
@@ -265,6 +266,17 @@ def main(page: ft.Page):
                     color="white", text_style=weisser_stil_klein, label_style=weisser_stil_klein, 
                     border_color="white", cursor_color="white", text_size=8
                 )
+                
+                # =========================================================
+                # NEU: ROTER HINWEISTEXT FÜR DIE AUFTRAGSNUMMER
+                # =========================================================
+                auftragsnummer_hinweis = ft.Text(
+                    "Etikettennummer eingeben: XX-XXXXXX", 
+                    color="red", 
+                    size=8, 
+                    weight="bold"
+                )
+                
                 auftrag_input = ft.TextField(
                     label="Auftragsnummer", value=aktuelle_daten.get("auftragsnummer", ""), 
                     color="white", text_style=weisser_stil_klein, label_style=weisser_stil_klein, 
@@ -277,14 +289,11 @@ def main(page: ft.Page):
                     border_color="white", cursor_color="white", text_size=8
                 )
 
-                # =========================================================
-                # AUFTRAGGEBER MIT ROTEM HINWEISTEXT
-                # =========================================================
                 auftraggeber_dd = ft.Dropdown(
                     label="Auftraggeber (Hier auswählen ▼)", 
                     value=aktuelle_daten.get("auftraggeber", "03509 - REWE Hackfleischmonitoring"),
                     color="white", border_color="white", text_style=weisser_stil_klein, 
-                    label_style=roter_stil_klein, # Hier ist die Schrift nun ROT!
+                    label_style=roter_stil_auffaellig, 
                     text_size=8,
                     options=[
                         ft.dropdown.Option(
@@ -298,9 +307,6 @@ def main(page: ft.Page):
                     ]
                 )
 
-                # =========================================================
-                # DATUMSWÄHLER 
-                # =========================================================
                 tag_dd = ft.Dropdown(
                     label="Tag", value=tag_wert, width=90, 
                     color="white", border_color="white", text_style=weisser_stil_klein, label_style=weisser_stil_klein,
@@ -356,6 +362,8 @@ def main(page: ft.Page):
                 ansicht.controls.append(ft.Text(titel, size=20, weight="bold", color="white"))
                 ansicht.controls.append(adresse_input)
                 ansicht.controls.append(marktnummer_input)
+                # Den Hinweis-Text hier direkt VOR dem Auftragsnummer-Feld eingefügt:
+                ansicht.controls.append(auftragsnummer_hinweis) 
                 ansicht.controls.append(auftrag_input)
                 ansicht.controls.append(auftraggeber_dd) 
                 ansicht.controls.append(name_input)
