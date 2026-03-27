@@ -100,6 +100,7 @@ def main(page: ft.Page):
                 weisser_stil = ft.TextStyle(color="white")
                 gespeicherter_vorname, gespeicherter_zuname = lade_benutzer()
                 
+                # FELDER SIND ZENTRIERT UND OHNE DAS WORT "PROBENEHMER"
                 vorname_input = ft.TextField(
                     label="Vorname",
                     value=gespeicherter_vorname, 
