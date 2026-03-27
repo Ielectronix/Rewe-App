@@ -11,7 +11,7 @@ def main(page: ft.Page):
     page.scroll = ft.ScrollMode.AUTO
 
     # =========================================================
-    # DER CONTAINER-TRICK (Verhindert Abstürze beim Seitenwechsel)
+    # DER CONTAINER-TRICK
     # =========================================================
     ansicht = ft.Column(expand=True)
     page.add(ansicht)
@@ -31,10 +31,12 @@ def main(page: ft.Page):
         import pypdf
 
         # =========================================================
-        # DATEI-TRESOR
+        # DIE ZWEI DATEI-TRESORE (Märkte & Benutzername)
         # =========================================================
         SPEICHER_DATEI = "meine_monitoring_daten.json"
+        BENUTZER_DATEI = "benutzer_daten.json"
 
+        # 1. Gedächtnis für die Touren
         def lade_maerkte():
             try:
                 if os.path.exists(SPEICHER_DATEI):
@@ -51,7 +53,26 @@ def main(page: ft.Page):
             except:
                 pass
 
+        # 2. NEU: Gedächtnis für den Probenehmer-Namen
+        def lade_benutzer():
+            try:
+                if os.path.exists(BENUTZER_DATEI):
+                    with open(BENUTZER_DATEI, "r", encoding="utf-8") as datei:
+                        return json.load(datei).get("name", "")
+                return ""
+            except:
+                return ""
+
+        def speichere_benutzer(name):
+            try:
+                with open(BENUTZER_DATEI, "w", encoding="utf-8") as datei:
+                    json.dump({"name": name}, datei)
+            except:
+                pass
+
+        # =========================================================
         # 3. HAUPT-NAVIGATION
+        # =========================================================
         def nav_leiste():
             return ft.Container(
                 bgcolor="#001100", 
@@ -80,15 +101,33 @@ def main(page: ft.Page):
                     ], text_align=ft.TextAlign.CENTER
                 )
                 
+                weisser_stil = ft.TextStyle(color="white")
+                
+                # NEU: Das Eingabefeld auf dem Startbildschirm
+                name_input = ft.TextField(
+                    label="Bitte kompletten Probenehmer-Namen eingeben (Vorname und Zuname)",
+                    value=lade_benutzer(), # Zieht sich den Namen, falls gestern schon eingetippt!
+                    color="white", text_style=weisser_stil, label_style=weisser_stil, 
+                    border_color="white", cursor_color="white"
+                )
+
+                def start_klick(e):
+                    # Speichert den Namen in den Tresor, bevor wir weitergehen
+                    speichere_benutzer(name_input.value)
+                    zeige_dashboard()
+                
                 ansicht.controls.append(ft.Container(height=50))
                 ansicht.controls.append(ft.Row([header], alignment=ft.MainAxisAlignment.CENTER))
-                ansicht.controls.append(ft.Container(height=60)) 
+                ansicht.controls.append(ft.Container(height=30)) 
+                
+                ansicht.controls.append(name_input) # Das Feld einfügen
+                ansicht.controls.append(ft.Container(height=30)) 
                 
                 ansicht.controls.append(
                     ft.Row([
                         ft.ElevatedButton(
                             "Neuen Tag starten", 
-                            on_click=lambda e: zeige_dashboard(), 
+                            on_click=start_klick, 
                             bgcolor="red", 
                             color="white",
                             width=250,
@@ -148,29 +187,27 @@ def main(page: ft.Page):
                 zeige_fehler(e)
 
         # =========================================================
-        # 4. DIE TOUR-MASKE (Stammdaten mit manuellem Kalender)
+        # 4. DIE TOUR-MASKE (inkl. Probenehmer-Feld)
         # =========================================================
         def zeige_maske(markt_index):
             try:
                 ansicht.controls.clear()
                 maerkte = lade_maerkte()
+                gespeicherter_probenehmer = lade_benutzer() # Wir rufen das Gedächtnis ab!
                 
-                # Exakt aktuelles Datum holen
                 heute = datetime.datetime.now()
-                
-                # Wir zwingen Tag und Monat in das exakte 2-stellige Format (z.B. "05", "27")
                 tag_wert = f"{heute.day:02d}"
                 monat_wert = f"{heute.month:02d}"
                 jahr_wert = str(heute.year)
                 
                 if markt_index is None:
-                    aktuelle_daten = {"adresse": "", "marktnummer": "", "auftragsnummer": ""}
+                    # BEHOBEN: Wir legen die neue Tour direkt mit dem Probenehmer-Namen an
+                    aktuelle_daten = {"adresse": "", "marktnummer": "", "auftragsnummer": "", "probenehmer": gespeicherter_probenehmer}
                     titel = "Neue Tour anlegen"
                 else:
                     aktuelle_daten = maerkte[markt_index]
                     titel = "Tour bearbeiten"
                     
-                    # Wenn wir einen alten Markt bearbeiten, holen wir sein gespeichertes Datum
                     gespeichertes_datum = aktuelle_daten.get("datum", "")
                     if gespeichertes_datum:
                         teile = gespeichertes_datum.split(".")
@@ -193,7 +230,6 @@ def main(page: ft.Page):
 
                 weisser_stil = ft.TextStyle(color="white")
 
-                # BEHOBEN: Die Zahlen 1., 2., 4. wurden hier in den Labels entfernt
                 adresse_input = ft.TextField(
                     label="Adresse Markt", value=aktuelle_daten.get("adresse", ""), 
                     color="white", text_style=weisser_stil, label_style=weisser_stil, 
@@ -209,12 +245,18 @@ def main(page: ft.Page):
                     color="white", text_style=weisser_stil, label_style=weisser_stil, 
                     border_color="white", cursor_color="white"
                 )
+                
+                # NEU: Das Probenehmer-Feld
+                probenehmer_input = ft.TextField(
+                    label="Probenehmer", value=aktuelle_daten.get("probenehmer", gespeicherter_probenehmer), 
+                    color="white", text_style=weisser_stil, label_style=weisser_stil, 
+                    border_color="white", cursor_color="white"
+                )
 
                 # =========================================================
-                # UNSER EIGENER DATUMSWÄHLER (Sichere Zuweisung)
+                # DATUMSWÄHLER
                 # =========================================================
                 
-                # Wir setzen explizit die Schlüssel (key) und Anzeige (text), damit es zu 100% einrastet
                 tag_dd = ft.Dropdown(
                     label="Tag", value=tag_wert, width=90, 
                     color="white", border_color="white", text_style=weisser_stil, label_style=weisser_stil,
@@ -233,7 +275,6 @@ def main(page: ft.Page):
 
                 datum_zeile = ft.Column(
                     controls=[
-                        # BEHOBEN: Die Zahl 3. wurde hier entfernt
                         ft.Text("Datum der Probenahme", color="white", weight="bold"),
                         ft.Row([tag_dd, monat_dd, jahr_dd])
                     ]
@@ -242,14 +283,14 @@ def main(page: ft.Page):
                 # =========================================================
 
                 def speichere_klick(e):
-                    # Wir kleben das Datum aus den Rädchen wieder zusammen
                     zusammengesetztes_datum = f"{tag_dd.value}.{monat_dd.value}.{jahr_dd.value}"
                     
                     neue_daten = {
                         "adresse": adresse_input.value,
                         "marktnummer": marktnummer_input.value,
                         "datum": zusammengesetztes_datum,
-                        "auftragsnummer": auftrag_input.value
+                        "auftragsnummer": auftrag_input.value,
+                        "probenehmer": probenehmer_input.value # Wir speichern auch den Namen im Datensatz der Tour ab!
                     }
                     if markt_index is None:
                         maerkte.append(neue_daten)
@@ -269,8 +310,9 @@ def main(page: ft.Page):
                 ansicht.controls.append(ft.Text(titel, size=20, weight="bold", color="white"))
                 ansicht.controls.append(adresse_input)
                 ansicht.controls.append(marktnummer_input)
-                ansicht.controls.append(datum_zeile) 
                 ansicht.controls.append(auftrag_input)
+                ansicht.controls.append(probenehmer_input) # Das Probenehmer-Feld anzeigen
+                ansicht.controls.append(datum_zeile) 
                 ansicht.controls.append(ft.Container(height=20))
                 ansicht.controls.append(ft.Row(button_reihe))
                 page.update()
