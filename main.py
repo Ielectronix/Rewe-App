@@ -52,7 +52,6 @@ def main(page: ft.Page):
             except:
                 pass
 
-        # NEU: Das Benutzer-Gedächtnis gibt jetzt ZWEI Werte zurück (Vorname, Zuname)
         def lade_benutzer():
             try:
                 if os.path.exists(BENUTZER_DATEI):
@@ -102,27 +101,26 @@ def main(page: ft.Page):
                 )
                 
                 weisser_stil = ft.TextStyle(color="white")
-                
-                # Alte Daten abrufen (falls gestern schon ausgefüllt)
                 gespeicherter_vorname, gespeicherter_zuname = lade_benutzer()
                 
-                # BEHOBEN: Jetzt zwei schöne, getrennte Felder für den Namen
+                # BEHOBEN: Felder "Vorname" und "Zuname" - Schrift und Box absolut mittig zentriert
                 vorname_input = ft.TextField(
-                    label="Vorname Probenehmer",
+                    label="Vorname",
                     value=gespeicherter_vorname, 
                     color="white", text_style=weisser_stil, label_style=weisser_stil, 
-                    border_color="white", cursor_color="white"
+                    border_color="white", cursor_color="white",
+                    text_align=ft.TextAlign.CENTER # Text wird mittig getippt
                 )
                 
                 zuname_input = ft.TextField(
-                    label="Nachname Probenehmer",
+                    label="Zuname",
                     value=gespeicherter_zuname, 
                     color="white", text_style=weisser_stil, label_style=weisser_stil, 
-                    border_color="white", cursor_color="white"
+                    border_color="white", cursor_color="white",
+                    text_align=ft.TextAlign.CENTER # Text wird mittig getippt
                 )
 
                 def start_klick(e):
-                    # Speichert BEIDE Felder sicher ab
                     speichere_benutzer(vorname_input.value, zuname_input.value)
                     zeige_dashboard()
                 
@@ -130,9 +128,12 @@ def main(page: ft.Page):
                 ansicht.controls.append(ft.Row([header], alignment=ft.MainAxisAlignment.CENTER))
                 ansicht.controls.append(ft.Container(height=30)) 
                 
-                # Felder dem Bildschirm hinzufügen
-                ansicht.controls.append(vorname_input)
-                ansicht.controls.append(zuname_input)
+                # BEHOBEN: Wir packen die Felder in eine Spalte und zentrieren diese auf dem Bildschirm
+                eingabe_spalte = ft.Column(
+                    controls=[vorname_input, zuname_input],
+                    horizontal_alignment=ft.CrossAxisAlignment.CENTER
+                )
+                ansicht.controls.append(eingabe_spalte)
                 
                 ansicht.controls.append(ft.Container(height=30)) 
                 
@@ -207,7 +208,6 @@ def main(page: ft.Page):
                 ansicht.controls.clear()
                 maerkte = lade_maerkte()
                 
-                # Wir holen Vor- und Nachname und setzen sie mit einem Leerzeichen zusammen
                 gespeicherter_vorname, gespeicherter_zuname = lade_benutzer()
                 voller_probenehmer_name = f"{gespeicherter_vorname} {gespeicherter_zuname}".strip()
                 
@@ -217,7 +217,6 @@ def main(page: ft.Page):
                 jahr_wert = str(heute.year)
                 
                 if markt_index is None:
-                    # Neue Tour: Nutze den zusammengesetzten Namen aus dem Startbildschirm
                     aktuelle_daten = {
                         "adresse": "", 
                         "marktnummer": "", 
@@ -230,11 +229,19 @@ def main(page: ft.Page):
                     aktuelle_daten = maerkte[markt_index]
                     titel = "Tour bearbeiten"
                     
+                    # BEHOBEN: "Waschstraßen-Code" für alte, fehlerhafte Datums-Einträge
                     gespeichertes_datum = aktuelle_daten.get("datum", "")
                     if gespeichertes_datum:
                         teile = gespeichertes_datum.split(".")
                         if len(teile) == 3:
-                            tag_wert, monat_wert, jahr_wert = teile
+                            # zfill(2) zwingt alte Einträge wie "2" in das Format "02"
+                            # Dadurch stürzt das Dropdown nicht mehr ab und rastet sofort ein!
+                            try:
+                                tag_wert = str(teile[0]).zfill(2)
+                                monat_wert = str(teile[1]).zfill(2)
+                                jahr_wert = str(teile[2])
+                            except:
+                                pass
 
                 untermenue = ft.Row(
                     alignment=ft.MainAxisAlignment.START,
@@ -273,10 +280,15 @@ def main(page: ft.Page):
                     border_color="white", cursor_color="white"
                 )
 
+                # =========================================================
+                # BEHOBEN: AUFTRAGGEBER-DROPDOWN JETZT MIT DEUTLICHEM PFEIL
+                # =========================================================
                 auftraggeber_dd = ft.Dropdown(
-                    label="Auftraggeber", 
+                    label="Auftraggeber (bitte hier auswählen)", 
                     value=aktuelle_daten.get("auftraggeber", "03509 - REWE Hackfleischmonitoring"),
                     color="white", border_color="white", text_style=weisser_stil, label_style=weisser_stil,
+                    icon=ft.icons.ARROW_DROP_DOWN_CIRCLE, # <- Dieser Befehl zaubert ein fettes Pfeil-Symbol daneben!
+                    icon_color="white",
                     options=[
                         ft.dropdown.Option(
                             key="03509 - REWE Hackfleischmonitoring", 
@@ -290,7 +302,7 @@ def main(page: ft.Page):
                 )
 
                 # =========================================================
-                # DATUMSWÄHLER (BEHOBEN: expand=True verhindert das Abschneiden!)
+                # DATUMSWÄHLER (Wie gewünscht OHNE Extra-Pfeile)
                 # =========================================================
                 tag_dd = ft.Dropdown(
                     label="Tag", value=tag_wert, expand=1, 
@@ -347,7 +359,7 @@ def main(page: ft.Page):
                 ansicht.controls.append(adresse_input)
                 ansicht.controls.append(marktnummer_input)
                 ansicht.controls.append(auftrag_input)
-                ansicht.controls.append(auftraggeber_dd) 
+                ansicht.controls.append(auftraggeber_dd) # Das Dropdown-Menü MIT dem neuen Pfeil
                 ansicht.controls.append(probenehmer_input)
                 ansicht.controls.append(datum_zeile) 
                 ansicht.controls.append(ft.Container(height=20))
