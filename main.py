@@ -11,7 +11,7 @@ def main(page: ft.Page):
     page.scroll = ft.ScrollMode.AUTO
 
     # =========================================================
-    # KALENDER-WERKZEUG
+    # KALENDER-WERKZEUG (wird im Hintergrund bereitgehalten)
     # =========================================================
     page.date_picker = ft.DatePicker()
     page.overlay.append(page.date_picker)
@@ -186,7 +186,6 @@ def main(page: ft.Page):
                     ]
                 )
 
-                # BEHOBEN: Wir nutzen jetzt einfach wieder das Wort "white"
                 weisser_stil = ft.TextStyle(color="white")
 
                 adresse_input = ft.TextField(
@@ -218,18 +217,31 @@ def main(page: ft.Page):
 
                 page.date_picker.on_change = datum_gewaehlt
 
+                # =========================================================
+                # EXTREM-FEHLER-FÄNGER FÜR DEN KALENDER
+                # =========================================================
                 def oeffne_kalender(e):
                     try:
-                        aktuelles_datum = datetime.datetime.strptime(datum_input.value, "%d.%m.%Y")
-                        page.date_picker.value = aktuelles_datum
-                    except:
-                        page.date_picker.value = datetime.datetime.now()
-                    
-                    page.update()
-                    try:
-                        page.open(page.date_picker)
-                    except AttributeError:
-                        page.date_picker.pick_date()
+                        # Datum einlesen
+                        try:
+                            aktuelles_datum = datetime.datetime.strptime(datum_input.value, "%d.%m.%Y")
+                            page.date_picker.value = aktuelles_datum
+                        except:
+                            page.date_picker.value = datetime.datetime.now()
+                        
+                        page.update()
+                        
+                        # Absolut sicherer Startversuch für den Kalender
+                        if hasattr(page, 'open'):
+                            page.open(page.date_picker)
+                        elif hasattr(page.date_picker, 'pick_date'):
+                            page.date_picker.pick_date()
+                        else:
+                            raise Exception("Das Handy verweigert das Öffnen des Kalenders komplett!")
+                            
+                    except Exception as ex:
+                        # WENN ES HIER KNALLT, LANDEN WIR SOFORT IM SCHWARZEN BILDSCHIRM
+                        zeige_fehler(f"Kalender-Absturz: {ex}")
 
                 datum_zeile = ft.Row([
                     datum_input,
