@@ -128,7 +128,6 @@ def main(page: ft.Page):
                         if anzeige_name == "":
                             anzeige_name = "Unbenannter Markt"
 
-                        # BEHOBEN: Zeile mit Tour-Button UND einem kleinen Papierkorb-Button daneben
                         ansicht.controls.append(
                             ft.Row(
                                 controls=[
@@ -187,28 +186,29 @@ def main(page: ft.Page):
                     ]
                 )
 
-                weisser_stil = ft.TextStyle(color=ft.colors.WHITE)
+                # BEHOBEN: Wir nutzen jetzt einfach wieder das Wort "white"
+                weisser_stil = ft.TextStyle(color="white")
 
                 adresse_input = ft.TextField(
                     label="1. Adresse Markt", value=aktuelle_daten.get("adresse", ""), 
-                    color=ft.colors.WHITE, text_style=weisser_stil, label_style=weisser_stil, 
-                    border_color=ft.colors.WHITE, cursor_color=ft.colors.WHITE
+                    color="white", text_style=weisser_stil, label_style=weisser_stil, 
+                    border_color="white", cursor_color="white"
                 )
                 marktnummer_input = ft.TextField(
                     label="2. Marktnummer", value=aktuelle_daten.get("marktnummer", ""), 
-                    color=ft.colors.WHITE, text_style=weisser_stil, label_style=weisser_stil, 
-                    border_color=ft.colors.WHITE, cursor_color=ft.colors.WHITE
+                    color="white", text_style=weisser_stil, label_style=weisser_stil, 
+                    border_color="white", cursor_color="white"
                 )
                 auftrag_input = ft.TextField(
                     label="4. Auftragsnummer", value=aktuelle_daten.get("auftragsnummer", ""), 
-                    color=ft.colors.WHITE, text_style=weisser_stil, label_style=weisser_stil, 
-                    border_color=ft.colors.WHITE, cursor_color=ft.colors.WHITE
+                    color="white", text_style=weisser_stil, label_style=weisser_stil, 
+                    border_color="white", cursor_color="white"
                 )
 
                 datum_input = ft.TextField(
                     label="3. Datum der Probenahme", value=aktuelle_daten.get("datum", ""), 
-                    color=ft.colors.WHITE, text_style=weisser_stil, label_style=weisser_stil, 
-                    border_color=ft.colors.WHITE, cursor_color=ft.colors.WHITE, expand=True 
+                    color="white", text_style=weisser_stil, label_style=weisser_stil, 
+                    border_color="white", cursor_color="white", expand=True 
                 )
                 
                 def datum_gewaehlt(e):
@@ -218,7 +218,6 @@ def main(page: ft.Page):
 
                 page.date_picker.on_change = datum_gewaehlt
 
-                # BEHOBEN: Doppel-Zündsystem für den Kalender
                 def oeffne_kalender(e):
                     try:
                         aktuelles_datum = datetime.datetime.strptime(datum_input.value, "%d.%m.%Y")
@@ -227,11 +226,9 @@ def main(page: ft.Page):
                         page.date_picker.value = datetime.datetime.now()
                     
                     page.update()
-                    # Zündung 1 (Neues Flet)
                     try:
                         page.open(page.date_picker)
                     except AttributeError:
-                        # Zündung 2 (Altes Flet / Handy-Ausnahme)
                         page.date_picker.pick_date()
 
                 datum_zeile = ft.Row([
