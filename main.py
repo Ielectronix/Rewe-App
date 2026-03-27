@@ -97,25 +97,27 @@ def main(page: ft.Page):
                     ], text_align=ft.TextAlign.CENTER
                 )
                 
-                weisser_stil_klein = ft.TextStyle(color="white", size=8)
+                # STARTSEITE: Label normal, Text Größe 10
+                label_stil_normal = ft.TextStyle(color="white")
+                text_stil_10 = ft.TextStyle(color="white", size=10)
                 gespeicherter_vorname, gespeicherter_zuname = lade_benutzer()
                 
                 vorname_input = ft.TextField(
                     label="Vorname",
                     value=gespeicherter_vorname, 
-                    color="white", text_style=weisser_stil_klein, label_style=weisser_stil_klein, 
+                    color="white", text_style=text_stil_10, label_style=label_stil_normal, 
                     border_color="white", cursor_color="white",
                     text_align=ft.TextAlign.CENTER,
-                    text_size=8
+                    text_size=10
                 )
                 
                 zuname_input = ft.TextField(
                     label="Nachname",
                     value=gespeicherter_zuname, 
-                    color="white", text_style=weisser_stil_klein, label_style=weisser_stil_klein, 
+                    color="white", text_style=text_stil_10, label_style=label_stil_normal, 
                     border_color="white", cursor_color="white",
                     text_align=ft.TextAlign.CENTER,
-                    text_size=8
+                    text_size=10
                 )
 
                 def start_klick(e):
@@ -252,49 +254,56 @@ def main(page: ft.Page):
                     ]
                 )
 
-                weisser_stil_klein = ft.TextStyle(color="white", size=8)
-                roter_stil_klein = ft.TextStyle(color="red", size=8) 
-                roter_stil_auffaellig = ft.TextStyle(color="red", size=14, weight="bold")
+                # =========================================================
+                # STILE: Labels wieder groß, Text 10, Dropdown 9
+                # =========================================================
+                label_stil_normal = ft.TextStyle(color="white") # Keine Größe = Standard/Normalgroß
+                text_stil_10 = ft.TextStyle(color="white", size=10)
+                text_stil_9 = ft.TextStyle(color="white", size=9)
+                
+                # Hier ist der weiße Schatten (Rand) um den roten Dropdown-Text
+                weisser_rand_effekt = ft.Shadow(blur_radius=3, color="white", offset=ft.Offset(0, 0))
+                roter_stil_label = ft.TextStyle(color="red", size=9, weight="bold", shadow=weisser_rand_effekt)
 
                 adresse_input = ft.TextField(
                     label="Adresse Markt", value=aktuelle_daten.get("adresse", ""), 
-                    color="white", text_style=weisser_stil_klein, label_style=weisser_stil_klein, 
-                    border_color="white", cursor_color="white", text_size=8
+                    color="white", text_style=text_stil_10, label_style=label_stil_normal, 
+                    border_color="white", cursor_color="white", text_size=10
                 )
                 marktnummer_input = ft.TextField(
                     label="Marktnummer", value=aktuelle_daten.get("marktnummer", ""), 
-                    color="white", text_style=weisser_stil_klein, label_style=weisser_stil_klein, 
-                    border_color="white", cursor_color="white", text_size=8
+                    color="white", text_style=text_stil_10, label_style=label_stil_normal, 
+                    border_color="white", cursor_color="white", text_size=10
                 )
                 
-                # =========================================================
-                # NEU: ROTER HINWEISTEXT FÜR DIE AUFTRAGSNUMMER
-                # =========================================================
                 auftragsnummer_hinweis = ft.Text(
                     "Etikettennummer eingeben: XX-XXXXXX", 
                     color="red", 
-                    size=8, 
+                    size=12, # Hinweis in lesbarer Größe
                     weight="bold"
                 )
                 
                 auftrag_input = ft.TextField(
                     label="Auftragsnummer", value=aktuelle_daten.get("auftragsnummer", ""), 
-                    color="white", text_style=weisser_stil_klein, label_style=weisser_stil_klein, 
-                    border_color="white", cursor_color="white", text_size=8
+                    color="white", text_style=text_stil_10, label_style=label_stil_normal, 
+                    border_color="white", cursor_color="white", text_size=10
                 )
                 
                 name_input = ft.TextField(
                     label="Name", value=aktuelle_daten.get("mitarbeiter_name", voller_name), 
-                    color="white", text_style=weisser_stil_klein, label_style=weisser_stil_klein, 
-                    border_color="white", cursor_color="white", text_size=8
+                    color="white", text_style=text_stil_10, label_style=label_stil_normal, 
+                    border_color="white", cursor_cursor="white", text_size=10
                 )
 
+                # =========================================================
+                # AUFTRAGGEBER-DROPDOWN
+                # =========================================================
                 auftraggeber_dd = ft.Dropdown(
                     label="Auftraggeber (Hier auswählen ▼)", 
                     value=aktuelle_daten.get("auftraggeber", "03509 - REWE Hackfleischmonitoring"),
-                    color="white", border_color="white", text_style=weisser_stil_klein, 
-                    label_style=roter_stil_auffaellig, 
-                    text_size=8,
+                    color="white", border_color="white", text_style=text_stil_9, 
+                    label_style=roter_stil_label, # Roter Text, Größe 9, weißer Rand!
+                    text_size=9,
                     options=[
                         ft.dropdown.Option(
                             key="03509 - REWE Hackfleischmonitoring", 
@@ -307,28 +316,31 @@ def main(page: ft.Page):
                     ]
                 )
 
+                # =========================================================
+                # DATUMSWÄHLER (Eingabe: 10, Labels: Normal)
+                # =========================================================
                 tag_dd = ft.Dropdown(
                     label="Tag", value=tag_wert, width=90, 
-                    color="white", border_color="white", text_style=weisser_stil_klein, label_style=weisser_stil_klein,
-                    text_size=8, content_padding=10, 
+                    color="white", border_color="white", text_style=text_stil_10, label_style=label_stil_normal,
+                    text_size=10, content_padding=10, 
                     options=[ft.dropdown.Option(key=f"{i:02d}", text=f"{i:02d}") for i in range(1, 32)]
                 )
                 monat_dd = ft.Dropdown(
                     label="Monat", value=monat_wert, width=90, 
-                    color="white", border_color="white", text_style=weisser_stil_klein, label_style=weisser_stil_klein,
-                    text_size=8, content_padding=10, 
+                    color="white", border_color="white", text_style=text_stil_10, label_style=label_stil_normal,
+                    text_size=10, content_padding=10, 
                     options=[ft.dropdown.Option(key=f"{i:02d}", text=f"{i:02d}") for i in range(1, 13)]
                 )
                 jahr_dd = ft.Dropdown(
                     label="Jahr", value=jahr_wert, width=110, 
-                    color="white", border_color="white", text_style=weisser_stil_klein, label_style=weisser_stil_klein,
-                    text_size=8, content_padding=10, 
+                    color="white", border_color="white", text_style=text_stil_10, label_style=label_stil_normal,
+                    text_size=10, content_padding=10, 
                     options=[ft.dropdown.Option(key=str(i), text=str(i)) for i in range(heute.year - 1, heute.year + 5)]
                 )
 
                 datum_zeile = ft.Column(
                     controls=[
-                        ft.Text("Datum der Probenahme", color="white", weight="bold", size=10),
+                        ft.Text("Datum der Probenahme", color="white", weight="bold", size=16), # Normale, gut lesbare Größe
                         ft.Row([tag_dd, monat_dd, jahr_dd])
                     ]
                 )
@@ -362,7 +374,6 @@ def main(page: ft.Page):
                 ansicht.controls.append(ft.Text(titel, size=20, weight="bold", color="white"))
                 ansicht.controls.append(adresse_input)
                 ansicht.controls.append(marktnummer_input)
-                # Den Hinweis-Text hier direkt VOR dem Auftragsnummer-Feld eingefügt:
                 ansicht.controls.append(auftragsnummer_hinweis) 
                 ansicht.controls.append(auftrag_input)
                 ansicht.controls.append(auftraggeber_dd) 
