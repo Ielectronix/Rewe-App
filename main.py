@@ -52,19 +52,21 @@ def main(page: ft.Page):
             except:
                 pass
 
+        # NEU: Das Benutzer-Gedächtnis gibt jetzt ZWEI Werte zurück (Vorname, Zuname)
         def lade_benutzer():
             try:
                 if os.path.exists(BENUTZER_DATEI):
                     with open(BENUTZER_DATEI, "r", encoding="utf-8") as datei:
-                        return json.load(datei).get("name", "")
-                return ""
+                        daten = json.load(datei)
+                        return daten.get("vorname", ""), daten.get("zuname", "")
+                return "", ""
             except:
-                return ""
+                return "", ""
 
-        def speichere_benutzer(name):
+        def speichere_benutzer(vorname, zuname):
             try:
                 with open(BENUTZER_DATEI, "w", encoding="utf-8") as datei:
-                    json.dump({"name": name}, datei)
+                    json.dump({"vorname": vorname, "zuname": zuname}, datei)
             except:
                 pass
 
@@ -101,22 +103,37 @@ def main(page: ft.Page):
                 
                 weisser_stil = ft.TextStyle(color="white")
                 
-                name_input = ft.TextField(
-                    label="Bitte kompletten Probenehmer-Namen eingeben (Vorname und Zuname)",
-                    value=lade_benutzer(), 
+                # Alte Daten abrufen (falls gestern schon ausgefüllt)
+                gespeicherter_vorname, gespeicherter_zuname = lade_benutzer()
+                
+                # BEHOBEN: Jetzt zwei schöne, getrennte Felder für den Namen
+                vorname_input = ft.TextField(
+                    label="Vorname Probenehmer",
+                    value=gespeicherter_vorname, 
+                    color="white", text_style=weisser_stil, label_style=weisser_stil, 
+                    border_color="white", cursor_color="white"
+                )
+                
+                zuname_input = ft.TextField(
+                    label="Nachname Probenehmer",
+                    value=gespeicherter_zuname, 
                     color="white", text_style=weisser_stil, label_style=weisser_stil, 
                     border_color="white", cursor_color="white"
                 )
 
                 def start_klick(e):
-                    speichere_benutzer(name_input.value)
+                    # Speichert BEIDE Felder sicher ab
+                    speichere_benutzer(vorname_input.value, zuname_input.value)
                     zeige_dashboard()
                 
                 ansicht.controls.append(ft.Container(height=50))
                 ansicht.controls.append(ft.Row([header], alignment=ft.MainAxisAlignment.CENTER))
                 ansicht.controls.append(ft.Container(height=30)) 
                 
-                ansicht.controls.append(name_input)
+                # Felder dem Bildschirm hinzufügen
+                ansicht.controls.append(vorname_input)
+                ansicht.controls.append(zuname_input)
+                
                 ansicht.controls.append(ft.Container(height=30)) 
                 
                 ansicht.controls.append(
@@ -189,7 +206,10 @@ def main(page: ft.Page):
             try:
                 ansicht.controls.clear()
                 maerkte = lade_maerkte()
-                gespeicherter_probenehmer = lade_benutzer()
+                
+                # Wir holen Vor- und Nachname und setzen sie mit einem Leerzeichen zusammen
+                gespeicherter_vorname, gespeicherter_zuname = lade_benutzer()
+                voller_probenehmer_name = f"{gespeicherter_vorname} {gespeicherter_zuname}".strip()
                 
                 heute = datetime.datetime.now()
                 tag_wert = f"{heute.day:02d}"
@@ -197,12 +217,13 @@ def main(page: ft.Page):
                 jahr_wert = str(heute.year)
                 
                 if markt_index is None:
+                    # Neue Tour: Nutze den zusammengesetzten Namen aus dem Startbildschirm
                     aktuelle_daten = {
                         "adresse": "", 
                         "marktnummer": "", 
                         "auftragsnummer": "", 
-                        "probenehmer": gespeicherter_probenehmer,
-                        "auftraggeber": "03509 - REWE Hackfleischmonitoring" # NEU: Standardwert
+                        "probenehmer": voller_probenehmer_name,
+                        "auftraggeber": "03509 - REWE Hackfleischmonitoring"
                     }
                     titel = "Neue Tour anlegen"
                 else:
@@ -247,14 +268,11 @@ def main(page: ft.Page):
                     border_color="white", cursor_color="white"
                 )
                 probenehmer_input = ft.TextField(
-                    label="Probenehmer", value=aktuelle_daten.get("probenehmer", gespeicherter_probenehmer), 
+                    label="Probenehmer", value=aktuelle_daten.get("probenehmer", voller_probenehmer_name), 
                     color="white", text_style=weisser_stil, label_style=weisser_stil, 
                     border_color="white", cursor_color="white"
                 )
 
-                # =========================================================
-                # NEU: DROPDOWN FÜR AUFTRAGGEBER
-                # =========================================================
                 auftraggeber_dd = ft.Dropdown(
                     label="Auftraggeber", 
                     value=aktuelle_daten.get("auftraggeber", "03509 - REWE Hackfleischmonitoring"),
@@ -272,20 +290,20 @@ def main(page: ft.Page):
                 )
 
                 # =========================================================
-                # DATUMSWÄHLER
+                # DATUMSWÄHLER (BEHOBEN: expand=True verhindert das Abschneiden!)
                 # =========================================================
                 tag_dd = ft.Dropdown(
-                    label="Tag", value=tag_wert, width=90, 
+                    label="Tag", value=tag_wert, expand=1, 
                     color="white", border_color="white", text_style=weisser_stil, label_style=weisser_stil,
                     options=[ft.dropdown.Option(key=f"{i:02d}", text=f"{i:02d}") for i in range(1, 32)]
                 )
                 monat_dd = ft.Dropdown(
-                    label="Monat", value=monat_wert, width=90, 
+                    label="Monat", value=monat_wert, expand=1, 
                     color="white", border_color="white", text_style=weisser_stil, label_style=weisser_stil,
                     options=[ft.dropdown.Option(key=f"{i:02d}", text=f"{i:02d}") for i in range(1, 13)]
                 )
                 jahr_dd = ft.Dropdown(
-                    label="Jahr", value=jahr_wert, width=120, 
+                    label="Jahr", value=jahr_wert, expand=2, 
                     color="white", border_color="white", text_style=weisser_stil, label_style=weisser_stil,
                     options=[ft.dropdown.Option(key=str(i), text=str(i)) for i in range(heute.year - 1, heute.year + 5)]
                 )
@@ -308,7 +326,7 @@ def main(page: ft.Page):
                         "datum": zusammengesetztes_datum,
                         "auftragsnummer": auftrag_input.value,
                         "probenehmer": probenehmer_input.value,
-                        "auftraggeber": auftraggeber_dd.value # Speichert die Auswahl des Auftraggebers!
+                        "auftraggeber": auftraggeber_dd.value 
                     }
                     if markt_index is None:
                         maerkte.append(neue_daten)
@@ -329,7 +347,7 @@ def main(page: ft.Page):
                 ansicht.controls.append(adresse_input)
                 ansicht.controls.append(marktnummer_input)
                 ansicht.controls.append(auftrag_input)
-                ansicht.controls.append(auftraggeber_dd) # Das neue Dropdown-Menü hinzugefügt
+                ansicht.controls.append(auftraggeber_dd) 
                 ansicht.controls.append(probenehmer_input)
                 ansicht.controls.append(datum_zeile) 
                 ansicht.controls.append(ft.Container(height=20))
