@@ -10,9 +10,6 @@ def main(page: ft.Page):
     page.padding = 20
     page.scroll = ft.ScrollMode.AUTO
 
-    # =========================================================
-    # DER CONTAINER-TRICK
-    # =========================================================
     ansicht = ft.Column(expand=True)
     page.add(ansicht)
 
@@ -31,7 +28,7 @@ def main(page: ft.Page):
         import pypdf
 
         # =========================================================
-        # DIE ZWEI DATEI-TRESORE
+        # DATEI-TRESORE
         # =========================================================
         SPEICHER_DATEI = "meine_monitoring_daten.json"
         BENUTZER_DATEI = "benutzer_daten.json"
@@ -70,7 +67,7 @@ def main(page: ft.Page):
                 pass
 
         # =========================================================
-        # 3. HAUPT-NAVIGATION
+        # HAUPT-NAVIGATION
         # =========================================================
         def nav_leiste():
             return ft.Container(
@@ -103,7 +100,7 @@ def main(page: ft.Page):
                 weisser_stil = ft.TextStyle(color="white")
                 gespeicherter_vorname, gespeicherter_zuname = lade_benutzer()
                 
-                # KOMPLETT SAUBERE FELDER OHNE "PROBENEHMER" UND ZENTRIERT
+                # FELDER SIND ZENTRIERT UND OHNE DAS WORT "PROBENEHMER"
                 vorname_input = ft.TextField(
                     label="Vorname",
                     value=gespeicherter_vorname, 
@@ -113,7 +110,7 @@ def main(page: ft.Page):
                 )
                 
                 zuname_input = ft.TextField(
-                    label="Zuname",
+                    label="Nachname",
                     value=gespeicherter_zuname, 
                     color="white", text_style=weisser_stil, label_style=weisser_stil, 
                     border_color="white", cursor_color="white",
@@ -128,7 +125,6 @@ def main(page: ft.Page):
                 ansicht.controls.append(ft.Row([header], alignment=ft.MainAxisAlignment.CENTER))
                 ansicht.controls.append(ft.Container(height=40)) 
                 
-                # ZENTRIERTE SPALTE FÜR DIE NAMENS-FELDER
                 eingabe_spalte = ft.Column(
                     controls=[vorname_input, zuname_input],
                     horizontal_alignment=ft.CrossAxisAlignment.CENTER
@@ -229,14 +225,16 @@ def main(page: ft.Page):
                     aktuelle_daten = maerkte[markt_index]
                     titel = "Tour bearbeiten"
                     
+                    # SICHERHEITS-CHECK FÜR DAS DATUM (Blockiert Zeichen wie ";" oder "(")
                     gespeichertes_datum = aktuelle_daten.get("datum", "")
                     if gespeichertes_datum:
                         teile = gespeichertes_datum.split(".")
                         if len(teile) == 3:
                             try:
-                                tag_wert = str(teile[0]).zfill(2)
-                                monat_wert = str(teile[1]).zfill(2)
-                                jahr_wert = str(teile[2])
+                                # Prüft, ob es WIRKLICH Zahlen sind
+                                if teile[0].isdigit(): tag_wert = str(int(teile[0])).zfill(2)
+                                if teile[1].isdigit(): monat_wert = str(int(teile[1])).zfill(2)
+                                if teile[2].isdigit(): jahr_wert = str(int(teile[2]))
                             except:
                                 pass
 
@@ -272,7 +270,7 @@ def main(page: ft.Page):
                     border_color="white", cursor_color="white"
                 )
                 
-                # FELD HEISST JETZT NUR NOCH "NAME"
+                # FELD HEISST NUR NOCH "NAME"
                 name_input = ft.TextField(
                     label="Name", value=aktuelle_daten.get("mitarbeiter_name", voller_name), 
                     color="white", text_style=weisser_stil, label_style=weisser_stil, 
@@ -280,13 +278,12 @@ def main(page: ft.Page):
                 )
 
                 # =========================================================
-                # DROPDOWN MIT ROTEM PFEIL (▼)
+                # DROPDOWN MIT TEXT-PFEIL (Ohne Farb-Befehl, der Android abstürzen lässt)
                 # =========================================================
                 auftraggeber_dd = ft.Dropdown(
                     label="Auftraggeber (Hier auswählen ▼)", 
                     value=aktuelle_daten.get("auftraggeber", "03509 - REWE Hackfleischmonitoring"),
                     color="white", border_color="white", text_style=weisser_stil, label_style=weisser_stil,
-                    icon_color="red", # <- Dieser Befehl zaubert das Pfeil-Symbol in Rot!
                     options=[
                         ft.dropdown.Option(
                             key="03509 - REWE Hackfleischmonitoring", 
@@ -300,7 +297,7 @@ def main(page: ft.Page):
                 )
 
                 # =========================================================
-                # DATUMSWÄHLER (OHNE Pfeile)
+                # DATUMSWÄHLER (Breit genug, damit nichts abgeschnitten wird)
                 # =========================================================
                 tag_dd = ft.Dropdown(
                     label="Tag", value=tag_wert, expand=1, 
