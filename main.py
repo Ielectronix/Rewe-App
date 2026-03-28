@@ -98,17 +98,20 @@ def main(page: ft.Page):
                 titel = "Tour bearbeiten"
 
             stil_tf_gelb_10 = ft.TextStyle(color="yellow", size=10)
+            stil_tf_gelb_12 = ft.TextStyle(color="yellow", size=12) # Neue Größe 12
             stil_label_weiss = ft.TextStyle(color="white")
             stil_label_rot_fett = ft.TextStyle(color="red", size=10, weight="bold")
 
+            # Marktnummer & Auftragsnummer jetzt in Größe 12
             adr_in = ft.TextField(label="Adresse Markt", value=aktuelle_daten.get("adresse"), color="yellow", text_style=stil_tf_gelb_10, label_style=stil_label_weiss, border_color="white", text_size=10)
-            nr_in = ft.TextField(label="Marktnummer", value=aktuelle_daten.get("marktnummer"), color="yellow", text_style=stil_tf_gelb_10, label_style=stil_label_weiss, border_color="white", text_size=10)
-            auft_in = ft.TextField(label="Auftragsnummer", value=aktuelle_daten.get("auftragsnummer"), color="yellow", text_style=stil_tf_gelb_10, label_style=stil_label_weiss, border_color="white", text_size=10)
+            nr_in = ft.TextField(label="Marktnummer", value=aktuelle_daten.get("marktnummer"), color="yellow", text_style=stil_tf_gelb_12, label_style=stil_label_weiss, border_color="white", text_size=12)
+            auft_in = ft.TextField(label="Auftragsnummer", value=aktuelle_daten.get("auftragsnummer"), color="yellow", text_style=stil_tf_gelb_12, label_style=stil_label_weiss, border_color="white", text_size=12)
             name_in = ft.TextField(label="Name Probenehmer", value=aktuelle_daten.get("mitarbeiter_name"), color="yellow", text_style=stil_tf_gelb_10, label_style=stil_label_weiss, border_color="white", text_size=10)
 
             # --- BEMERKUNGS-WEICHE ---
-            bem_in = ft.TextField(label="Eigene Bemerkung", value=aktuelle_daten.get("bemerkung"), color="yellow", text_style=stil_tf_gelb_10, label_style=stil_label_weiss, border_color="white", text_size=10, expand=1, visible=True)
-            vor_dd = ft.Dropdown(label="Vorlage wählen ▼", color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_rot_fett, expand=1, options=[ft.dropdown.Option("keine Fertiggerichte"), ft.dropdown.Option("keine Convinience heute"), ft.dropdown.Option("keine HFM heute"), ft.dropdown.Option("keine Convinience generell")], visible=False)
+            # Das Label heißt jetzt direkt "Zusätzliche Bemerkung" und sitzt auf dem Rahmen
+            bem_in = ft.TextField(label="Zusätzliche Bemerkung", value=aktuelle_daten.get("bemerkung"), color="yellow", text_style=stil_tf_gelb_10, label_style=stil_label_weiss, border_color="white", text_size=10, expand=1, visible=True)
+            vor_dd = ft.Dropdown(label="Zusätzliche Bemerkung ▼", color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_rot_fett, expand=1, options=[ft.dropdown.Option("keine Fertiggerichte"), ft.dropdown.Option("keine Convinience heute"), ft.dropdown.Option("keine HFM heute"), ft.dropdown.Option("keine Convinience generell")], visible=False)
 
             def aktiviere_manuell(e):
                 bem_in.visible = True; vor_dd.visible = False
@@ -120,16 +123,12 @@ def main(page: ft.Page):
                 btn_manuell.bgcolor = "grey"; btn_vorlage.bgcolor = "red"
                 page.update()
 
-            btn_manuell = ft.ElevatedButton("✍️ Selbst schreiben", on_click=aktiviere_manuell, bgcolor="red", color="white", height=30)
-            btn_vorlage = ft.ElevatedButton("📋 Vorlage wählen", on_click=aktiviere_vorlage, bgcolor="grey", color="white", height=30)
+            # Verkleinerte Buttons über ft.ButtonStyle (Kleine Schrift, wenig Padding)
+            btn_manuell = ft.ElevatedButton("✍️ Selbst schreiben", on_click=aktiviere_manuell, bgcolor="red", color="white", height=30, style=ft.ButtonStyle(padding=5, text_style=ft.TextStyle(size=10)))
+            btn_vorlage = ft.ElevatedButton("📋 Vorlage", on_click=aktiviere_vorlage, bgcolor="grey", color="white", height=30, style=ft.ButtonStyle(padding=5, text_style=ft.TextStyle(size=10)))
 
-            # WEICHE: Jetzt untereinander gestapelt für Mobile-Ansicht
-            weiche_reihe = ft.Column([
-                ft.Text("Zusätzliche Bemerkung:", color="white", size=10, weight="bold"), 
-                btn_manuell, 
-                btn_vorlage
-            ], spacing=5)
-            
+            # Buttons Links und Rechts ausgerichtet
+            weiche_reihe = ft.Row([btn_manuell, btn_vorlage], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
             bemerkungs_container = ft.Row([bem_in, vor_dd])
 
             ag_dd = ft.Dropdown(label="Auftraggeber ▼", value=aktuelle_daten.get("auftraggeber"), color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_rot_fett, options=[ft.dropdown.Option("03509 - REWE Hackfleischmonitoring"), ft.dropdown.Option("3001767 - REWE Dortmund (Hackfleischmonitoring)")])
@@ -157,7 +156,7 @@ def main(page: ft.Page):
                     e.control.text = "PDF offen!"; e.control.bgcolor = "red"; page.update()
                 except Exception as ex: zeige_fehler(ex)
 
-            save_btn = ft.ElevatedButton("Speichern", bgcolor="blue", color="white")
+            save_btn = ft.ElevatedButton("Speichern", bgcolor="blue", color="white", height=35, style=ft.ButtonStyle(padding=2, text_style=ft.TextStyle(size=10, weight="bold")), expand=True)
             def save_klick(e):
                 text_fuer_json = bem_in.value if bem_in.visible else vor_dd.value
                 d = {"adresse": adr_in.value, "marktnummer": nr_in.value, "auftragsnummer": auft_in.value, "mitarbeiter_name": name_in.value, "auftraggeber": ag_dd.value, "typ_probenahme": typ_dd.value, "bemerkung": text_fuer_json, "tag": t_dd.value, "monat": m_dd.value, "jahr": j_dd.value}
@@ -166,18 +165,17 @@ def main(page: ft.Page):
                 speichere_maerkte(maerkte); save_btn.bgcolor = "green"; save_btn.text = "Gespeichert!"; page.update()
             save_btn.on_click = save_klick
 
-            # AKTIONEN: Jetzt untereinander gestapelt für Mobile-Ansicht
-            aktions_buttons = ft.Column([
-                save_btn, 
-                ft.ElevatedButton("Zur Marktliste", on_click=lambda e: zeige_dashboard(), bgcolor="#004400", color="white"), 
-                ft.ElevatedButton("Daten fest eintragen", on_click=pdf_speichern, bgcolor="blue", color="white")
-            ], spacing=10)
+            # AKTIONEN: In einer Zeile nebeneinander, mit expand=True quetschen sie sich automatisch passend!
+            btn_touren = ft.ElevatedButton("Zu Touren", on_click=lambda e: zeige_dashboard(), bgcolor="#004400", color="white", height=35, style=ft.ButtonStyle(padding=2, text_style=ft.TextStyle(size=10, weight="bold")), expand=True)
+            btn_pdf = ft.ElevatedButton("PDF eintragen", on_click=pdf_speichern, bgcolor="blue", color="white", height=35, style=ft.ButtonStyle(padding=2, text_style=ft.TextStyle(size=10, weight="bold")), expand=True)
+            
+            aktions_buttons = ft.Row([save_btn, btn_touren, btn_pdf], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=5)
 
             ansicht.controls.extend([
                 ft.Row([ft.ElevatedButton("STAMMDATEN", bgcolor="red", color="white"), ft.ElevatedButton("1.HFM", bgcolor="grey", color="white")], scroll=ft.ScrollMode.HIDDEN),
                 ft.Divider(color="white"), ft.Text(titel, size=20, weight="bold", color="white"),
                 adr_in, nr_in, 
-                ft.Text("Etikettennummer eingeben: XX-XXXXXX", color="red", size=10, weight="bold"), # Text in Rot
+                ft.Text("Etikettennummer eingeben: XX-XXXXXX", color="red", size=10, weight="bold"),
                 auft_in, ag_dd, name_in, typ_dd,
                 weiche_reihe,
                 bemerkungs_container,
