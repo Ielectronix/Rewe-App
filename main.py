@@ -28,32 +28,50 @@ def main(page: ft.Page):
         import pypdf
         from pypdf.generic import DictionaryObject, NameObject, ArrayObject
 
-        # --- DATEI-MANAGEMENT ---
+        # --- DATEI-LOGIK ---
         SPEICHER_DATEI = "meine_monitoring_daten.json"
         BENUTZER_DATEI = "benutzer_daten.json"
 
         def lade_maerkte():
-            if os.path.exists(SPEICHER_DATEI):
-                with open(SPEICHER_DATEI, "r", encoding="utf-8") as d: return json.load(d)
-            return []
+            try:
+                if os.path.exists(SPEICHER_DATEI):
+                    with open(SPEICHER_DATEI, "r", encoding="utf-8") as d: return json.load(d)
+                return []
+            except: return []
 
         def speichere_maerkte(liste):
-            with open(SPEICHER_DATEI, "w", encoding="utf-8") as d: json.dump(liste, d)
+            try:
+                with open(SPEICHER_DATEI, "w", encoding="utf-8") as d: json.dump(liste, d)
+            except: pass
 
         def lade_benutzer():
-            if os.path.exists(BENUTZER_DATEI):
-                with open(BENUTZER_DATEI, "r", encoding="utf-8") as d:
-                    daten = json.load(d)
-                    return daten.get("vorname", ""), daten.get("zuname", "")
-            return "", ""
+            try:
+                if os.path.exists(BENUTZER_DATEI):
+                    with open(BENUTZER_DATEI, "r", encoding="utf-8") as d:
+                        daten = json.load(d)
+                        return daten.get("vorname", ""), daten.get("zuname", "")
+                return "", ""
+            except: return "", ""
 
         def speichere_benutzer(v, z):
-            with open(BENUTZER_DATEI, "w", encoding="utf-8") as d: json.dump({"vorname": v, "zuname": z}, d)
+            try:
+                with open(BENUTZER_DATEI, "w", encoding="utf-8") as d: json.dump({"vorname": v, "zuname": z}, d)
+            except: pass
 
         def nav_leiste():
-            return ft.Container(bgcolor="#001100", padding=10, border_radius=10, content=ft.Row(alignment=ft.MainAxisAlignment.SPACE_EVENLY, controls=[ft.ElevatedButton("Märkte", on_click=lambda e: zeige_dashboard(), bgcolor="#004400", color="white"), ft.ElevatedButton("Senden", on_click=lambda e: zeige_postausgang(), bgcolor="#004400", color="white"), ft.ElevatedButton("Archiv", on_click=lambda e: zeige_archiv(), bgcolor="#004400", color="white")]))
+            return ft.Container(
+                bgcolor="#001100", padding=10, border_radius=10,
+                content=ft.Row(
+                    alignment=ft.MainAxisAlignment.SPACE_EVENLY,
+                    controls=[
+                        ft.ElevatedButton("Märkte", on_click=lambda e: zeige_dashboard(), bgcolor="#004400", color="white"),
+                        ft.ElevatedButton("Senden", on_click=lambda e: zeige_postausgang(), bgcolor="#004400", color="white"),
+                        ft.ElevatedButton("Archiv", on_click=lambda e: zeige_archiv(), bgcolor="#004400", color="white"),
+                    ]
+                )
+            )
 
-        # --- SEITEN-LOGIK ---
+        # --- SEITEN ---
 
         def zeige_startbildschirm():
             ansicht.controls.clear()
@@ -61,8 +79,11 @@ def main(page: ft.Page):
             v, z = lade_benutzer()
             v_in = ft.TextField(label="Vorname", value=v, color="white", text_size=10, border_color="white", text_align=ft.TextAlign.CENTER)
             z_in = ft.TextField(label="Nachname", value=z, color="white", text_size=10, border_color="white", text_align=ft.TextAlign.CENTER)
+
             def start_klick(e):
-                speichere_benutzer(v_in.value, z_in.value); zeige_dashboard()
+                speichere_benutzer(v_in.value, z_in.value)
+                zeige_dashboard()
+            
             ansicht.controls.extend([ft.Container(height=50), ft.Row([header], alignment=ft.MainAxisAlignment.CENTER), ft.Container(height=40), ft.Column([v_in, z_in], horizontal_alignment=ft.CrossAxisAlignment.CENTER), ft.Container(height=40), ft.Row([ft.ElevatedButton("Neuen Tag starten", on_click=start_klick, bgcolor="red", color="white", width=250, height=60)], alignment=ft.MainAxisAlignment.CENTER)])
             page.update()
 
@@ -72,6 +93,7 @@ def main(page: ft.Page):
             ansicht.controls.append(nav_leiste())
             ansicht.controls.append(ft.Divider(color="transparent"))
             ansicht.controls.append(ft.Row([ft.Text("Meine heutigen Touren", size=25, weight="bold", color="white")], alignment=ft.MainAxisAlignment.CENTER))
+            
             if not maerkte:
                 ansicht.controls.append(ft.Row([ft.Text("Noch keine Märkte angelegt.", color="grey", size=16)], alignment=ft.MainAxisAlignment.CENTER))
             else:
@@ -89,6 +111,7 @@ def main(page: ft.Page):
             maerkte = lade_maerkte()
             v, z = lade_benutzer()
             heute = datetime.datetime.now()
+            
             if markt_index is None:
                 aktuelle_daten = {"adresse": "", "marktnummer": "", "auftragsnummer": "", "mitarbeiter_name": f"{v} {z}".strip(), "auftraggeber": "03509 - REWE Hackfleischmonitoring", "typ_probenahme": "Standard", "bemerkung": "", "tag": f"{heute.day:02d}", "monat": f"{heute.month:02d}", "jahr": str(heute.year)}
                 titel = "Neue Tour anlegen"
@@ -96,18 +119,32 @@ def main(page: ft.Page):
                 aktuelle_daten = maerkte[markt_index]
                 titel = "Tour bearbeiten"
 
+            untermenue = ft.Row([ft.ElevatedButton("STAMMDATEN", bgcolor="red", color="white"), ft.ElevatedButton("1.HFM", bgcolor="grey", color="white")], scroll=ft.ScrollMode.HIDDEN)
+
             stil_tf_10 = ft.TextStyle(color="white", size=10)
             stil_dd_10 = ft.TextStyle(color="white", size=10)
             stil_lab_rot_10 = ft.TextStyle(color="red", size=10, weight="bold")
 
-            # --- EINGABEN ---
+            # --- EINGABEFELDER ---
             adr_in = ft.TextField(label="Adresse Markt", value=aktuelle_daten.get("adresse"), color="white", text_style=stil_tf_10, border_color="white", text_size=10)
             nr_in = ft.TextField(label="Marktnummer", value=aktuelle_daten.get("marktnummer"), color="white", text_style=stil_tf_10, border_color="white", text_size=10)
             auft_in = ft.TextField(label="Auftragsnummer", value=aktuelle_daten.get("auftragsnummer"), color="white", text_style=stil_tf_10, border_color="white", text_size=10)
             name_in = ft.TextField(label="Name Probenehmer", value=aktuelle_daten.get("mitarbeiter_name"), color="white", text_style=stil_tf_10, border_color="white", text_size=10)
+            
+            # Das Bemerkungsfeld
             bem_in = ft.TextField(label="Zusätzliche Bemerkung", value=aktuelle_daten.get("bemerkung"), color="white", text_style=stil_tf_10, border_color="white", text_size=10, expand=1)
 
-            # --- SPERR-LOGIK ---
+            # Dropdowns
+            ag_dd = ft.Dropdown(label="Auftraggeber ▼", value=aktuelle_daten.get("auftraggeber"), color="white", border_color="white", text_style=stil_dd_10, label_style=stil_lab_rot_10, options=[ft.dropdown.Option("03509 - REWE Hackfleischmonitoring"), ft.dropdown.Option("3001767 - REWE Dortmund (Hackfleischmonitoring)")])
+            typ_dd = ft.Dropdown(label="Typ der Probenahme ▼", value=aktuelle_daten.get("typ_probenahme"), color="white", border_color="white", text_style=stil_dd_10, label_style=stil_lab_rot_10, options=[ft.dropdown.Option("Standard"), ft.dropdown.Option("Nachkontrolle"), ft.dropdown.Option("Mehrwöchig")])
+            
+            # --- VORLAGEN LOGIK (SPERREN & LEEREN) ---
+            vor_dd = ft.Dropdown(
+                label="Vorlagen ▼", color="white", border_color="white", text_style=stil_dd_10, label_style=stil_lab_rot_10, expand=1, 
+                options=[ft.dropdown.Option("Manuelle Eingabe..."), ft.dropdown.Option("keine Fertiggerichte"), ft.dropdown.Option("keine Convinience heute"), ft.dropdown.Option("keine HFM heute"), ft.dropdown.Option("keine Convinience generell")],
+                value="Manuelle Eingabe..."
+            )
+
             def lade_vorlage(e):
                 if e.control.value == "Manuelle Eingabe...":
                     bem_in.value = ""
@@ -116,15 +153,14 @@ def main(page: ft.Page):
                     bem_in.value = e.control.value
                     bem_in.read_only = True
                 bem_in.update()
+            
+            # Zuweisung nach Erstellung verhindert Absturz am PC
+            vor_dd.on_change = lade_vorlage
 
-            vor_dd = ft.Dropdown(label="Vorlagen ▼", color="red", border_color="white", text_style=stil_dd_10, label_style=stil_lab_rot_10, expand=1, options=[ft.dropdown.Option("Manuelle Eingabe..."), ft.dropdown.Option("keine Fertiggerichte"), ft.dropdown.Option("keine Convinience heute"), ft.dropdown.Option("keine HFM heute"), ft.dropdown.Option("keine Convinience generell")], value="Manuelle Eingabe...")
-            vor_dd.on_change = lade_vorlage 
-
-            ag_dd = ft.Dropdown(label="Auftraggeber ▼", value=aktuelle_daten.get("auftraggeber"), color="red", border_color="white", text_style=stil_dd_10, label_style=stil_lab_rot_10, options=[ft.dropdown.Option("03509 - REWE Hackfleischmonitoring"), ft.dropdown.Option("3001767 - REWE Dortmund (Hackfleischmonitoring)")])
-            typ_dd = ft.Dropdown(label="Typ der Probenahme ▼", value=aktuelle_daten.get("typ_probenahme"), color="red", border_color="white", text_style=stil_dd_10, label_style=stil_lab_rot_10, options=[ft.dropdown.Option("Standard"), ft.dropdown.Option("Nachkontrolle"), ft.dropdown.Option("Mehrwöchig")])
-            t_dd = ft.Dropdown(value=aktuelle_daten.get("tag"), width=90, color="red", border_color="white", text_style=stil_dd_10, label_style=stil_lab_rot_10, options=[ft.dropdown.Option(f"{i:02d}") for i in range(1, 32)])
-            m_dd = ft.Dropdown(value=aktuelle_daten.get("monat"), width=90, color="red", border_color="white", text_style=stil_dd_10, label_style=stil_lab_rot_10, options=[ft.dropdown.Option(f"{i:02d}") for i in range(1, 13)])
-            j_dd = ft.Dropdown(value=aktuelle_daten.get("jahr"), width=110, color="red", border_color="white", text_style=stil_dd_10, label_style=stil_lab_rot_10, options=[ft.dropdown.Option(str(i)) for i in range(heute.year - 1, heute.year + 2)])
+            # Datum
+            t_dd = ft.Dropdown(value=aktuelle_daten.get("tag"), width=90, color="white", border_color="white", text_style=stil_dd_10, label_style=stil_lab_rot_10, options=[ft.dropdown.Option(f"{i:02d}") for i in range(1, 32)])
+            m_dd = ft.Dropdown(value=aktuelle_daten.get("monat"), width=90, color="white", border_color="white", text_style=stil_dd_10, label_style=stil_lab_rot_10, options=[ft.dropdown.Option(f"{i:02d}") for i in range(1, 13)])
+            j_dd = ft.Dropdown(value=aktuelle_daten.get("jahr"), width=110, color="white", border_color="white", text_style=stil_dd_10, label_style=stil_lab_rot_10, options=[ft.dropdown.Option(str(i)) for i in range(heute.year - 1, heute.year + 2)])
 
             def pdf_speichern(e):
                 try:
@@ -134,25 +170,25 @@ def main(page: ft.Page):
                     writer = pypdf.PdfWriter(clone_from=reader)
                     if "/AcroForm" not in writer.root_object: writer.root_object.update({NameObject("/AcroForm"): DictionaryObject()})
                     if "/Fields" not in writer.root_object["/AcroForm"]: writer.root_object["/AcroForm"].update({NameObject("/Fields"): ArrayObject()})
-                    f_map = {"tf_0000_00_ZS-001870": adr_in.value, "tf_0000_00_ZS-1408": nr_in.value, "tf_0000_00_ZS-002000": auft_in.value, "cal_templateLaborderprobenahmeDatum": f"{t_dd.value}.{m_dd.value}.{j_dd.value}", "dd_0000_00_ZS-002314": name_in.value, "dd_0000_00_ZS-1566": ag_dd.value, "dd_0000_00_ZS-002315": typ_dd.value, "dd_0000_00_ZS-001796": bem_in.value}
-                    writer.update_page_form_field_values(writer.pages[0], f_map)
-                    with open(ausg, "wb") as f: writer.write(f)
+                    f = {"tf_0000_00_ZS-001870": adr_in.value, "tf_0000_00_ZS-1408": nr_in.value, "tf_0000_00_ZS-002000": auft_in.value, "cal_templateLaborderprobenahmeDatum": f"{t_dd.value}.{m_dd.value}.{j_dd.value}", "dd_0000_00_ZS-002314": name_in.value, "dd_0000_00_ZS-1566": ag_dd.value, "dd_0000_00_ZS-002315": typ_dd.value, "dd_0000_00_ZS-001796": bem_in.value}
+                    writer.update_page_form_field_values(writer.pages[0], f)
+                    with open(ausg, "wb") as file: writer.write(file)
                     e.control.text = "ERFOLG!"; e.control.bgcolor = "green"; page.update()
                 except PermissionError:
-                    page.overlay.append(ft.SnackBar(content=ft.Text("❌ Datei ist offen! Bitte stammdaten_fertig.pdf schließen."), bgcolor="red", open=True)); e.control.text = "PDF offen!"; page.update()
+                    snack = ft.SnackBar(content=ft.Text("❌ Fehler: PDF ist noch geöffnet! Bitte schließen."), bgcolor="red")
+                    page.overlay.append(snack); snack.open = True; e.control.text = "PDF offen!"; page.update()
                 except Exception as ex: zeige_fehler(ex)
 
             save_btn = ft.ElevatedButton("Speichern", bgcolor="blue", color="white")
             def save_klick(e):
-                d = {"adresse": adr_in.value, "marktnummer": nr_in.value, "auftragsnummer": auft_in.value, "mitarbeiter_name": name_in.value, "auftraggeber": ag_dd.value, "typ_probenahme": typ_dd.value, "bemerkung": bem_in.value, "tag": t_dd.value, "monat": m_dd.value, "jahr": j_dd.value}
+                d = {"adresse": adr_in.value, "marktnummer": nr_in.value, "auftragsnummer": auft_in.value, "mitarbeiter_name": name_in.value, "auftraggeber": ag_dd.value, "typ_probenahme": typ_dd.value, "bemerkung": bem_in.value, "tag": t_dd.value, "monat": m_dd.value, "jahr": j_dd.value, "datum": f"{t_dd.value}.{m_dd.value}.{j_dd.value}"}
                 if markt_index is None: maerkte.append(d)
                 else: maerkte[markt_index] = d
                 speichere_maerkte(maerkte); save_btn.bgcolor = "green"; save_btn.text = "Gespeichert!"; page.update()
             save_btn.on_click = save_klick
 
             ansicht.controls.extend([
-                ft.Row([ft.ElevatedButton("STAMMDATEN", bgcolor="red", color="white"), ft.ElevatedButton("1.HFM", bgcolor="grey", color="white")], scroll=ft.ScrollMode.HIDDEN),
-                ft.Divider(color="white"), ft.Text(titel, size=20, weight="bold", color="white"),
+                untermenue, ft.Divider(color="white"), ft.Text(titel, size=20, weight="bold", color="white"),
                 adr_in, nr_in, ft.Text("Etikettennummer eingeben: XX-XXXXXX", color="red", size=10, weight="bold"),
                 auft_in, ag_dd, name_in, typ_dd,
                 ft.Row([bem_in, vor_dd]),
@@ -165,20 +201,21 @@ def main(page: ft.Page):
         def zeige_postausgang():
             ansicht.controls.clear(); ansicht.controls.append(nav_leiste())
             ansicht.controls.append(ft.Text("Postausgang", size=25, weight="bold", color="white"))
-            p_list = [f for f in os.listdir("assets") if f.endswith(".pdf") and f != "stammdaten.pdf"] if os.path.exists("assets") else []
-            for pdf in p_list:
-                def dl(e, d=pdf):
+            pdf_liste = [f for f in os.listdir("assets") if f.endswith(".pdf") and f != "stammdaten.pdf"] if os.path.exists("assets") else []
+            for pdf_datei in pdf_liste:
+                def dl(e, d=pdf_datei):
                     try:
                         z = "/storage/emulated/0/Download" if os.path.exists("/storage/emulated/0/Download") else os.path.join(os.path.expanduser("~"), "Downloads")
                         shutil.copyfile(os.path.join("assets", d), os.path.join(z, d))
-                        s = ft.SnackBar(content=ft.Text(f"✅ {d} im Download-Ordner gespeichert!"), bgcolor="blue", open=True)
-                        page.overlay.append(s); page.update()
+                        s = ft.SnackBar(content=ft.Text(f"✅ {d} gespeichert!"), bgcolor="blue")
+                        page.overlay.append(s); s.open = True; e.control.text = "✅"; page.update()
                     except: pass
-                def rm(e, d=pdf): os.remove(os.path.join("assets", d)); zeige_postausgang()
-                ansicht.controls.append(ft.Container(bgcolor="#002200", padding=10, border_radius=10, content=ft.Row([ft.Text(pdf, color="white", size=10, expand=True), ft.ElevatedButton("💾", on_click=dl, bgcolor="blue"), ft.ElevatedButton("🗑️", on_click=rm, bgcolor="red")])))
+                def rm(e, d=pdf_datei): os.remove(os.path.join("assets", d)); zeige_postausgang()
+                ansicht.controls.append(ft.Container(bgcolor="#002200", padding=10, border_radius=10, content=ft.Row([ft.Text(pdf_datei, color="white", size=10, expand=True), ft.ElevatedButton("💾", on_click=dl, bgcolor="blue"), ft.ElevatedButton("🗑️", on_click=rm, bgcolor="red")])))
             page.update()
 
         def zeige_archiv(): ansicht.controls.clear(); ansicht.controls.append(nav_leiste()); page.update()
+
         zeige_startbildschirm()
     except Exception as e: zeige_fehler(e)
 
