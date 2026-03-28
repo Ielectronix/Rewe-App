@@ -14,6 +14,22 @@ def main(page: ft.Page):
     ansicht = ft.Column(expand=True)
     page.add(ansicht)
 
+    # --- DIE NEUE, ZUVERLÄSSIGE POP-UP FUNKTION ---
+    def zeige_popup(titel, nachricht, farbe="red"):
+        d = ft.AlertDialog(
+            title=ft.Text(titel, color=farbe, weight="bold"),
+            content=ft.Text(nachricht, color="white"),
+            bgcolor="#002200"
+        )
+        def schliesse_popup(e):
+            d.open = False
+            page.update()
+        
+        d.actions = [ft.TextButton("OK", on_click=schliesse_popup)]
+        page.dialog = d
+        d.open = True
+        page.update()
+
     def zeige_fehler(e):
         ansicht.controls.clear()
         page.bgcolor = "black"
@@ -107,7 +123,6 @@ def main(page: ft.Page):
             auft_in = ft.TextField(label="Auftragsnummer", value=aktuelle_daten.get("auftragsnummer"), color="yellow", text_style=stil_tf_gelb_12, label_style=stil_label_weiss, border_color="white", text_size=12)
             name_in = ft.TextField(label="Name Probenehmer", value=aktuelle_daten.get("mitarbeiter_name"), color="yellow", text_style=stil_tf_gelb_10, label_style=stil_label_weiss, border_color="white", text_size=10)
 
-            # --- BEMERKUNGS-WEICHE ---
             bem_in = ft.TextField(label="Zusätzliche Bemerkung", value=aktuelle_daten.get("bemerkung"), color="yellow", text_style=stil_tf_gelb_10, label_style=stil_label_weiss, border_color="white", text_size=10, expand=1, visible=True)
             vor_dd = ft.Dropdown(label="Zusätzliche Bemerkung ▼", color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_rot_fett, expand=1, options=[ft.dropdown.Option("keine Fertiggerichte"), ft.dropdown.Option("keine Convinience heute"), ft.dropdown.Option("keine HFM heute"), ft.dropdown.Option("keine Convinience generell")], visible=False)
 
@@ -134,17 +149,15 @@ def main(page: ft.Page):
             m_dd = ft.Dropdown(value=aktuelle_daten.get("monat"), width=90, color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_rot_fett, options=[ft.dropdown.Option(f"{i:02d}") for i in range(1, 13)])
             j_dd = ft.Dropdown(value=aktuelle_daten.get("jahr"), width=110, color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_rot_fett, options=[ft.dropdown.Option(str(i)) for i in range(heute.year - 1, heute.year + 2)])
 
-            # --- PFLICHTFELD-PRÜFUNG ---
+            # --- ZUVERLÄSSIGE PFLICHTFELD-PRÜFUNG ---
             def check_pflichtfelder():
                 if not nr_in.value.strip() or not auft_in.value.strip():
-                    page.snack_bar = ft.SnackBar(content=ft.Text("❌ Bitte Marktnummer und Auftragsnummer eingeben!", color="white"), bgcolor="red")
-                    page.snack_bar.open = True
-                    page.update()
+                    zeige_popup("⚠️ Fehlende Eingabe", "Bitte fülle die Felder 'Marktnummer' und 'Auftragsnummer' aus, bevor du speicherst!", "red")
                     return False
                 return True
 
             def pdf_speichern(e):
-                if not check_pflichtfelder(): return # Stoppt, wenn Felder leer sind!
+                if not check_pflichtfelder(): return # Stoppt sofort und zeigt Pop-up!
                 try:
                     e.control.text = "Lädt..."; e.control.bgcolor = "blue"; page.update()
                     text_fuer_pdf = bem_in.value if bem_in.visible else vor_dd.value
@@ -158,14 +171,13 @@ def main(page: ft.Page):
                     with open(ausg, "wb") as f: writer.write(f)
                     e.control.text = "ERFOLG!"; e.control.bgcolor = "green"; page.update()
                 except PermissionError:
-                    page.snack_bar = ft.SnackBar(content=ft.Text("❌ Datei ist offen! Bitte stammdaten_fertig.pdf schließen.", color="white"), bgcolor="red")
-                    page.snack_bar.open = True
+                    zeige_popup("⚠️ Datei blockiert", "Die Datei stammdaten_fertig.pdf ist im Hintergrund geöffnet. Bitte schließen!", "red")
                     e.control.text = "PDF offen!"; e.control.bgcolor = "red"; page.update()
                 except Exception as ex: zeige_fehler(ex)
 
             save_btn = ft.ElevatedButton("Speichern", bgcolor="blue", color="white", height=35, style=ft.ButtonStyle(padding=2, text_style=ft.TextStyle(size=10, weight="bold")), expand=True)
             def save_klick(e):
-                if not check_pflichtfelder(): return # Stoppt, wenn Felder leer sind!
+                if not check_pflichtfelder(): return # Stoppt sofort und zeigt Pop-up!
                 text_fuer_json = bem_in.value if bem_in.visible else vor_dd.value
                 d = {"adresse": adr_in.value, "marktnummer": nr_in.value, "auftragsnummer": auft_in.value, "mitarbeiter_name": name_in.value, "auftraggeber": ag_dd.value, "typ_probenahme": typ_dd.value, "bemerkung": text_fuer_json, "tag": t_dd.value, "monat": m_dd.value, "jahr": j_dd.value}
                 if markt_index is None: maerkte.append(d)
@@ -197,38 +209,24 @@ def main(page: ft.Page):
             ansicht.controls.append(ft.Text("Postausgang", size=25, weight="bold", color="white"))
             p_list = [f for f in os.listdir("assets") if f.endswith(".pdf") and f != "stammdaten.pdf"] if os.path.exists("assets") else []
             for pdf in p_list:
-                
-                # ÖFFNEN-BUTTON (Ersatz für das fehlerhafte Android-Share)
-                def open_pdf(e, d=pdf):
-                    try:
-                        page.launch_url(f"file://{os.path.abspath(os.path.join('assets', d))}")
-                    except Exception as ex:
-                        page.snack_bar = ft.SnackBar(content=ft.Text("❌ Konnte PDF nicht öffnen. Bitte lade sie erst herunter.", color="white"), bgcolor="red")
-                        page.snack_bar.open = True; page.update()
-
                 def dl(e, d=pdf):
                     try:
                         z = "/storage/emulated/0/Download" if os.path.exists("/storage/emulated/0/Download") else os.path.join(os.path.expanduser("~"), "Downloads")
-                        # --- NEU: Verhindert den Android [Errno 13] Fehler! ---
                         zeit = datetime.datetime.now().strftime('%H%M%S')
                         neu_name = f"Export_{zeit}_{d}"
                         ziel_pfad = os.path.join(z, neu_name)
                         
                         shutil.copyfile(os.path.join("assets", d), ziel_pfad)
                         
-                        page.snack_bar = ft.SnackBar(content=ft.Text(f"✅ In Downloads gespeichert als: {neu_name}", color="white"), bgcolor="green")
-                        page.snack_bar.open = True
+                        # ZUVERLÄSSIGES POP-UP STATT SNACKBAR
+                        zeige_popup("✅ Erfolgreich gespeichert!", f"Die PDF wurde gespeichert unter:\nDownloads -> {neu_name}\n\nBitte öffne die App 'Eigene Dateien' oder deinen Datei-Manager, um die PDF von dort aus zu versenden.", "green")
                         e.control.text = "✅"; e.control.bgcolor = "green"; page.update()
                     except Exception as ex: zeige_fehler(ex)
-                
+
                 def rm(e, d=pdf): os.remove(os.path.join("assets", d)); zeige_postausgang()
                 
-                ansicht.controls.append(ft.Container(bgcolor="#002200", padding=10, border_radius=10, content=ft.Row([
-                    ft.Text(pdf, color="white", size=10, expand=True), 
-                    ft.ElevatedButton("📄", on_click=open_pdf, bgcolor="orange"), # NEUER ÖFFNEN-BUTTON
-                    ft.ElevatedButton("💾", on_click=dl, bgcolor="blue"), 
-                    ft.ElevatedButton("🗑️", on_click=rm, bgcolor="red")
-                ])))
+                # Nur Speichern und Löschen - der Öffnen-Button flog raus, da er Android verwirrt
+                ansicht.controls.append(ft.Container(bgcolor="#002200", padding=10, border_radius=10, content=ft.Row([ft.Text(pdf, color="white", size=10, expand=True), ft.ElevatedButton("💾", on_click=dl, bgcolor="blue"), ft.ElevatedButton("🗑️", on_click=rm, bgcolor="red")])))
             page.update()
 
         def zeige_archiv(): ansicht.controls.clear(); ansicht.controls.append(nav_leiste()); page.update()
