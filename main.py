@@ -27,13 +27,15 @@ def main(page: ft.Page):
 
     try:
         import pypdf
+        from pypdf.generic import DictionaryObject, NameObject, ArrayObject
 
         # =========================================================
         # WERKZEUG ZUM SPEICHERN DER PDF AUF DEM HANDY
         # =========================================================
         speicher_dialog = ft.FilePicker()
         
-        def datei_gespeichert(e: ft.FilePickerResultEvent):
+        # HIER IST DER FIX: Das ": ft.FilePickerResultEvent" wurde entfernt!
+        def datei_gespeichert(e):
             if e.path:
                 try:
                     interne_datei = speicher_dialog.data 
@@ -371,7 +373,6 @@ def main(page: ft.Page):
                         eingabe_pfad = os.path.join("assets", "stammdaten.pdf")
                         ausgabe_pfad = os.path.join("assets", dateiname)
                         
-                        # Wir klonen die Datei komplett 1:1, damit alle originalen IDs und Strukturen erhalten bleiben!
                         reader = pypdf.PdfReader(eingabe_pfad)
                         writer = pypdf.PdfWriter(clone_from=reader)
                             
