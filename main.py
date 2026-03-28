@@ -60,11 +60,18 @@ def main(page: ft.Page):
             header = ft.Text(spans=[ft.TextSpan("Rewe ", ft.TextStyle(color="red", weight="bold", size=45)), ft.TextSpan("Monitoring", ft.TextStyle(color="white", weight="bold", size=45))], text_align=ft.TextAlign.CENTER)
             v, z = lade_benutzer()
             
-            v_in = ft.TextField(label="Vorname", value=v, color="yellow", label_style=ft.TextStyle(color="white"), text_size=10, border_color="white", text_align=ft.TextAlign.CENTER)
-            z_in = ft.TextField(label="Nachname", value=z, color="yellow", label_style=ft.TextStyle(color="white"), text_size=10, border_color="white", text_align=ft.TextAlign.CENTER)
+            v_in = ft.TextField(label="Vorname", value=v, color="yellow", label_style=ft.TextStyle(color="white"), text_size=12, border_color="white", text_align=ft.TextAlign.CENTER)
+            z_in = ft.TextField(label="Nachname", value=z, color="yellow", label_style=ft.TextStyle(color="white"), text_size=12, border_color="white", text_align=ft.TextAlign.CENTER)
             def start_klick(e):
                 speichere_benutzer(v_in.value, z_in.value); zeige_dashboard()
-            ansicht.controls.extend([ft.Container(height=50), ft.Row([header], alignment=ft.MainAxisAlignment.CENTER), ft.Container(height=40), ft.Column([v_in, z_in], horizontal_alignment=ft.CrossAxisAlignment.CENTER), ft.Container(height=40), ft.Row([ft.ElevatedButton("Neuen Tag starten", on_click=start_klick, bgcolor="red", color="white", width=250, height=60)], alignment=ft.MainAxisAlignment.CENTER)])
+            ansicht.controls.extend([
+                ft.Container(height=50), 
+                ft.Row([header], alignment=ft.MainAxisAlignment.CENTER), 
+                ft.Container(height=40), 
+                ft.Column([v_in, z_in], horizontal_alignment=ft.CrossAxisAlignment.STRETCH), 
+                ft.Container(height=40), 
+                ft.Row([ft.ElevatedButton("Neuen Tag starten", on_click=start_klick, bgcolor="red", color="white", width=250, height=60)], alignment=ft.MainAxisAlignment.CENTER)
+            ])
             page.update()
 
         def zeige_dashboard():
@@ -129,11 +136,10 @@ def main(page: ft.Page):
             ag_dd = ft.Dropdown(label="Auftraggeber ▼", value=aktuelle_daten.get("auftraggeber"), color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_rot_fett, options=[ft.dropdown.Option("03509 - REWE Hackfleischmonitoring"), ft.dropdown.Option("3001767 - REWE Dortmund (Hackfleischmonitoring)")])
             typ_dd = ft.Dropdown(label="Typ der Probenahme ▼", value=aktuelle_daten.get("typ_probenahme"), color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_rot_fett, options=[ft.dropdown.Option("Standard"), ft.dropdown.Option("Nachkontrolle"), ft.dropdown.Option("Mehrwöchig")])
             
-            t_dd = ft.Dropdown(value=aktuelle_daten.get("tag"), width=90, color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_rot_fett, options=[ft.dropdown.Option(f"{i:02d}") for i in range(1, 32)])
-            m_dd = ft.Dropdown(value=aktuelle_daten.get("monat"), width=90, color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_rot_fett, options=[ft.dropdown.Option(f"{i:02d}") for i in range(1, 13)])
-            j_dd = ft.Dropdown(value=aktuelle_daten.get("jahr"), width=110, color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_rot_fett, options=[ft.dropdown.Option(str(i)) for i in range(heute.year - 1, heute.year + 2)])
+            t_dd = ft.Dropdown(value=aktuelle_daten.get("tag"), expand=1, color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_rot_fett, options=[ft.dropdown.Option(f"{i:02d}") for i in range(1, 32)])
+            m_dd = ft.Dropdown(value=aktuelle_daten.get("monat"), expand=1, color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_rot_fett, options=[ft.dropdown.Option(f"{i:02d}") for i in range(1, 13)])
+            j_dd = ft.Dropdown(value=aktuelle_daten.get("jahr"), expand=1, color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_rot_fett, options=[ft.dropdown.Option(str(i)) for i in range(heute.year - 1, heute.year + 2)])
 
-            # --- NEU: SICHTBARE FEHLERMELDUNG ---
             fehler_text = ft.Text("", color="red", size=14, weight="bold", visible=False)
 
             def check_pflichtfelder():
@@ -151,7 +157,14 @@ def main(page: ft.Page):
                 try:
                     e.control.text = "Lädt..."; e.control.bgcolor = "blue"; page.update()
                     text_fuer_pdf = bem_in.value if bem_in.visible else vor_dd.value
-                    ausg = os.path.join("assets", "stammdaten_fertig.pdf")
+                    
+                    # --- NEU: DYNAMISCHER DATEINAME PRO TOUR ---
+                    sicherer_markt = "".join([c for c in nr_in.value if c.isalnum()]) # Schützt vor ungültigen Zeichen
+                    sicherer_auftrag = "".join([c for c in auft_in.value if c.isalnum()])
+                    dateiname = f"Tour_{sicherer_markt}_{sicherer_auftrag}.pdf"
+                    ausg = os.path.join("assets", dateiname)
+                    # ---------------------------------------------
+                    
                     reader = pypdf.PdfReader(os.path.join("assets", "stammdaten.pdf"))
                     writer = pypdf.PdfWriter(clone_from=reader)
                     if "/AcroForm" not in writer.root_object: writer.root_object.update({NameObject("/AcroForm"): DictionaryObject()})
@@ -161,7 +174,7 @@ def main(page: ft.Page):
                     with open(ausg, "wb") as f: writer.write(f)
                     e.control.text = "ERFOLG!"; e.control.bgcolor = "green"; page.update()
                 except PermissionError:
-                    fehler_text.value = "❌ FEHLER: Datei ist offen! Bitte stammdaten_fertig.pdf schließen."
+                    fehler_text.value = f"❌ FEHLER: Datei ist offen! Bitte {dateiname} schließen."
                     fehler_text.visible = True
                     e.control.text = "PDF offen!"; e.control.bgcolor = "red"; page.update()
                 except Exception as ex: zeige_fehler(ex)
@@ -184,14 +197,27 @@ def main(page: ft.Page):
             ansicht.controls.extend([
                 ft.Row([ft.ElevatedButton("STAMMDATEN", bgcolor="red", color="white"), ft.ElevatedButton("1.HFM", bgcolor="grey", color="white")], scroll=ft.ScrollMode.HIDDEN),
                 ft.Divider(color="white"), ft.Text(titel, size=20, weight="bold", color="white"),
-                adr_in, nr_in, 
-                ft.Text("Etikettennummer eingeben: XX-XXXXXX", color="red", size=10, weight="bold"),
-                auft_in, ag_dd, name_in, typ_dd,
+                
+                ft.Column([
+                    adr_in, 
+                    nr_in, 
+                    ft.Text("Etikettennummer eingeben: XX-XXXXXX", color="red", size=10, weight="bold"),
+                    auft_in, 
+                    ag_dd, 
+                    name_in, 
+                    typ_dd
+                ], horizontal_alignment=ft.CrossAxisAlignment.STRETCH),
+                
                 weiche_reihe,
                 bemerkungs_container,
-                ft.Column([ft.Text("Datum der Probenahme", color="white", weight="bold"), ft.Row([t_dd, m_dd, j_dd])]),
+                
+                ft.Column([
+                    ft.Text("Datum der Probenahme", color="white", weight="bold"), 
+                    ft.Row([t_dd, m_dd, j_dd])
+                ], horizontal_alignment=ft.CrossAxisAlignment.STRETCH),
+                
                 ft.Container(height=10),
-                fehler_text, # HIER IST DIE NEUE, FESTE FEHLERMELDUNG
+                fehler_text,
                 ft.Container(height=10),
                 aktions_buttons
             ])
@@ -211,12 +237,10 @@ def main(page: ft.Page):
                     try:
                         base_dl = "/storage/emulated/0/Download" if os.path.exists("/storage/emulated/0/Download") else os.path.join(os.path.expanduser("~"), "Downloads")
                         
-                        # --- NEUE ORDNERSTRUKTUR ---
                         rewe_ordner = os.path.join(base_dl, "Rewe")
                         heute_datum = datetime.datetime.now().strftime('%Y-%m-%d')
                         datum_ordner = os.path.join(rewe_ordner, heute_datum)
                         
-                        # Erstellt die Ordner, falls sie noch nicht existieren
                         os.makedirs(datum_ordner, exist_ok=True)
 
                         zeit = datetime.datetime.now().strftime('%H%M%S')
