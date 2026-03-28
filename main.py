@@ -123,7 +123,13 @@ def main(page: ft.Page):
             btn_manuell = ft.ElevatedButton("✍️ Selbst schreiben", on_click=aktiviere_manuell, bgcolor="red", color="white", height=30)
             btn_vorlage = ft.ElevatedButton("📋 Vorlage wählen", on_click=aktiviere_vorlage, bgcolor="grey", color="white", height=30)
 
-            weiche_reihe = ft.Row([ft.Text("Zusätzliche Bemerkung:", color="white", size=10, weight="bold"), btn_manuell, btn_vorlage])
+            # WEICHE: Jetzt untereinander gestapelt für Mobile-Ansicht
+            weiche_reihe = ft.Column([
+                ft.Text("Zusätzliche Bemerkung:", color="white", size=10, weight="bold"), 
+                btn_manuell, 
+                btn_vorlage
+            ], spacing=5)
+            
             bemerkungs_container = ft.Row([bem_in, vor_dd])
 
             ag_dd = ft.Dropdown(label="Auftraggeber ▼", value=aktuelle_daten.get("auftraggeber"), color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_rot_fett, options=[ft.dropdown.Option("03509 - REWE Hackfleischmonitoring"), ft.dropdown.Option("3001767 - REWE Dortmund (Hackfleischmonitoring)")])
@@ -147,7 +153,6 @@ def main(page: ft.Page):
                     with open(ausg, "wb") as f: writer.write(f)
                     e.control.text = "ERFOLG!"; e.control.bgcolor = "green"; page.update()
                 except PermissionError:
-                    # Hier wird die fehlende Abfrage wieder korrekt abgefangen!
                     page.overlay.append(ft.SnackBar(content=ft.Text("❌ Datei ist offen! Bitte stammdaten_fertig.pdf schließen.", color="white"), bgcolor="red", open=True))
                     e.control.text = "PDF offen!"; e.control.bgcolor = "red"; page.update()
                 except Exception as ex: zeige_fehler(ex)
@@ -161,16 +166,24 @@ def main(page: ft.Page):
                 speichere_maerkte(maerkte); save_btn.bgcolor = "green"; save_btn.text = "Gespeichert!"; page.update()
             save_btn.on_click = save_klick
 
+            # AKTIONEN: Jetzt untereinander gestapelt für Mobile-Ansicht
+            aktions_buttons = ft.Column([
+                save_btn, 
+                ft.ElevatedButton("Zur Marktliste", on_click=lambda e: zeige_dashboard(), bgcolor="#004400", color="white"), 
+                ft.ElevatedButton("Daten fest eintragen", on_click=pdf_speichern, bgcolor="blue", color="white")
+            ], spacing=10)
+
             ansicht.controls.extend([
                 ft.Row([ft.ElevatedButton("STAMMDATEN", bgcolor="red", color="white"), ft.ElevatedButton("1.HFM", bgcolor="grey", color="white")], scroll=ft.ScrollMode.HIDDEN),
                 ft.Divider(color="white"), ft.Text(titel, size=20, weight="bold", color="white"),
-                adr_in, nr_in, ft.Text("Etikettennummer eingeben: XX-XXXXXX", color="white", size=10, weight="bold"),
+                adr_in, nr_in, 
+                ft.Text("Etikettennummer eingeben: XX-XXXXXX", color="red", size=10, weight="bold"), # Text in Rot
                 auft_in, ag_dd, name_in, typ_dd,
                 weiche_reihe,
                 bemerkungs_container,
                 ft.Column([ft.Text("Datum der Probenahme", color="white", weight="bold"), ft.Row([t_dd, m_dd, j_dd])]),
                 ft.Container(height=20),
-                ft.Row([save_btn, ft.ElevatedButton("Zur Marktliste", on_click=lambda e: zeige_dashboard(), bgcolor="#004400", color="white"), ft.ElevatedButton("Daten fest eintragen", on_click=pdf_speichern, bgcolor="blue", color="white")])
+                aktions_buttons
             ])
             page.update()
 
