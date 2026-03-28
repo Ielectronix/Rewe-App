@@ -3,6 +3,7 @@ import traceback
 import json
 import os
 import datetime
+import shutil
 
 def main(page: ft.Page):
     page.title = "Rewe Monitoring System"
@@ -26,7 +27,29 @@ def main(page: ft.Page):
 
     try:
         import pypdf
-        from pypdf.generic import DictionaryObject, NameObject, ArrayObject
+
+        # =========================================================
+        # WERKZEUG ZUM SPEICHERN DER PDF AUF DEM HANDY
+        # =========================================================
+        speicher_dialog = ft.FilePicker()
+        
+        def datei_gespeichert(e: ft.FilePickerResultEvent):
+            if e.path:
+                try:
+                    interne_datei = speicher_dialog.data 
+                    shutil.copyfile(interne_datei, e.path)
+                    
+                    page.snack_bar = ft.SnackBar(
+                        ft.Text("Gespeichert! Du kannst die PDF jetzt in deinen Downloads ansehen.", color="white"), 
+                        bgcolor="green"
+                    )
+                    page.snack_bar.open = True
+                    page.update()
+                except Exception as ex:
+                    zeige_fehler(f"Fehler beim Speichern: {ex}")
+                    
+        speicher_dialog.on_result = datei_gespeichert
+        page.overlay.append(speicher_dialog)
 
         # =========================================================
         # DATEI-TRESORE
@@ -332,10 +355,13 @@ def main(page: ft.Page):
                 )
 
                 # =========================================================
-                # NEU: PDF-TEST-FUNKTION (Mit AcroForm & Fields-Fix)
+                # DIE LIMS-SICHERE PDF-FUNKTION (Klonen)
                 # =========================================================
                 def test_pdf_klick(e):
                     try:
+                        e.control.text = "Lädt..."
+                        page.update()
+
                         zusammengesetztes_datum = f"{tag_dd.value}.{monat_dd.value}.{jahr_dd.value}"
                         markt_nr = marktnummer_input.value.strip()
                         if not markt_nr:
@@ -345,24 +371,11 @@ def main(page: ft.Page):
                         eingabe_pfad = os.path.join("assets", "stammdaten.pdf")
                         ausgabe_pfad = os.path.join("assets", dateiname)
                         
+                        # Wir klonen die Datei komplett 1:1, damit alle originalen IDs und Strukturen erhalten bleiben!
                         reader = pypdf.PdfReader(eingabe_pfad)
-                        writer = pypdf.PdfWriter()
-                        
-                        writer.append_pages_from_reader(reader)
-                        
-                        # DER ULTIMATIVE FIX FÜR DIE FORMULARFELDER (/Fields):
-                        # Wir kopieren das komplette Formular-Verzeichnis aus dem Original!
-                        if "/AcroForm" in reader.trailer["/Root"]:
-                            writer.root_object.update({
-                                NameObject("/AcroForm"): reader.trailer["/Root"]["/AcroForm"]
-                            })
-                        else:
-                            # Falls wirklich gar nichts da ist, bauen wir ein leeres, das nicht abstürzt
-                            acro_form = DictionaryObject()
-                            acro_form.update({NameObject("/Fields"): ArrayObject()})
-                            writer.root_object.update({NameObject("/AcroForm"): acro_form})
+                        writer = pypdf.PdfWriter(clone_from=reader)
                             
-                        # Deine PDF-IDs
+                        # Deine PDF-IDs für das LIMS
                         fields = {
                             "tf_0000_00_ZS-001870": adresse_input.value,
                             "tf_0000_00_ZS-1408": marktnummer_input.value,
@@ -374,11 +387,13 @@ def main(page: ft.Page):
                         with open(ausgabe_pfad, "wb") as output_stream:
                             writer.write(output_stream)
                             
-                        page.snack_bar = ft.SnackBar(ft.Text(f"ERFOLG! {dateiname} generiert!", color="white"), bgcolor="green")
-                        page.snack_bar.open = True
+                        e.control.text = "ERFOLG! (Siehe Senden)"
+                        e.control.bgcolor = "green"
                         page.update()
+                        
                     except Exception as ex:
                         zeige_fehler(f"Fehler bei der PDF-Erstellung: {ex}")
+
 
                 def speichere_klick(e):
                     zusammengesetztes_datum = f"{tag_dd.value}.{monat_dd.value}.{jahr_dd.value}"
@@ -430,7 +445,7 @@ def main(page: ft.Page):
                 ansicht.controls.append(ft.Divider(color="transparent"))
                 
                 ansicht.controls.append(ft.Text("Postausgang", size=25, weight="bold", color="white"))
-                ansicht.controls.append(ft.Text("Hier landen die fertigen PDFs.", color="grey"))
+                ansicht.controls.append(ft.Text("Speichere die Datei, um sie auf dem Handy zu öffnen.", color="grey"))
                 ansicht.controls.append(ft.Divider(color="white"))
                 
                 pdf_liste = []
@@ -441,12 +456,17 @@ def main(page: ft.Page):
                     ansicht.controls.append(ft.Text("Noch keine PDFs generiert.", color="grey"))
                 else:
                     for pdf_datei in pdf_liste:
+                        
+                        def klick_speichern_unter(e, datei_name=pdf_datei):
+                            speicher_dialog.data = os.path.join("assets", datei_name)
+                            speicher_dialog.save_file(dialog_title="PDF speichern", file_name=datei_name, allowed_extensions=["pdf"])
+
                         ansicht.controls.append(
                             ft.ListTile(
                                 leading=ft.Text("P", size=30, color="red"),
                                 title=ft.Text(pdf_datei, color="white"),
-                                subtitle=ft.Text("Bereit zum Anschauen", color="grey"),
-                                trailing=ft.ElevatedButton("📄 Öffnen", url=f"/{pdf_datei}", bgcolor="blue", color="white")
+                                subtitle=ft.Text("Im App-Tresor", color="grey"),
+                                trailing=ft.ElevatedButton("💾 In Downloads speichern", on_click=klick_speichern_unter, bgcolor="blue", color="white")
                             )
                         )
                 page.update()
