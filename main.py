@@ -3,6 +3,7 @@ import traceback
 import json
 import os
 import datetime
+import shutil
 
 def main(page: ft.Page):
     page.title = "Rewe Monitoring System"
@@ -255,21 +256,21 @@ def main(page: ft.Page):
                     ]
                 )
 
-                stil_tf_inhalt_12 = ft.TextStyle(color="white", size=12) 
-                stil_dd_inhalt_9 = ft.TextStyle(color="white", size=9)   
-                stil_dd_inhalt_10 = ft.TextStyle(color="white", size=10) 
+                # Felder mit Schriftgröße 8 und rote Farbe in den Dropdowns
+                stil_tf_inhalt_8 = ft.TextStyle(color="white", size=8) 
+                stil_dd_inhalt_8 = ft.TextStyle(color="red", size=8)   
                 stil_label_weiss_normal = ft.TextStyle(color="white")    
                 stil_label_rot_dick_10 = ft.TextStyle(color="red", size=10, weight="bold")
 
                 adresse_input = ft.TextField(
                     label="Adresse Markt", value=aktuelle_daten.get("adresse", ""), 
-                    color="white", text_style=stil_tf_inhalt_12, label_style=stil_label_weiss_normal, 
-                    border_color="white", cursor_color="white", text_size=12
+                    color="white", text_style=stil_tf_inhalt_8, label_style=stil_label_weiss_normal, 
+                    border_color="white", cursor_color="white", text_size=8
                 )
                 marktnummer_input = ft.TextField(
                     label="Marktnummer", value=aktuelle_daten.get("marktnummer", ""), 
-                    color="white", text_style=stil_tf_inhalt_12, label_style=stil_label_weiss_normal, 
-                    border_color="white", cursor_color="white", text_size=12
+                    color="white", text_style=stil_tf_inhalt_8, label_style=stil_label_weiss_normal, 
+                    border_color="white", cursor_color="white", text_size=8
                 )
                 
                 auftragsnummer_hinweis = ft.Text(
@@ -279,23 +280,23 @@ def main(page: ft.Page):
                 
                 auftrag_input = ft.TextField(
                     label="Auftragsnummer", value=aktuelle_daten.get("auftragsnummer", ""), 
-                    color="white", text_style=stil_tf_inhalt_12, label_style=stil_label_weiss_normal, 
-                    border_color="white", cursor_color="white", text_size=12
+                    color="white", text_style=stil_tf_inhalt_8, label_style=stil_label_weiss_normal, 
+                    border_color="white", cursor_color="white", text_size=8
                 )
                 
                 name_input = ft.TextField(
                     label="Name", value=aktuelle_daten.get("mitarbeiter_name", voller_name), 
-                    color="white", text_style=stil_tf_inhalt_12, label_style=stil_label_weiss_normal, 
-                    border_color="white", cursor_color="white", text_size=12
+                    color="white", text_style=stil_tf_inhalt_8, label_style=stil_label_weiss_normal, 
+                    border_color="white", cursor_color="white", text_size=8
                 )
 
                 auftraggeber_dd = ft.Dropdown(
                     label="Auftraggeber (Hier auswählen ▼)", 
                     value=aktuelle_daten.get("auftraggeber", "03509 - REWE Hackfleischmonitoring"),
-                    color="white", border_color="white", 
-                    text_style=stil_dd_inhalt_9,    
+                    color="red", border_color="white", 
+                    text_style=stil_dd_inhalt_8,    
                     label_style=stil_label_rot_dick_10, 
-                    text_size=9,                   
+                    text_size=8,                   
                     options=[
                         ft.dropdown.Option(key="03509 - REWE Hackfleischmonitoring", text="03509 - REWE Hackfleischmonitoring"),
                         ft.dropdown.Option(key="3001767 - REWE Dortmund (Hackfleischmonitoring)", text="3001767 - REWE Dortmund (Hackfleischmonitoring)")
@@ -304,23 +305,23 @@ def main(page: ft.Page):
 
                 tag_dd = ft.Dropdown(
                     label="Tag", value=tag_wert, width=90, 
-                    color="white", border_color="white", 
-                    text_style=stil_dd_inhalt_10, label_style=stil_label_weiss_normal,
-                    text_size=10, content_padding=10, 
+                    color="red", border_color="white", 
+                    text_style=stil_dd_inhalt_8, label_style=stil_label_weiss_normal,
+                    text_size=8, content_padding=10, 
                     options=[ft.dropdown.Option(key=f"{i:02d}", text=f"{i:02d}") for i in range(1, 32)]
                 )
                 monat_dd = ft.Dropdown(
                     label="Monat", value=monat_wert, width=90, 
-                    color="white", border_color="white", 
-                    text_style=stil_dd_inhalt_10, label_style=stil_label_weiss_normal,
-                    text_size=10, content_padding=10, 
+                    color="red", border_color="white", 
+                    text_style=stil_dd_inhalt_8, label_style=stil_label_weiss_normal,
+                    text_size=8, content_padding=10, 
                     options=[ft.dropdown.Option(key=f"{i:02d}", text=f"{i:02d}") for i in range(1, 13)]
                 )
                 jahr_dd = ft.Dropdown(
                     label="Jahr", value=jahr_wert, width=110, 
-                    color="white", border_color="white", 
-                    text_style=stil_dd_inhalt_10, label_style=stil_label_weiss_normal,
-                    text_size=10, content_padding=10, 
+                    color="red", border_color="white", 
+                    text_style=stil_dd_inhalt_8, label_style=stil_label_weiss_normal,
+                    text_size=8, content_padding=10, 
                     options=[ft.dropdown.Option(key=str(i), text=str(i)) for i in range(heute.year - 1, heute.year + 5)]
                 )
 
@@ -331,9 +332,6 @@ def main(page: ft.Page):
                     ]
                 )
 
-                # =========================================================
-                # DIE KUGELSICHERE PDF-FUNKTION (Nie wieder AcroForm Fehler!)
-                # =========================================================
                 def test_pdf_klick(e):
                     try:
                         e.control.text = "Lädt..."
@@ -349,22 +347,8 @@ def main(page: ft.Page):
                         ausgabe_pfad = os.path.join("assets", dateiname)
                         
                         reader = pypdf.PdfReader(eingabe_pfad)
-                        writer = pypdf.PdfWriter()
-                        
-                        # Wir kopieren die Seite sanft rüber
-                        writer.append_pages_from_reader(reader)
-                        
-                        # DER ABSOLUT KUGELSICHERE FIX FÜR JEDE PDF:
-                        # 1. Fehlt AcroForm komplett? Erstellen wir es!
-                        if "/AcroForm" not in writer.root_object:
-                            writer.root_object.update({NameObject("/AcroForm"): DictionaryObject()})
+                        writer = pypdf.PdfWriter(clone_from=reader)
                             
-                        # 2. Fehlt das Fields-Verzeichnis im AcroForm? Erstellen wir es!
-                        acro_form = writer.root_object["/AcroForm"]
-                        if "/Fields" not in acro_form:
-                            acro_form.update({NameObject("/Fields"): ArrayObject()})
-                            
-                        # Deine PDF-IDs für das LIMS
                         fields = {
                             "tf_0000_00_ZS-001870": adresse_input.value,
                             "tf_0000_00_ZS-1408": marktnummer_input.value,
@@ -372,7 +356,6 @@ def main(page: ft.Page):
                             "cal_templateLaborderprobenahmeDatum": zusammengesetztes_datum
                         }
                         
-                        # Felder befüllen
                         writer.update_page_form_field_values(writer.pages[0], fields)
                         with open(ausgabe_pfad, "wb") as output_stream:
                             writer.write(output_stream)
@@ -383,7 +366,6 @@ def main(page: ft.Page):
                         
                     except Exception as ex:
                         zeige_fehler(f"Fehler bei der PDF-Erstellung: {ex}")
-
 
                 def speichere_klick(e):
                     zusammengesetztes_datum = f"{tag_dd.value}.{monat_dd.value}.{jahr_dd.value}"
@@ -426,7 +408,7 @@ def main(page: ft.Page):
             except Exception as e:
                 zeige_fehler(e)
 
-        # ---------------- RESTLICHE SEITEN ----------------
+        # ---------------- POSTAUSGANG (NEU: Ohne Bug und Direkter Android Download) ----------------
 
         def zeige_postausgang():
             try:
@@ -435,7 +417,7 @@ def main(page: ft.Page):
                 ansicht.controls.append(ft.Divider(color="transparent"))
                 
                 ansicht.controls.append(ft.Text("Postausgang", size=25, weight="bold", color="white"))
-                ansicht.controls.append(ft.Text("Öffne die Datei direkt im Browser deines Handys.", color="grey"))
+                ansicht.controls.append(ft.Text("Speichere die PDFs direkt in deine Handy-Downloads.", color="grey", size=12))
                 ansicht.controls.append(ft.Divider(color="white"))
                 
                 pdf_liste = []
@@ -446,21 +428,43 @@ def main(page: ft.Page):
                     ansicht.controls.append(ft.Text("Noch keine PDFs generiert.", color="grey"))
                 else:
                     for pdf_datei in pdf_liste:
-                        # FIX: Wir nutzen den URL-Befehl von Flet!
-                        # Sobald du draufdrückst, startet dein Handy den Browser und lädt/öffnet die PDF
-                        ansicht.controls.append(
-                            ft.ListTile(
-                                leading=ft.Text("P", size=30, color="red"),
-                                title=ft.Text(pdf_datei, color="white"),
-                                subtitle=ft.Text("Tippe zum Ansehen", color="grey"),
-                                trailing=ft.ElevatedButton(
-                                    "📄 Download / Öffnen", 
-                                    url=f"/{pdf_datei}", 
-                                    bgcolor="blue", 
-                                    color="white"
-                                )
+                        
+                        # Die Holzhammer-Methode: Wir schieben die Datei zwingend in den Android Download-Ordner!
+                        def manueller_download(e, dateiname=pdf_datei):
+                            try:
+                                quell_pfad = os.path.join("assets", dateiname)
+                                ziel_ordner = "/storage/emulated/0/Download" # Das ist der Standard-Ordner bei Android
+                                
+                                if os.path.exists(ziel_ordner):
+                                    ziel_pfad = os.path.join(ziel_ordner, dateiname)
+                                    shutil.copyfile(quell_pfad, ziel_pfad)
+                                    page.snack_bar = ft.SnackBar(ft.Text("✅ Erfolgreich im Download-Ordner gespeichert!", color="white", weight="bold"), bgcolor="green")
+                                else:
+                                    # Fallback, falls der Ordner anders heißt
+                                    page.snack_bar = ft.SnackBar(ft.Text("❌ Konnte Android-Download-Ordner nicht finden.", color="white", weight="bold"), bgcolor="red")
+                                
+                                page.snack_bar.open = True
+                                page.update()
+                            except Exception as ex:
+                                zeige_fehler(f"Fehler beim direkten Kopieren: {ex}")
+
+                        # NEU: Ein sauberes Layout (ft.Row), das den Text nicht zerquetscht!
+                        dateizeile = ft.Container(
+                            bgcolor="#002200", padding=10, border_radius=10, margin=5,
+                            content=ft.Row(
+                                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                                controls=[
+                                    ft.Row([
+                                        ft.Text("P", size=20, color="red", weight="bold"),
+                                        # width und max_lines verhindern das vertikale Quetschen!
+                                        ft.Text(pdf_datei, color="white", size=12, width=150, max_lines=1, overflow=ft.TextOverflow.ELLIPSIS)
+                                    ]),
+                                    ft.ElevatedButton("💾 Speichern", on_click=manueller_download, bgcolor="blue", color="white")
+                                ]
                             )
                         )
+                        ansicht.controls.append(dateizeile)
+                        
                 page.update()
             except Exception as e:
                 zeige_fehler(e)
