@@ -21,480 +21,165 @@ def main(page: ft.Page):
         ansicht.controls.append(ft.Text(str(e), color="yellow", size=20))
         try:
             ansicht.controls.append(ft.Text(traceback.format_exc(), color="white", size=12))
-        except:
-            pass
+        except: pass
         page.update()
 
     try:
         import pypdf
         from pypdf.generic import DictionaryObject, NameObject, ArrayObject
 
-        # =========================================================
-        # DATEI-TRESORE
-        # =========================================================
+        # --- DATEI-MANAGEMENT ---
         SPEICHER_DATEI = "meine_monitoring_daten.json"
         BENUTZER_DATEI = "benutzer_daten.json"
 
         def lade_maerkte():
-            try:
-                if os.path.exists(SPEICHER_DATEI):
-                    with open(SPEICHER_DATEI, "r", encoding="utf-8") as datei:
-                        return json.load(datei)
-                return []
-            except Exception as e:
-                return []
+            if os.path.exists(SPEICHER_DATEI):
+                with open(SPEICHER_DATEI, "r", encoding="utf-8") as d: return json.load(d)
+            return []
 
-        def speichere_maerkte(maerkte_liste):
-            try:
-                with open(SPEICHER_DATEI, "w", encoding="utf-8") as datei:
-                    json.dump(maerkte_liste, datei)
-            except:
-                pass
+        def speichere_maerkte(liste):
+            with open(SPEICHER_DATEI, "w", encoding="utf-8") as d: json.dump(liste, d)
 
         def lade_benutzer():
-            try:
-                if os.path.exists(BENUTZER_DATEI):
-                    with open(BENUTZER_DATEI, "r", encoding="utf-8") as datei:
-                        daten = json.load(datei)
-                        return daten.get("vorname", ""), daten.get("zuname", "")
-                return "", ""
-            except:
-                return "", ""
+            if os.path.exists(BENUTZER_DATEI):
+                with open(BENUTZER_DATEI, "r", encoding="utf-8") as d:
+                    daten = json.load(d)
+                    return daten.get("vorname", ""), daten.get("zuname", "")
+            return "", ""
 
-        def speichere_benutzer(vorname, zuname):
-            try:
-                with open(BENUTZER_DATEI, "w", encoding="utf-8") as datei:
-                    json.dump({"vorname": vorname, "zuname": zuname}, datei)
-            except:
-                pass
+        def speichere_benutzer(v, z):
+            with open(BENUTZER_DATEI, "w", encoding="utf-8") as d: json.dump({"vorname": v, "zuname": z}, d)
 
-        # =========================================================
-        # HAUPT-NAVIGATION
-        # =========================================================
         def nav_leiste():
-            return ft.Container(
-                bgcolor="#001100", 
-                padding=10,
-                border_radius=10,
-                content=ft.Row(
-                    alignment=ft.MainAxisAlignment.SPACE_EVENLY,
-                    controls=[
-                        ft.ElevatedButton("Märkte", on_click=lambda e: zeige_dashboard(), bgcolor="#004400", color="white"),
-                        ft.ElevatedButton("Senden", on_click=lambda e: zeige_postausgang(), bgcolor="#004400", color="white"),
-                        ft.ElevatedButton("Archiv", on_click=lambda e: zeige_archiv(), bgcolor="#004400", color="white"),
-                    ]
-                )
-            )
+            return ft.Container(bgcolor="#001100", padding=10, border_radius=10, content=ft.Row(alignment=ft.MainAxisAlignment.SPACE_EVENLY, controls=[ft.ElevatedButton("Märkte", on_click=lambda e: zeige_dashboard(), bgcolor="#004400", color="white"), ft.ElevatedButton("Senden", on_click=lambda e: zeige_postausgang(), bgcolor="#004400", color="white"), ft.ElevatedButton("Archiv", on_click=lambda e: zeige_archiv(), bgcolor="#004400", color="white")]))
 
-        # ---------------- DIE VERSCHIEDENEN SEITEN ----------------
+        # --- SEITEN-LOGIK ---
 
         def zeige_startbildschirm():
-            try:
-                ansicht.controls.clear()
-                
-                header = ft.Text(
-                    spans=[
-                        ft.TextSpan("Rewe ", ft.TextStyle(color="red", weight="bold", size=45)),
-                        ft.TextSpan("Monitoring", ft.TextStyle(color="white", weight="bold", size=45)),
-                    ], text_align=ft.TextAlign.CENTER
-                )
-                
-                label_stil_start = ft.TextStyle(color="white")
-                text_stil_start_12 = ft.TextStyle(color="white", size=12)
-                
-                gespeicherter_vorname, gespeicherter_zuname = lade_benutzer()
-                
-                vorname_input = ft.TextField(
-                    label="Vorname",
-                    value=gespeicherter_vorname, 
-                    color="white", text_style=text_stil_start_12, label_style=label_stil_start, 
-                    border_color="white", cursor_color="white",
-                    text_align=ft.TextAlign.CENTER,
-                    text_size=12 
-                )
-                
-                zuname_input = ft.TextField(
-                    label="Nachname",
-                    value=gespeicherter_zuname, 
-                    color="white", text_style=text_stil_start_12, label_style=label_stil_start, 
-                    border_color="white", cursor_color="white",
-                    text_align=ft.TextAlign.CENTER,
-                    text_size=12 
-                )
-
-                def start_klick(e):
-                    speichere_benutzer(vorname_input.value, zuname_input.value)
-                    zeige_dashboard()
-                
-                ansicht.controls.append(ft.Container(height=50))
-                ansicht.controls.append(ft.Row([header], alignment=ft.MainAxisAlignment.CENTER))
-                ansicht.controls.append(ft.Container(height=40)) 
-                
-                eingabe_spalte = ft.Column(
-                    controls=[vorname_input, zuname_input],
-                    horizontal_alignment=ft.CrossAxisAlignment.CENTER
-                )
-                ansicht.controls.append(eingabe_spalte)
-                
-                ansicht.controls.append(ft.Container(height=40)) 
-                
-                ansicht.controls.append(
-                    ft.Row([
-                        ft.ElevatedButton(
-                            "Neuen Tag starten", 
-                            on_click=start_klick, 
-                            bgcolor="red", 
-                            color="white",
-                            width=250,
-                            height=60
-                        )
-                    ], alignment=ft.MainAxisAlignment.CENTER)
-                )
-                page.update()
-            except Exception as e:
-                zeige_fehler(e)
+            ansicht.controls.clear()
+            header = ft.Text(spans=[ft.TextSpan("Rewe ", ft.TextStyle(color="red", weight="bold", size=45)), ft.TextSpan("Monitoring", ft.TextStyle(color="white", weight="bold", size=45))], text_align=ft.TextAlign.CENTER)
+            v, z = lade_benutzer()
+            v_in = ft.TextField(label="Vorname", value=v, color="white", text_size=10, border_color="white", text_align=ft.TextAlign.CENTER)
+            z_in = ft.TextField(label="Nachname", value=z, color="white", text_size=10, border_color="white", text_align=ft.TextAlign.CENTER)
+            def start_klick(e):
+                speichere_benutzer(v_in.value, z_in.value); zeige_dashboard()
+            ansicht.controls.extend([ft.Container(height=50), ft.Row([header], alignment=ft.MainAxisAlignment.CENTER), ft.Container(height=40), ft.Column([v_in, z_in], horizontal_alignment=ft.CrossAxisAlignment.CENTER), ft.Container(height=40), ft.Row([ft.ElevatedButton("Neuen Tag starten", on_click=start_klick, bgcolor="red", color="white", width=250, height=60)], alignment=ft.MainAxisAlignment.CENTER)])
+            page.update()
 
         def zeige_dashboard():
-            try:
-                ansicht.controls.clear()
-                maerkte = lade_maerkte()
+            ansicht.controls.clear()
+            maerkte = lade_maerkte()
+            ansicht.controls.append(nav_leiste())
+            ansicht.controls.append(ft.Divider(color="transparent"))
+            ansicht.controls.append(ft.Row([ft.Text("Meine heutigen Touren", size=25, weight="bold", color="white")], alignment=ft.MainAxisAlignment.CENTER))
+            if not maerkte:
+                ansicht.controls.append(ft.Row([ft.Text("Noch keine Märkte angelegt.", color="grey", size=16)], alignment=ft.MainAxisAlignment.CENTER))
+            else:
+                def loesche_t(i): maerkte.pop(i); speichere_maerkte(maerkte); zeige_dashboard()
+                for index, markt in enumerate(maerkte):
+                    adr = markt.get("adresse", "").strip() or "Unbenannter Markt"
+                    buchstabe = chr(65 + index) if index < 26 else str(index)
+                    ansicht.controls.append(ft.Row([ft.ElevatedButton(f"Tour {buchstabe}: {adr}", on_click=lambda e, i=index: zeige_maske(i), expand=True, height=50, bgcolor="#005500", color="white"), ft.ElevatedButton("🗑️", on_click=lambda e, i=index: loesche_t(i), bgcolor="red", color="white", height=50, width=65)]))
+            ansicht.controls.append(ft.Divider(color="white"))
+            ansicht.controls.append(ft.Row([ft.ElevatedButton("Tour voranlegen", on_click=lambda e: zeige_maske(None), bgcolor="red", color="white", height=50)], alignment=ft.MainAxisAlignment.CENTER))
+            page.update()
 
-                ansicht.controls.append(nav_leiste())
-                ansicht.controls.append(ft.Divider(color="transparent"))
-                ansicht.controls.append(ft.Text("Meine heutigen Touren", size=25, weight="bold", color="white"))
-                
-                if not maerkte:
-                    ansicht.controls.append(ft.Text("Noch keine Märkte angelegt. Leg direkt los!", color="grey", size=16))
-                else:
-                    def loesche_tour_direkt(index_zum_loeschen):
-                        maerkte.pop(index_zum_loeschen)
-                        speichere_maerkte(maerkte)
-                        zeige_dashboard()
-
-                    for index, markt in enumerate(maerkte):
-                        anzeige_name = markt.get("adresse", "")
-                        if anzeige_name == "":
-                            anzeige_name = "Unbenannter Markt"
-
-                        ansicht.controls.append(
-                            ft.Row(
-                                controls=[
-                                    ft.ElevatedButton(
-                                        f"Tour: {anzeige_name}", 
-                                        on_click=lambda e, i=index: zeige_maske(i),
-                                        expand=True, height=50, bgcolor="#005500", color="white"
-                                    ),
-                                    ft.ElevatedButton(
-                                        "🗑️", 
-                                        on_click=lambda e, i=index: loesche_tour_direkt(i),
-                                        bgcolor="red", color="white", height=50, width=65
-                                    )
-                                ]
-                            )
-                        )
-
-                ansicht.controls.append(ft.Divider(color="white"))
-                ansicht.controls.append(
-                    ft.Row([ft.ElevatedButton("Tour voranlegen", on_click=lambda e: zeige_maske(None), bgcolor="red", color="white", height=50)], alignment=ft.MainAxisAlignment.CENTER)
-                )
-                page.update()
-            except Exception as e:
-                zeige_fehler(e)
-
-        # =========================================================
-        # 4. DIE TOUR-MASKE 
-        # =========================================================
         def zeige_maske(markt_index):
-            try:
-                ansicht.controls.clear()
-                maerkte = lade_maerkte()
-                
-                gespeicherter_vorname, gespeicherter_zuname = lade_benutzer()
-                voller_name = f"{gespeicherter_vorname} {gespeicherter_zuname}".strip()
-                
-                heute = datetime.datetime.now()
-                aktueller_tag = f"{heute.day:02d}"
-                aktueller_monat = f"{heute.month:02d}"
-                aktuelles_jahr = str(heute.year)
-                
-                tag_wert = aktueller_tag
-                monat_wert = aktueller_monat
-                jahr_wert = aktuelles_jahr
-                
-                if markt_index is None:
-                    aktuelle_daten = {
-                        "adresse": "", 
-                        "marktnummer": "", 
-                        "auftragsnummer": "", 
-                        "mitarbeiter_name": voller_name,
-                        "auftraggeber": "03509 - REWE Hackfleischmonitoring"
-                    }
-                    titel = "Neue Tour anlegen"
+            ansicht.controls.clear()
+            maerkte = lade_maerkte()
+            v, z = lade_benutzer()
+            heute = datetime.datetime.now()
+            if markt_index is None:
+                aktuelle_daten = {"adresse": "", "marktnummer": "", "auftragsnummer": "", "mitarbeiter_name": f"{v} {z}".strip(), "auftraggeber": "03509 - REWE Hackfleischmonitoring", "typ_probenahme": "Standard", "bemerkung": "", "tag": f"{heute.day:02d}", "monat": f"{heute.month:02d}", "jahr": str(heute.year)}
+                titel = "Neue Tour anlegen"
+            else:
+                aktuelle_daten = maerkte[markt_index]
+                titel = "Tour bearbeiten"
+
+            stil_tf_10 = ft.TextStyle(color="white", size=10)
+            stil_dd_10 = ft.TextStyle(color="white", size=10)
+            stil_lab_rot_10 = ft.TextStyle(color="red", size=10, weight="bold")
+
+            # --- EINGABEN ---
+            adr_in = ft.TextField(label="Adresse Markt", value=aktuelle_daten.get("adresse"), color="white", text_style=stil_tf_10, border_color="white", text_size=10)
+            nr_in = ft.TextField(label="Marktnummer", value=aktuelle_daten.get("marktnummer"), color="white", text_style=stil_tf_10, border_color="white", text_size=10)
+            auft_in = ft.TextField(label="Auftragsnummer", value=aktuelle_daten.get("auftragsnummer"), color="white", text_style=stil_tf_10, border_color="white", text_size=10)
+            name_in = ft.TextField(label="Name Probenehmer", value=aktuelle_daten.get("mitarbeiter_name"), color="white", text_style=stil_tf_10, border_color="white", text_size=10)
+            bem_in = ft.TextField(label="Zusätzliche Bemerkung", value=aktuelle_daten.get("bemerkung"), color="white", text_style=stil_tf_10, border_color="white", text_size=10, expand=1)
+
+            # --- SPERR-LOGIK ---
+            def lade_vorlage(e):
+                if e.control.value == "Manuelle Eingabe...":
+                    bem_in.value = ""
+                    bem_in.read_only = False
                 else:
-                    aktuelle_daten = maerkte[markt_index]
-                    titel = "Tour bearbeiten"
-                    
-                    gespeichertes_datum = aktuelle_daten.get("datum", "")
-                    if gespeichertes_datum:
-                        teile = gespeichertes_datum.split(".")
-                        if len(teile) == 3 and teile[0].isdigit() and teile[1].isdigit() and teile[2].isdigit():
-                            tag_wert = f"{int(teile[0]):02d}"
-                            monat_wert = f"{int(teile[1]):02d}"
-                            jahr_wert = str(int(teile[2]))
+                    bem_in.value = e.control.value
+                    bem_in.read_only = True
+                bem_in.update()
 
-                untermenue = ft.Row(
-                    alignment=ft.MainAxisAlignment.START,
-                    scroll=ft.ScrollMode.HIDDEN, 
-                    controls=[
-                        ft.ElevatedButton("STAMMDATEN", bgcolor="red", color="white"),
-                        ft.ElevatedButton("1.HFM", bgcolor="grey", color="white"),
-                        ft.ElevatedButton("OKZ -HFM", bgcolor="grey", color="white"),
-                        ft.ElevatedButton("3. OG", bgcolor="grey", color="white"),
-                        ft.ElevatedButton("4. OKZ-OG", bgcolor="grey", color="white"),
-                        ft.ElevatedButton("5. TW", bgcolor="grey", color="white"),
-                        ft.ElevatedButton("6. Scherbeneis", bgcolor="grey", color="white"),
-                    ]
-                )
+            vor_dd = ft.Dropdown(label="Vorlagen ▼", color="red", border_color="white", text_style=stil_dd_10, label_style=stil_lab_rot_10, expand=1, options=[ft.dropdown.Option("Manuelle Eingabe..."), ft.dropdown.Option("keine Fertiggerichte"), ft.dropdown.Option("keine Convinience heute"), ft.dropdown.Option("keine HFM heute"), ft.dropdown.Option("keine Convinience generell")], value="Manuelle Eingabe...")
+            vor_dd.on_change = lade_vorlage 
 
-                # Felder mit Schriftgröße 8 und rote Farbe in den Dropdowns
-                stil_tf_inhalt_8 = ft.TextStyle(color="white", size=8) 
-                stil_dd_inhalt_8 = ft.TextStyle(color="red", size=8)   
-                stil_label_weiss_normal = ft.TextStyle(color="white")    
-                stil_label_rot_dick_10 = ft.TextStyle(color="red", size=10, weight="bold")
+            ag_dd = ft.Dropdown(label="Auftraggeber ▼", value=aktuelle_daten.get("auftraggeber"), color="red", border_color="white", text_style=stil_dd_10, label_style=stil_lab_rot_10, options=[ft.dropdown.Option("03509 - REWE Hackfleischmonitoring"), ft.dropdown.Option("3001767 - REWE Dortmund (Hackfleischmonitoring)")])
+            typ_dd = ft.Dropdown(label="Typ der Probenahme ▼", value=aktuelle_daten.get("typ_probenahme"), color="red", border_color="white", text_style=stil_dd_10, label_style=stil_lab_rot_10, options=[ft.dropdown.Option("Standard"), ft.dropdown.Option("Nachkontrolle"), ft.dropdown.Option("Mehrwöchig")])
+            t_dd = ft.Dropdown(value=aktuelle_daten.get("tag"), width=90, color="red", border_color="white", text_style=stil_dd_10, label_style=stil_lab_rot_10, options=[ft.dropdown.Option(f"{i:02d}") for i in range(1, 32)])
+            m_dd = ft.Dropdown(value=aktuelle_daten.get("monat"), width=90, color="red", border_color="white", text_style=stil_dd_10, label_style=stil_lab_rot_10, options=[ft.dropdown.Option(f"{i:02d}") for i in range(1, 13)])
+            j_dd = ft.Dropdown(value=aktuelle_daten.get("jahr"), width=110, color="red", border_color="white", text_style=stil_dd_10, label_style=stil_lab_rot_10, options=[ft.dropdown.Option(str(i)) for i in range(heute.year - 1, heute.year + 2)])
 
-                adresse_input = ft.TextField(
-                    label="Adresse Markt", value=aktuelle_daten.get("adresse", ""), 
-                    color="white", text_style=stil_tf_inhalt_8, label_style=stil_label_weiss_normal, 
-                    border_color="white", cursor_color="white", text_size=8
-                )
-                marktnummer_input = ft.TextField(
-                    label="Marktnummer", value=aktuelle_daten.get("marktnummer", ""), 
-                    color="white", text_style=stil_tf_inhalt_8, label_style=stil_label_weiss_normal, 
-                    border_color="white", cursor_color="white", text_size=8
-                )
-                
-                auftragsnummer_hinweis = ft.Text(
-                    "Etikettennummer eingeben: XX-XXXXXX", 
-                    color="red", size=10, weight="bold"
-                )
-                
-                auftrag_input = ft.TextField(
-                    label="Auftragsnummer", value=aktuelle_daten.get("auftragsnummer", ""), 
-                    color="white", text_style=stil_tf_inhalt_8, label_style=stil_label_weiss_normal, 
-                    border_color="white", cursor_color="white", text_size=8
-                )
-                
-                name_input = ft.TextField(
-                    label="Name", value=aktuelle_daten.get("mitarbeiter_name", voller_name), 
-                    color="white", text_style=stil_tf_inhalt_8, label_style=stil_label_weiss_normal, 
-                    border_color="white", cursor_color="white", text_size=8
-                )
+            def pdf_speichern(e):
+                try:
+                    e.control.text = "Lädt..."; page.update()
+                    ausg = os.path.join("assets", "stammdaten_fertig.pdf")
+                    reader = pypdf.PdfReader(os.path.join("assets", "stammdaten.pdf"))
+                    writer = pypdf.PdfWriter(clone_from=reader)
+                    if "/AcroForm" not in writer.root_object: writer.root_object.update({NameObject("/AcroForm"): DictionaryObject()})
+                    if "/Fields" not in writer.root_object["/AcroForm"]: writer.root_object["/AcroForm"].update({NameObject("/Fields"): ArrayObject()})
+                    f_map = {"tf_0000_00_ZS-001870": adr_in.value, "tf_0000_00_ZS-1408": nr_in.value, "tf_0000_00_ZS-002000": auft_in.value, "cal_templateLaborderprobenahmeDatum": f"{t_dd.value}.{m_dd.value}.{j_dd.value}", "dd_0000_00_ZS-002314": name_in.value, "dd_0000_00_ZS-1566": ag_dd.value, "dd_0000_00_ZS-002315": typ_dd.value, "dd_0000_00_ZS-001796": bem_in.value}
+                    writer.update_page_form_field_values(writer.pages[0], f_map)
+                    with open(ausg, "wb") as f: writer.write(f)
+                    e.control.text = "ERFOLG!"; e.control.bgcolor = "green"; page.update()
+                except PermissionError:
+                    page.overlay.append(ft.SnackBar(content=ft.Text("❌ Datei ist offen! Bitte stammdaten_fertig.pdf schließen."), bgcolor="red", open=True)); e.control.text = "PDF offen!"; page.update()
+                except Exception as ex: zeige_fehler(ex)
 
-                auftraggeber_dd = ft.Dropdown(
-                    label="Auftraggeber (Hier auswählen ▼)", 
-                    value=aktuelle_daten.get("auftraggeber", "03509 - REWE Hackfleischmonitoring"),
-                    color="red", border_color="white", 
-                    text_style=stil_dd_inhalt_8,    
-                    label_style=stil_label_rot_dick_10, 
-                    text_size=8,                   
-                    options=[
-                        ft.dropdown.Option(key="03509 - REWE Hackfleischmonitoring", text="03509 - REWE Hackfleischmonitoring"),
-                        ft.dropdown.Option(key="3001767 - REWE Dortmund (Hackfleischmonitoring)", text="3001767 - REWE Dortmund (Hackfleischmonitoring)")
-                    ]
-                )
+            save_btn = ft.ElevatedButton("Speichern", bgcolor="blue", color="white")
+            def save_klick(e):
+                d = {"adresse": adr_in.value, "marktnummer": nr_in.value, "auftragsnummer": auft_in.value, "mitarbeiter_name": name_in.value, "auftraggeber": ag_dd.value, "typ_probenahme": typ_dd.value, "bemerkung": bem_in.value, "tag": t_dd.value, "monat": m_dd.value, "jahr": j_dd.value}
+                if markt_index is None: maerkte.append(d)
+                else: maerkte[markt_index] = d
+                speichere_maerkte(maerkte); save_btn.bgcolor = "green"; save_btn.text = "Gespeichert!"; page.update()
+            save_btn.on_click = save_klick
 
-                tag_dd = ft.Dropdown(
-                    label="Tag", value=tag_wert, width=90, 
-                    color="red", border_color="white", 
-                    text_style=stil_dd_inhalt_8, label_style=stil_label_weiss_normal,
-                    text_size=8, content_padding=10, 
-                    options=[ft.dropdown.Option(key=f"{i:02d}", text=f"{i:02d}") for i in range(1, 32)]
-                )
-                monat_dd = ft.Dropdown(
-                    label="Monat", value=monat_wert, width=90, 
-                    color="red", border_color="white", 
-                    text_style=stil_dd_inhalt_8, label_style=stil_label_weiss_normal,
-                    text_size=8, content_padding=10, 
-                    options=[ft.dropdown.Option(key=f"{i:02d}", text=f"{i:02d}") for i in range(1, 13)]
-                )
-                jahr_dd = ft.Dropdown(
-                    label="Jahr", value=jahr_wert, width=110, 
-                    color="red", border_color="white", 
-                    text_style=stil_dd_inhalt_8, label_style=stil_label_weiss_normal,
-                    text_size=8, content_padding=10, 
-                    options=[ft.dropdown.Option(key=str(i), text=str(i)) for i in range(heute.year - 1, heute.year + 5)]
-                )
-
-                datum_zeile = ft.Column(
-                    controls=[
-                        ft.Text("Datum der Probenahme", color="white", weight="bold"),
-                        ft.Row([tag_dd, monat_dd, jahr_dd])
-                    ]
-                )
-
-                def test_pdf_klick(e):
-                    try:
-                        e.control.text = "Lädt..."
-                        page.update()
-
-                        zusammengesetztes_datum = f"{tag_dd.value}.{monat_dd.value}.{jahr_dd.value}"
-                        markt_nr = marktnummer_input.value.strip()
-                        if not markt_nr:
-                            markt_nr = "XXXX"
-                            
-                        dateiname = f"REWE_{markt_nr}_{zusammengesetztes_datum}.pdf"
-                        eingabe_pfad = os.path.join("assets", "stammdaten.pdf")
-                        ausgabe_pfad = os.path.join("assets", dateiname)
-                        
-                        reader = pypdf.PdfReader(eingabe_pfad)
-                        writer = pypdf.PdfWriter(clone_from=reader)
-                            
-                        fields = {
-                            "tf_0000_00_ZS-001870": adresse_input.value,
-                            "tf_0000_00_ZS-1408": marktnummer_input.value,
-                            "tf_0000_00_ZS-002000": auftrag_input.value,
-                            "cal_templateLaborderprobenahmeDatum": zusammengesetztes_datum
-                        }
-                        
-                        writer.update_page_form_field_values(writer.pages[0], fields)
-                        with open(ausgabe_pfad, "wb") as output_stream:
-                            writer.write(output_stream)
-                            
-                        e.control.text = "ERFOLG! (Siehe Senden)"
-                        e.control.bgcolor = "green"
-                        page.update()
-                        
-                    except Exception as ex:
-                        zeige_fehler(f"Fehler bei der PDF-Erstellung: {ex}")
-
-                def speichere_klick(e):
-                    zusammengesetztes_datum = f"{tag_dd.value}.{monat_dd.value}.{jahr_dd.value}"
-                    
-                    neue_daten = {
-                        "adresse": adresse_input.value,
-                        "marktnummer": marktnummer_input.value,
-                        "datum": zusammengesetztes_datum,
-                        "auftragsnummer": auftrag_input.value,
-                        "mitarbeiter_name": name_input.value,
-                        "auftraggeber": auftraggeber_dd.value 
-                    }
-                    if markt_index is None:
-                        maerkte.append(neue_daten)
-                    else:
-                        maerkte[markt_index] = neue_daten
-                        
-                    speichere_maerkte(maerkte)
-                    zeige_dashboard()
-
-                button_reihe = [
-                    ft.ElevatedButton("Speichern", on_click=speichere_klick, bgcolor="green", color="white"),
-                    ft.ElevatedButton("Zurück", on_click=lambda e: zeige_dashboard(), bgcolor="grey", color="white"),
-                    ft.ElevatedButton("PDF Testen", on_click=test_pdf_klick, bgcolor="blue", color="white")
-                ]
-
-                ansicht.controls.append(untermenue)
-                ansicht.controls.append(ft.Divider(color="white"))
-                ansicht.controls.append(ft.Text(titel, size=20, weight="bold", color="white"))
-                ansicht.controls.append(adresse_input)
-                ansicht.controls.append(marktnummer_input)
-                ansicht.controls.append(auftragsnummer_hinweis) 
-                ansicht.controls.append(auftrag_input)
-                ansicht.controls.append(auftraggeber_dd) 
-                ansicht.controls.append(name_input)
-                ansicht.controls.append(datum_zeile) 
-                ansicht.controls.append(ft.Container(height=20))
-                ansicht.controls.append(ft.Row(button_reihe))
-                page.update()
-            except Exception as e:
-                zeige_fehler(e)
-
-        # ---------------- POSTAUSGANG (NEU: Ohne Bug und Direkter Android Download) ----------------
+            ansicht.controls.extend([
+                ft.Row([ft.ElevatedButton("STAMMDATEN", bgcolor="red", color="white"), ft.ElevatedButton("1.HFM", bgcolor="grey", color="white")], scroll=ft.ScrollMode.HIDDEN),
+                ft.Divider(color="white"), ft.Text(titel, size=20, weight="bold", color="white"),
+                adr_in, nr_in, ft.Text("Etikettennummer eingeben: XX-XXXXXX", color="red", size=10, weight="bold"),
+                auft_in, ag_dd, name_in, typ_dd,
+                ft.Row([bem_in, vor_dd]),
+                ft.Column([ft.Text("Datum der Probenahme", color="white", weight="bold"), ft.Row([t_dd, m_dd, j_dd])]),
+                ft.Container(height=20),
+                ft.Row([save_btn, ft.ElevatedButton("Zur Marktliste", on_click=lambda e: zeige_dashboard(), bgcolor="#004400", color="white"), ft.ElevatedButton("Daten fest eintragen", on_click=pdf_speichern, bgcolor="blue", color="white")])
+            ])
+            page.update()
 
         def zeige_postausgang():
-            try:
-                ansicht.controls.clear()
-                ansicht.controls.append(nav_leiste())
-                ansicht.controls.append(ft.Divider(color="transparent"))
-                
-                ansicht.controls.append(ft.Text("Postausgang", size=25, weight="bold", color="white"))
-                ansicht.controls.append(ft.Text("Speichere die PDFs direkt in deine Handy-Downloads.", color="grey", size=12))
-                ansicht.controls.append(ft.Divider(color="white"))
-                
-                pdf_liste = []
-                if os.path.exists("assets"):
-                    pdf_liste = [f for f in os.listdir("assets") if f.startswith("REWE_") and f.endswith(".pdf")]
-                
-                if not pdf_liste:
-                    ansicht.controls.append(ft.Text("Noch keine PDFs generiert.", color="grey"))
-                else:
-                    for pdf_datei in pdf_liste:
-                        
-                        # Die Holzhammer-Methode: Wir schieben die Datei zwingend in den Android Download-Ordner!
-                        def manueller_download(e, dateiname=pdf_datei):
-                            try:
-                                quell_pfad = os.path.join("assets", dateiname)
-                                ziel_ordner = "/storage/emulated/0/Download" # Das ist der Standard-Ordner bei Android
-                                
-                                if os.path.exists(ziel_ordner):
-                                    ziel_pfad = os.path.join(ziel_ordner, dateiname)
-                                    shutil.copyfile(quell_pfad, ziel_pfad)
-                                    page.snack_bar = ft.SnackBar(ft.Text("✅ Erfolgreich im Download-Ordner gespeichert!", color="white", weight="bold"), bgcolor="green")
-                                else:
-                                    # Fallback, falls der Ordner anders heißt
-                                    page.snack_bar = ft.SnackBar(ft.Text("❌ Konnte Android-Download-Ordner nicht finden.", color="white", weight="bold"), bgcolor="red")
-                                
-                                page.snack_bar.open = True
-                                page.update()
-                            except Exception as ex:
-                                zeige_fehler(f"Fehler beim direkten Kopieren: {ex}")
+            ansicht.controls.clear(); ansicht.controls.append(nav_leiste())
+            ansicht.controls.append(ft.Text("Postausgang", size=25, weight="bold", color="white"))
+            p_list = [f for f in os.listdir("assets") if f.endswith(".pdf") and f != "stammdaten.pdf"] if os.path.exists("assets") else []
+            for pdf in p_list:
+                def dl(e, d=pdf):
+                    try:
+                        z = "/storage/emulated/0/Download" if os.path.exists("/storage/emulated/0/Download") else os.path.join(os.path.expanduser("~"), "Downloads")
+                        shutil.copyfile(os.path.join("assets", d), os.path.join(z, d))
+                        s = ft.SnackBar(content=ft.Text(f"✅ {d} im Download-Ordner gespeichert!"), bgcolor="blue", open=True)
+                        page.overlay.append(s); page.update()
+                    except: pass
+                def rm(e, d=pdf): os.remove(os.path.join("assets", d)); zeige_postausgang()
+                ansicht.controls.append(ft.Container(bgcolor="#002200", padding=10, border_radius=10, content=ft.Row([ft.Text(pdf, color="white", size=10, expand=True), ft.ElevatedButton("💾", on_click=dl, bgcolor="blue"), ft.ElevatedButton("🗑️", on_click=rm, bgcolor="red")])))
+            page.update()
 
-                        # NEU: Ein sauberes Layout (ft.Row), das den Text nicht zerquetscht!
-                        dateizeile = ft.Container(
-                            bgcolor="#002200", padding=10, border_radius=10, margin=5,
-                            content=ft.Row(
-                                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-                                controls=[
-                                    ft.Row([
-                                        ft.Text("P", size=20, color="red", weight="bold"),
-                                        # width und max_lines verhindern das vertikale Quetschen!
-                                        ft.Text(pdf_datei, color="white", size=12, width=150, max_lines=1, overflow=ft.TextOverflow.ELLIPSIS)
-                                    ]),
-                                    ft.ElevatedButton("💾 Speichern", on_click=manueller_download, bgcolor="blue", color="white")
-                                ]
-                            )
-                        )
-                        ansicht.controls.append(dateizeile)
-                        
-                page.update()
-            except Exception as e:
-                zeige_fehler(e)
-
-        def zeige_archiv():
-            try:
-                ansicht.controls.clear()
-                ansicht.controls.append(nav_leiste())
-                ansicht.controls.append(ft.Divider(color="transparent"))
-                
-                ansicht.controls.append(ft.Text("Archiv", size=25, weight="bold", color="white"))
-                ansicht.controls.append(ft.Text("Tippe auf 'Bearbeiten', um Daten nachträglich zu ändern.", color="grey"))
-                ansicht.controls.append(ft.Divider(color="white"))
-                
-                ansicht.controls.append(
-                    ft.ListTile(
-                        leading=ft.Text("A", size=30, color="green"),
-                        title=ft.Text("Beispiel Filiale", color="white"),
-                        subtitle=ft.Text("Abgeschlossen", color="grey"),
-                        trailing=ft.ElevatedButton("Bearbeiten", bgcolor="grey", color="white")
-                    )
-                )
-                page.update()
-            except Exception as e:
-                zeige_fehler(e)
-
+        def zeige_archiv(): ansicht.controls.clear(); ansicht.controls.append(nav_leiste()); page.update()
         zeige_startbildschirm()
+    except Exception as e: zeige_fehler(e)
 
-    except Exception as e:
-        zeige_fehler(e)
-
-if __name__ == "__main__":
-    ft.app(target=main, assets_dir="assets")
+if __name__ == "__main__": ft.app(target=main, assets_dir="assets")
