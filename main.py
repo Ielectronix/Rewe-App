@@ -133,19 +133,23 @@ def main(page: ft.Page):
             m_dd = ft.Dropdown(value=aktuelle_daten.get("monat"), width=90, color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_rot_fett, options=[ft.dropdown.Option(f"{i:02d}") for i in range(1, 13)])
             j_dd = ft.Dropdown(value=aktuelle_daten.get("jahr"), width=110, color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_rot_fett, options=[ft.dropdown.Option(str(i)) for i in range(heute.year - 1, heute.year + 2)])
 
-            # --- PFLICHTFELDER PRÜFEN ---
-            def check_pflichtfelder(btn):
+            # --- NEU: SICHTBARE FEHLERMELDUNG ---
+            fehler_text = ft.Text("", color="red", size=14, weight="bold", visible=False)
+
+            def check_pflichtfelder():
                 if not nr_in.value.strip() or not auft_in.value.strip():
-                    btn.text = "⚠️ FEHLER: Felder leer!"
-                    btn.bgcolor = "red"
+                    fehler_text.value = "⚠️ FEHLER: Bitte Marktnummer und Auftragsnummer eingeben!"
+                    fehler_text.visible = True
                     page.update()
                     return False
+                fehler_text.visible = False
+                page.update()
                 return True
 
             def pdf_speichern(e):
-                if not check_pflichtfelder(btn_pdf): return 
+                if not check_pflichtfelder(): return 
                 try:
-                    btn_pdf.text = "Lädt..."; btn_pdf.bgcolor = "blue"; page.update()
+                    e.control.text = "Lädt..."; e.control.bgcolor = "blue"; page.update()
                     text_fuer_pdf = bem_in.value if bem_in.visible else vor_dd.value
                     ausg = os.path.join("assets", "stammdaten_fertig.pdf")
                     reader = pypdf.PdfReader(os.path.join("assets", "stammdaten.pdf"))
@@ -155,16 +159,16 @@ def main(page: ft.Page):
                     f_map = {"tf_0000_00_ZS-001870": adr_in.value, "tf_0000_00_ZS-1408": nr_in.value, "tf_0000_00_ZS-002000": auft_in.value, "cal_templateLaborderprobenahmeDatum": f"{t_dd.value}.{m_dd.value}.{j_dd.value}", "dd_0000_00_ZS-002314": name_in.value, "dd_0000_00_ZS-1566": ag_dd.value, "dd_0000_00_ZS-002315": typ_dd.value, "dd_0000_00_ZS-001796": text_fuer_pdf}
                     writer.update_page_form_field_values(writer.pages[0], f_map)
                     with open(ausg, "wb") as f: writer.write(f)
-                    btn_pdf.text = "✅ ERFOLG!"; btn_pdf.bgcolor = "green"; page.update()
+                    e.control.text = "ERFOLG!"; e.control.bgcolor = "green"; page.update()
                 except PermissionError:
-                    btn_pdf.text = "❌ PDF offen!"; btn_pdf.bgcolor = "red"; page.update()
+                    fehler_text.value = "❌ FEHLER: Datei ist offen! Bitte stammdaten_fertig.pdf schließen."
+                    fehler_text.visible = True
+                    e.control.text = "PDF offen!"; e.control.bgcolor = "red"; page.update()
                 except Exception as ex: zeige_fehler(ex)
 
             save_btn = ft.ElevatedButton("Speichern", bgcolor="blue", color="white", height=35, style=ft.ButtonStyle(padding=2, text_style=ft.TextStyle(size=10, weight="bold")), expand=True)
-            btn_pdf = ft.ElevatedButton("PDF eintragen", on_click=pdf_speichern, bgcolor="blue", color="white", height=35, style=ft.ButtonStyle(padding=2, text_style=ft.TextStyle(size=10, weight="bold")), expand=True)
-            
             def save_klick(e):
-                if not check_pflichtfelder(save_btn): return 
+                if not check_pflichtfelder(): return 
                 text_fuer_json = bem_in.value if bem_in.visible else vor_dd.value
                 d = {"adresse": adr_in.value, "marktnummer": nr_in.value, "auftragsnummer": auft_in.value, "mitarbeiter_name": name_in.value, "auftraggeber": ag_dd.value, "typ_probenahme": typ_dd.value, "bemerkung": text_fuer_json, "tag": t_dd.value, "monat": m_dd.value, "jahr": j_dd.value}
                 if markt_index is None: maerkte.append(d)
@@ -173,6 +177,7 @@ def main(page: ft.Page):
             save_btn.on_click = save_klick
 
             btn_touren = ft.ElevatedButton("Zu Touren", on_click=lambda e: zeige_dashboard(), bgcolor="#004400", color="white", height=35, style=ft.ButtonStyle(padding=2, text_style=ft.TextStyle(size=10, weight="bold")), expand=True)
+            btn_pdf = ft.ElevatedButton("PDF eintragen", on_click=pdf_speichern, bgcolor="blue", color="white", height=35, style=ft.ButtonStyle(padding=2, text_style=ft.TextStyle(size=10, weight="bold")), expand=True)
             
             aktions_buttons = ft.Row([save_btn, btn_touren, btn_pdf], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=5)
 
@@ -185,7 +190,9 @@ def main(page: ft.Page):
                 weiche_reihe,
                 bemerkungs_container,
                 ft.Column([ft.Text("Datum der Probenahme", color="white", weight="bold"), ft.Row([t_dd, m_dd, j_dd])]),
-                ft.Container(height=20),
+                ft.Container(height=10),
+                fehler_text, # HIER IST DIE NEUE, FESTE FEHLERMELDUNG
+                ft.Container(height=10),
                 aktions_buttons
             ])
             page.update()
@@ -194,7 +201,6 @@ def main(page: ft.Page):
             ansicht.controls.clear(); ansicht.controls.append(nav_leiste())
             ansicht.controls.append(ft.Text("Postausgang", size=25, weight="bold", color="white"))
             
-            # DIREKTES STATUS-TEXTFELD FÜR RÜCKMELDUNGEN (Ersatz für SnackBars)
             status_text = ft.Text("Bitte PDF über 'Eigene Dateien' versenden.", color="yellow", size=12, weight="bold")
             ansicht.controls.append(status_text)
             ansicht.controls.append(ft.Container(height=10))
@@ -203,15 +209,23 @@ def main(page: ft.Page):
             for pdf in p_list:
                 def dl(e, d=pdf):
                     try:
-                        z = "/storage/emulated/0/Download" if os.path.exists("/storage/emulated/0/Download") else os.path.join(os.path.expanduser("~"), "Downloads")
+                        base_dl = "/storage/emulated/0/Download" if os.path.exists("/storage/emulated/0/Download") else os.path.join(os.path.expanduser("~"), "Downloads")
+                        
+                        # --- NEUE ORDNERSTRUKTUR ---
+                        rewe_ordner = os.path.join(base_dl, "Rewe")
+                        heute_datum = datetime.datetime.now().strftime('%Y-%m-%d')
+                        datum_ordner = os.path.join(rewe_ordner, heute_datum)
+                        
+                        # Erstellt die Ordner, falls sie noch nicht existieren
+                        os.makedirs(datum_ordner, exist_ok=True)
+
                         zeit = datetime.datetime.now().strftime('%H%M%S')
                         neu_name = f"Export_{zeit}_{d}"
-                        ziel_pfad = os.path.join(z, neu_name)
+                        ziel_pfad = os.path.join(datum_ordner, neu_name)
                         
                         shutil.copyfile(os.path.join("assets", d), ziel_pfad)
                         
-                        # TEXT DIREKT AUF DIE SEITE SCHREIBEN
-                        status_text.value = f"✅ Gespeichert als:\n{neu_name}\n(Zu finden in deinem Download Ordner)"
+                        status_text.value = f"✅ Gespeichert in:\nDownloads/Rewe/{heute_datum}/\n{neu_name}"
                         status_text.color = "green"
                         e.control.text = "✅"; e.control.bgcolor = "green"; page.update()
                     except Exception as ex: 
