@@ -26,6 +26,8 @@ def main(page: ft.Page):
 
     try:
         import pypdf
+        # Diese Zeile ist wichtig für den AcroForm PDF-Fix:
+        from pypdf.generic import DictionaryObject, NameObject
 
         # =========================================================
         # DATEI-TRESORE
@@ -97,26 +99,28 @@ def main(page: ft.Page):
                     ], text_align=ft.TextAlign.CENTER
                 )
                 
-                label_stil_normal = ft.TextStyle(color="white")
-                text_stil_10 = ft.TextStyle(color="white", size=10)
+                # STARTSEITE STILE: Text Size 12 für Eingaben
+                label_stil_start = ft.TextStyle(color="white")
+                text_stil_start_12 = ft.TextStyle(color="white", size=12)
+                
                 gespeicherter_vorname, gespeicherter_zuname = lade_benutzer()
                 
                 vorname_input = ft.TextField(
                     label="Vorname",
                     value=gespeicherter_vorname, 
-                    color="white", text_style=text_stil_10, label_style=label_stil_normal, 
+                    color="white", text_style=text_stil_start_12, label_style=label_stil_start, 
                     border_color="white", cursor_color="white",
                     text_align=ft.TextAlign.CENTER,
-                    text_size=10
+                    text_size=12 
                 )
                 
                 zuname_input = ft.TextField(
                     label="Nachname",
                     value=gespeicherter_zuname, 
-                    color="white", text_style=text_stil_10, label_style=label_stil_normal, 
+                    color="white", text_style=text_stil_start_12, label_style=label_stil_start, 
                     border_color="white", cursor_color="white",
                     text_align=ft.TextAlign.CENTER,
-                    text_size=10
+                    text_size=12 
                 )
 
                 def start_klick(e):
@@ -256,93 +260,132 @@ def main(page: ft.Page):
                 # =========================================================
                 # STILE DEFINIEREN
                 # =========================================================
-                label_stil_normal = ft.TextStyle(color="white") 
-                text_stil_10 = ft.TextStyle(color="white", size=10)
-                text_stil_9 = ft.TextStyle(color="white", size=9)
+                stil_tf_inhalt_12 = ft.TextStyle(color="white", size=12) # Für Textfelder Inhalt
+                stil_dd_inhalt_9 = ft.TextStyle(color="white", size=9)   # Für Dropdown Auftraggeber
+                stil_dd_inhalt_10 = ft.TextStyle(color="white", size=10) # NEU: Für Datums-Dropdowns
+                stil_label_weiss_normal = ft.TextStyle(color="white")    # Überschriften weiss, normal
                 
-                # DER FIX FÜR DEN SCHATTEN: ft.BoxShadow verwenden!
-                weisser_rand_effekt = ft.BoxShadow(blur_radius=3, color="white", offset=ft.Offset(0, 0))
-                roter_stil_label = ft.TextStyle(color="red", size=9, weight="bold", shadow=weisser_rand_effekt)
+                # Rotes Dropdown Label: Fett, Rot, Size 10
+                stil_label_rot_dick_10 = ft.TextStyle(color="red", size=10, weight="bold")
 
                 adresse_input = ft.TextField(
                     label="Adresse Markt", value=aktuelle_daten.get("adresse", ""), 
-                    color="white", text_style=text_stil_10, label_style=label_stil_normal, 
-                    border_color="white", cursor_color="white", text_size=10
+                    color="white", text_style=stil_tf_inhalt_12, label_style=stil_label_weiss_normal, 
+                    border_color="white", cursor_color="white", text_size=12
                 )
                 marktnummer_input = ft.TextField(
                     label="Marktnummer", value=aktuelle_daten.get("marktnummer", ""), 
-                    color="white", text_style=text_stil_10, label_style=label_stil_normal, 
-                    border_color="white", cursor_color="white", text_size=10
+                    color="white", text_style=stil_tf_inhalt_12, label_style=stil_label_weiss_normal, 
+                    border_color="white", cursor_color="white", text_size=12
                 )
                 
                 auftragsnummer_hinweis = ft.Text(
                     "Etikettennummer eingeben: XX-XXXXXX", 
-                    color="red", 
-                    size=12, 
-                    weight="bold"
+                    color="red", size=10, weight="bold"
                 )
                 
                 auftrag_input = ft.TextField(
                     label="Auftragsnummer", value=aktuelle_daten.get("auftragsnummer", ""), 
-                    color="white", text_style=text_stil_10, label_style=label_stil_normal, 
-                    border_color="white", cursor_color="white", text_size=10
+                    color="white", text_style=stil_tf_inhalt_12, label_style=stil_label_weiss_normal, 
+                    border_color="white", cursor_color="white", text_size=12
                 )
                 
                 name_input = ft.TextField(
                     label="Name", value=aktuelle_daten.get("mitarbeiter_name", voller_name), 
-                    color="white", text_style=text_stil_10, label_style=label_stil_normal, 
-                    border_color="white", cursor_color="white", text_size=10
+                    color="white", text_style=stil_tf_inhalt_12, label_style=stil_label_weiss_normal, 
+                    border_color="white", cursor_color="white", text_size=12
                 )
 
                 # =========================================================
-                # AUFTRAGGEBER-DROPDOWN
+                # AUFTRAGGEBER-DROPDOWN (Hinweis 10, Inhalt 9)
                 # =========================================================
                 auftraggeber_dd = ft.Dropdown(
                     label="Auftraggeber (Hier auswählen ▼)", 
                     value=aktuelle_daten.get("auftraggeber", "03509 - REWE Hackfleischmonitoring"),
-                    color="white", border_color="white", text_style=text_stil_9, 
-                    label_style=roter_stil_label, # Roter Text, Größe 9, mit weißem Rahmen (BoxShadow)
-                    text_size=9,
+                    color="white", border_color="white", 
+                    text_style=stil_dd_inhalt_9,    # Inhalt Size 9
+                    label_style=stil_label_rot_dick_10, # Label Size 10, rot, fett
+                    text_size=9,                   # Inhalt Size 9
                     options=[
-                        ft.dropdown.Option(
-                            key="03509 - REWE Hackfleischmonitoring", 
-                            text="03509 - REWE Hackfleischmonitoring"
-                        ),
-                        ft.dropdown.Option(
-                            key="3001767 - REWE Dortmund (Hackfleischmonitoring)", 
-                            text="3001767 - REWE Dortmund (Hackfleischmonitoring)"
-                        )
+                        ft.dropdown.Option(key="03509 - REWE Hackfleischmonitoring", text="03509 - REWE Hackfleischmonitoring"),
+                        ft.dropdown.Option(key="3001767 - REWE Dortmund (Hackfleischmonitoring)", text="3001767 - REWE Dortmund (Hackfleischmonitoring)")
                     ]
                 )
 
                 # =========================================================
-                # DATUMSWÄHLER 
+                # DATUMSWÄHLER (Dropdowns Inhalt 10)
                 # =========================================================
                 tag_dd = ft.Dropdown(
                     label="Tag", value=tag_wert, width=90, 
-                    color="white", border_color="white", text_style=text_stil_10, label_style=label_stil_normal,
+                    color="white", border_color="white", 
+                    text_style=stil_dd_inhalt_10, label_style=stil_label_weiss_normal,
                     text_size=10, content_padding=10, 
                     options=[ft.dropdown.Option(key=f"{i:02d}", text=f"{i:02d}") for i in range(1, 32)]
                 )
                 monat_dd = ft.Dropdown(
                     label="Monat", value=monat_wert, width=90, 
-                    color="white", border_color="white", text_style=text_stil_10, label_style=label_stil_normal,
+                    color="white", border_color="white", 
+                    text_style=stil_dd_inhalt_10, label_style=stil_label_weiss_normal,
                     text_size=10, content_padding=10, 
                     options=[ft.dropdown.Option(key=f"{i:02d}", text=f"{i:02d}") for i in range(1, 13)]
                 )
                 jahr_dd = ft.Dropdown(
                     label="Jahr", value=jahr_wert, width=110, 
-                    color="white", border_color="white", text_style=text_stil_10, label_style=label_stil_normal,
+                    color="white", border_color="white", 
+                    text_style=stil_dd_inhalt_10, label_style=stil_label_weiss_normal,
                     text_size=10, content_padding=10, 
                     options=[ft.dropdown.Option(key=str(i), text=str(i)) for i in range(heute.year - 1, heute.year + 5)]
                 )
 
                 datum_zeile = ft.Column(
                     controls=[
-                        ft.Text("Datum der Probenahme", color="white", weight="bold", size=16), 
+                        ft.Text("Datum der Probenahme", color="white", weight="bold"),
                         ft.Row([tag_dd, monat_dd, jahr_dd])
                     ]
                 )
+
+                # =========================================================
+                # NEU: PDF-TEST-FUNKTION (Mit AcroForm-Fix)
+                # =========================================================
+                def test_pdf_klick(e):
+                    try:
+                        zusammengesetztes_datum = f"{tag_dd.value}.{monat_dd.value}.{jahr_dd.value}"
+                        markt_nr = marktnummer_input.value.strip()
+                        if not markt_nr:
+                            markt_nr = "XXXX"
+                            
+                        dateiname = f"REWE_{markt_nr}_{zusammengesetztes_datum}.pdf"
+                        eingabe_pfad = os.path.join("assets", "stammdaten.pdf")
+                        ausgabe_pfad = os.path.join("assets", dateiname)
+                        
+                        reader = pypdf.PdfReader(eingabe_pfad)
+                        writer = pypdf.PdfWriter()
+                        
+                        writer.append_pages_from_reader(reader)
+                        
+                        if "/AcroForm" not in writer.root_object:
+                            writer.root_object.update({
+                                NameObject("/AcroForm"): DictionaryObject()
+                            })
+                            
+                        # Deine PDF-IDs
+                        fields = {
+                            "tf_0000_00_ZS-001870": adresse_input.value,
+                            "tf_0000_00_ZS-1408": marktnummer_input.value,
+                            "tf_0000_00_ZS-002000": auftrag_input.value,
+                            "cal_templateLaborderprobenahmeDatum": zusammengesetztes_datum
+                        }
+                        
+                        writer.update_page_form_field_values(writer.pages[0], fields)
+                        with open(ausgabe_pfad, "wb") as output_stream:
+                            writer.write(output_stream)
+                            
+                        page.snack_bar = ft.SnackBar(ft.Text(f"ERFOLG! {dateiname} generiert!", color="white"), bgcolor="green")
+                        page.snack_bar.open = True
+                        page.update()
+                    except Exception as ex:
+                        zeige_fehler(f"Fehler bei der PDF-Erstellung: {ex}")
+
 
                 def speichere_klick(e):
                     zusammengesetztes_datum = f"{tag_dd.value}.{monat_dd.value}.{jahr_dd.value}"
@@ -365,7 +408,9 @@ def main(page: ft.Page):
 
                 button_reihe = [
                     ft.ElevatedButton("Speichern", on_click=speichere_klick, bgcolor="green", color="white"),
-                    ft.ElevatedButton("Zurück", on_click=lambda e: zeige_dashboard(), bgcolor="grey", color="white")
+                    ft.ElevatedButton("Zurück", on_click=lambda e: zeige_dashboard(), bgcolor="grey", color="white"),
+                    # HIER IST DER BLAUE BUTTON EINGEFÜGT:
+                    ft.ElevatedButton("PDF Testen", on_click=test_pdf_klick, bgcolor="blue", color="white")
                 ]
 
                 ansicht.controls.append(untermenue)
@@ -396,13 +441,23 @@ def main(page: ft.Page):
                 ansicht.controls.append(ft.Text("Hier landen die fertigen PDFs.", color="grey"))
                 ansicht.controls.append(ft.Divider(color="white"))
                 
-                ansicht.controls.append(
-                    ft.ListTile(
-                        leading=ft.Text("P", size=30, color="red"),
-                        title=ft.Text("Protokoll.pdf", color="white"),
-                        subtitle=ft.Text("Heute generiert - Bereit", color="grey")
-                    )
-                )
+                # NEU: Der Scanner für den assets-Ordner
+                pdf_liste = []
+                if os.path.exists("assets"):
+                    pdf_liste = [f for f in os.listdir("assets") if f.startswith("REWE_") and f.endswith(".pdf")]
+                
+                if not pdf_liste:
+                    ansicht.controls.append(ft.Text("Noch keine PDFs generiert.", color="grey"))
+                else:
+                    for pdf_datei in pdf_liste:
+                        ansicht.controls.append(
+                            ft.ListTile(
+                                leading=ft.Text("P", size=30, color="red"),
+                                title=ft.Text(pdf_datei, color="white"),
+                                subtitle=ft.Text("Bereit zum Anschauen", color="grey"),
+                                trailing=ft.ElevatedButton("📄 Öffnen", url=f"/{pdf_datei}", bgcolor="blue", color="white")
+                            )
+                        )
                 page.update()
             except Exception as e:
                 zeige_fehler(e)
@@ -436,4 +491,5 @@ def main(page: ft.Page):
         zeige_fehler(e)
 
 if __name__ == "__main__":
-    ft.app(target=main)
+    # GANZ WICHTIG FÜR PDF: assets_dir ergänzt
+    ft.app(target=main, assets_dir="assets")
