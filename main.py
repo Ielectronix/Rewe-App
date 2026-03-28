@@ -14,22 +14,6 @@ def main(page: ft.Page):
     ansicht = ft.Column(expand=True)
     page.add(ansicht)
 
-    # --- DIE NEUE, ZUVERLÄSSIGE POP-UP FUNKTION ---
-    def zeige_popup(titel, nachricht, farbe="red"):
-        d = ft.AlertDialog(
-            title=ft.Text(titel, color=farbe, weight="bold"),
-            content=ft.Text(nachricht, color="white"),
-            bgcolor="#002200"
-        )
-        def schliesse_popup(e):
-            d.open = False
-            page.update()
-        
-        d.actions = [ft.TextButton("OK", on_click=schliesse_popup)]
-        page.dialog = d
-        d.open = True
-        page.update()
-
     def zeige_fehler(e):
         ansicht.controls.clear()
         page.bgcolor = "black"
@@ -149,17 +133,19 @@ def main(page: ft.Page):
             m_dd = ft.Dropdown(value=aktuelle_daten.get("monat"), width=90, color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_rot_fett, options=[ft.dropdown.Option(f"{i:02d}") for i in range(1, 13)])
             j_dd = ft.Dropdown(value=aktuelle_daten.get("jahr"), width=110, color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_rot_fett, options=[ft.dropdown.Option(str(i)) for i in range(heute.year - 1, heute.year + 2)])
 
-            # --- ZUVERLÄSSIGE PFLICHTFELD-PRÜFUNG ---
-            def check_pflichtfelder():
+            # --- PFLICHTFELDER PRÜFEN ---
+            def check_pflichtfelder(btn):
                 if not nr_in.value.strip() or not auft_in.value.strip():
-                    zeige_popup("⚠️ Fehlende Eingabe", "Bitte fülle die Felder 'Marktnummer' und 'Auftragsnummer' aus, bevor du speicherst!", "red")
+                    btn.text = "⚠️ FEHLER: Felder leer!"
+                    btn.bgcolor = "red"
+                    page.update()
                     return False
                 return True
 
             def pdf_speichern(e):
-                if not check_pflichtfelder(): return # Stoppt sofort und zeigt Pop-up!
+                if not check_pflichtfelder(btn_pdf): return 
                 try:
-                    e.control.text = "Lädt..."; e.control.bgcolor = "blue"; page.update()
+                    btn_pdf.text = "Lädt..."; btn_pdf.bgcolor = "blue"; page.update()
                     text_fuer_pdf = bem_in.value if bem_in.visible else vor_dd.value
                     ausg = os.path.join("assets", "stammdaten_fertig.pdf")
                     reader = pypdf.PdfReader(os.path.join("assets", "stammdaten.pdf"))
@@ -169,24 +155,24 @@ def main(page: ft.Page):
                     f_map = {"tf_0000_00_ZS-001870": adr_in.value, "tf_0000_00_ZS-1408": nr_in.value, "tf_0000_00_ZS-002000": auft_in.value, "cal_templateLaborderprobenahmeDatum": f"{t_dd.value}.{m_dd.value}.{j_dd.value}", "dd_0000_00_ZS-002314": name_in.value, "dd_0000_00_ZS-1566": ag_dd.value, "dd_0000_00_ZS-002315": typ_dd.value, "dd_0000_00_ZS-001796": text_fuer_pdf}
                     writer.update_page_form_field_values(writer.pages[0], f_map)
                     with open(ausg, "wb") as f: writer.write(f)
-                    e.control.text = "ERFOLG!"; e.control.bgcolor = "green"; page.update()
+                    btn_pdf.text = "✅ ERFOLG!"; btn_pdf.bgcolor = "green"; page.update()
                 except PermissionError:
-                    zeige_popup("⚠️ Datei blockiert", "Die Datei stammdaten_fertig.pdf ist im Hintergrund geöffnet. Bitte schließen!", "red")
-                    e.control.text = "PDF offen!"; e.control.bgcolor = "red"; page.update()
+                    btn_pdf.text = "❌ PDF offen!"; btn_pdf.bgcolor = "red"; page.update()
                 except Exception as ex: zeige_fehler(ex)
 
             save_btn = ft.ElevatedButton("Speichern", bgcolor="blue", color="white", height=35, style=ft.ButtonStyle(padding=2, text_style=ft.TextStyle(size=10, weight="bold")), expand=True)
+            btn_pdf = ft.ElevatedButton("PDF eintragen", on_click=pdf_speichern, bgcolor="blue", color="white", height=35, style=ft.ButtonStyle(padding=2, text_style=ft.TextStyle(size=10, weight="bold")), expand=True)
+            
             def save_klick(e):
-                if not check_pflichtfelder(): return # Stoppt sofort und zeigt Pop-up!
+                if not check_pflichtfelder(save_btn): return 
                 text_fuer_json = bem_in.value if bem_in.visible else vor_dd.value
                 d = {"adresse": adr_in.value, "marktnummer": nr_in.value, "auftragsnummer": auft_in.value, "mitarbeiter_name": name_in.value, "auftraggeber": ag_dd.value, "typ_probenahme": typ_dd.value, "bemerkung": text_fuer_json, "tag": t_dd.value, "monat": m_dd.value, "jahr": j_dd.value}
                 if markt_index is None: maerkte.append(d)
                 else: maerkte[markt_index] = d
-                speichere_maerkte(maerkte); save_btn.bgcolor = "green"; save_btn.text = "Gespeichert!"; page.update()
+                speichere_maerkte(maerkte); save_btn.bgcolor = "green"; save_btn.text = "✅ Gespeichert!"; page.update()
             save_btn.on_click = save_klick
 
             btn_touren = ft.ElevatedButton("Zu Touren", on_click=lambda e: zeige_dashboard(), bgcolor="#004400", color="white", height=35, style=ft.ButtonStyle(padding=2, text_style=ft.TextStyle(size=10, weight="bold")), expand=True)
-            btn_pdf = ft.ElevatedButton("PDF eintragen", on_click=pdf_speichern, bgcolor="blue", color="white", height=35, style=ft.ButtonStyle(padding=2, text_style=ft.TextStyle(size=10, weight="bold")), expand=True)
             
             aktions_buttons = ft.Row([save_btn, btn_touren, btn_pdf], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=5)
 
@@ -207,6 +193,12 @@ def main(page: ft.Page):
         def zeige_postausgang():
             ansicht.controls.clear(); ansicht.controls.append(nav_leiste())
             ansicht.controls.append(ft.Text("Postausgang", size=25, weight="bold", color="white"))
+            
+            # DIREKTES STATUS-TEXTFELD FÜR RÜCKMELDUNGEN (Ersatz für SnackBars)
+            status_text = ft.Text("Bitte PDF über 'Eigene Dateien' versenden.", color="yellow", size=12, weight="bold")
+            ansicht.controls.append(status_text)
+            ansicht.controls.append(ft.Container(height=10))
+
             p_list = [f for f in os.listdir("assets") if f.endswith(".pdf") and f != "stammdaten.pdf"] if os.path.exists("assets") else []
             for pdf in p_list:
                 def dl(e, d=pdf):
@@ -218,14 +210,17 @@ def main(page: ft.Page):
                         
                         shutil.copyfile(os.path.join("assets", d), ziel_pfad)
                         
-                        # ZUVERLÄSSIGES POP-UP STATT SNACKBAR
-                        zeige_popup("✅ Erfolgreich gespeichert!", f"Die PDF wurde gespeichert unter:\nDownloads -> {neu_name}\n\nBitte öffne die App 'Eigene Dateien' oder deinen Datei-Manager, um die PDF von dort aus zu versenden.", "green")
+                        # TEXT DIREKT AUF DIE SEITE SCHREIBEN
+                        status_text.value = f"✅ Gespeichert als:\n{neu_name}\n(Zu finden in deinem Download Ordner)"
+                        status_text.color = "green"
                         e.control.text = "✅"; e.control.bgcolor = "green"; page.update()
-                    except Exception as ex: zeige_fehler(ex)
+                    except Exception as ex: 
+                        status_text.value = f"❌ Fehler beim Speichern: {str(ex)}"
+                        status_text.color = "red"
+                        page.update()
 
                 def rm(e, d=pdf): os.remove(os.path.join("assets", d)); zeige_postausgang()
                 
-                # Nur Speichern und Löschen - der Öffnen-Button flog raus, da er Android verwirrt
                 ansicht.controls.append(ft.Container(bgcolor="#002200", padding=10, border_radius=10, content=ft.Row([ft.Text(pdf, color="white", size=10, expand=True), ft.ElevatedButton("💾", on_click=dl, bgcolor="blue"), ft.ElevatedButton("🗑️", on_click=rm, bgcolor="red")])))
             page.update()
 
