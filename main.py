@@ -26,8 +26,7 @@ def main(page: ft.Page):
 
     try:
         import pypdf
-        # Diese Zeile ist wichtig für den AcroForm PDF-Fix:
-        from pypdf.generic import DictionaryObject, NameObject
+        from pypdf.generic import DictionaryObject, NameObject, ArrayObject
 
         # =========================================================
         # DATEI-TRESORE
@@ -99,7 +98,6 @@ def main(page: ft.Page):
                     ], text_align=ft.TextAlign.CENTER
                 )
                 
-                # STARTSEITE STILE: Text Size 12 für Eingaben
                 label_stil_start = ft.TextStyle(color="white")
                 text_stil_start_12 = ft.TextStyle(color="white", size=12)
                 
@@ -257,15 +255,10 @@ def main(page: ft.Page):
                     ]
                 )
 
-                # =========================================================
-                # STILE DEFINIEREN
-                # =========================================================
-                stil_tf_inhalt_12 = ft.TextStyle(color="white", size=12) # Für Textfelder Inhalt
-                stil_dd_inhalt_9 = ft.TextStyle(color="white", size=9)   # Für Dropdown Auftraggeber
-                stil_dd_inhalt_10 = ft.TextStyle(color="white", size=10) # NEU: Für Datums-Dropdowns
-                stil_label_weiss_normal = ft.TextStyle(color="white")    # Überschriften weiss, normal
-                
-                # Rotes Dropdown Label: Fett, Rot, Size 10
+                stil_tf_inhalt_12 = ft.TextStyle(color="white", size=12) 
+                stil_dd_inhalt_9 = ft.TextStyle(color="white", size=9)   
+                stil_dd_inhalt_10 = ft.TextStyle(color="white", size=10) 
+                stil_label_weiss_normal = ft.TextStyle(color="white")    
                 stil_label_rot_dick_10 = ft.TextStyle(color="red", size=10, weight="bold")
 
                 adresse_input = ft.TextField(
@@ -296,25 +289,19 @@ def main(page: ft.Page):
                     border_color="white", cursor_color="white", text_size=12
                 )
 
-                # =========================================================
-                # AUFTRAGGEBER-DROPDOWN (Hinweis 10, Inhalt 9)
-                # =========================================================
                 auftraggeber_dd = ft.Dropdown(
                     label="Auftraggeber (Hier auswählen ▼)", 
                     value=aktuelle_daten.get("auftraggeber", "03509 - REWE Hackfleischmonitoring"),
                     color="white", border_color="white", 
-                    text_style=stil_dd_inhalt_9,    # Inhalt Size 9
-                    label_style=stil_label_rot_dick_10, # Label Size 10, rot, fett
-                    text_size=9,                   # Inhalt Size 9
+                    text_style=stil_dd_inhalt_9,    
+                    label_style=stil_label_rot_dick_10, 
+                    text_size=9,                   
                     options=[
                         ft.dropdown.Option(key="03509 - REWE Hackfleischmonitoring", text="03509 - REWE Hackfleischmonitoring"),
                         ft.dropdown.Option(key="3001767 - REWE Dortmund (Hackfleischmonitoring)", text="3001767 - REWE Dortmund (Hackfleischmonitoring)")
                     ]
                 )
 
-                # =========================================================
-                # DATUMSWÄHLER (Dropdowns Inhalt 10)
-                # =========================================================
                 tag_dd = ft.Dropdown(
                     label="Tag", value=tag_wert, width=90, 
                     color="white", border_color="white", 
@@ -345,7 +332,7 @@ def main(page: ft.Page):
                 )
 
                 # =========================================================
-                # NEU: PDF-TEST-FUNKTION (Mit AcroForm-Fix)
+                # NEU: PDF-TEST-FUNKTION (Mit AcroForm & Fields-Fix)
                 # =========================================================
                 def test_pdf_klick(e):
                     try:
@@ -363,10 +350,17 @@ def main(page: ft.Page):
                         
                         writer.append_pages_from_reader(reader)
                         
-                        if "/AcroForm" not in writer.root_object:
+                        # DER ULTIMATIVE FIX FÜR DIE FORMULARFELDER (/Fields):
+                        # Wir kopieren das komplette Formular-Verzeichnis aus dem Original!
+                        if "/AcroForm" in reader.trailer["/Root"]:
                             writer.root_object.update({
-                                NameObject("/AcroForm"): DictionaryObject()
+                                NameObject("/AcroForm"): reader.trailer["/Root"]["/AcroForm"]
                             })
+                        else:
+                            # Falls wirklich gar nichts da ist, bauen wir ein leeres, das nicht abstürzt
+                            acro_form = DictionaryObject()
+                            acro_form.update({NameObject("/Fields"): ArrayObject()})
+                            writer.root_object.update({NameObject("/AcroForm"): acro_form})
                             
                         # Deine PDF-IDs
                         fields = {
@@ -385,7 +379,6 @@ def main(page: ft.Page):
                         page.update()
                     except Exception as ex:
                         zeige_fehler(f"Fehler bei der PDF-Erstellung: {ex}")
-
 
                 def speichere_klick(e):
                     zusammengesetztes_datum = f"{tag_dd.value}.{monat_dd.value}.{jahr_dd.value}"
@@ -409,7 +402,6 @@ def main(page: ft.Page):
                 button_reihe = [
                     ft.ElevatedButton("Speichern", on_click=speichere_klick, bgcolor="green", color="white"),
                     ft.ElevatedButton("Zurück", on_click=lambda e: zeige_dashboard(), bgcolor="grey", color="white"),
-                    # HIER IST DER BLAUE BUTTON EINGEFÜGT:
                     ft.ElevatedButton("PDF Testen", on_click=test_pdf_klick, bgcolor="blue", color="white")
                 ]
 
@@ -441,7 +433,6 @@ def main(page: ft.Page):
                 ansicht.controls.append(ft.Text("Hier landen die fertigen PDFs.", color="grey"))
                 ansicht.controls.append(ft.Divider(color="white"))
                 
-                # NEU: Der Scanner für den assets-Ordner
                 pdf_liste = []
                 if os.path.exists("assets"):
                     pdf_liste = [f for f in os.listdir("assets") if f.startswith("REWE_") and f.endswith(".pdf")]
@@ -484,12 +475,10 @@ def main(page: ft.Page):
             except Exception as e:
                 zeige_fehler(e)
 
-        # START DER APP!
         zeige_startbildschirm()
 
     except Exception as e:
         zeige_fehler(e)
 
 if __name__ == "__main__":
-    # GANZ WICHTIG FÜR PDF: assets_dir ergänzt
     ft.app(target=main, assets_dir="assets")
