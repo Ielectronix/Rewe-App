@@ -3,7 +3,6 @@ import traceback
 import json
 import os
 import datetime
-import shutil
 
 def main(page: ft.Page):
     page.title = "Rewe Monitoring System"
@@ -28,30 +27,6 @@ def main(page: ft.Page):
     try:
         import pypdf
         from pypdf.generic import DictionaryObject, NameObject, ArrayObject
-
-        # =========================================================
-        # WERKZEUG ZUM SPEICHERN DER PDF AUF DEM HANDY
-        # =========================================================
-        speicher_dialog = ft.FilePicker()
-        
-        # HIER IST DER FIX: Das ": ft.FilePickerResultEvent" wurde entfernt!
-        def datei_gespeichert(e):
-            if e.path:
-                try:
-                    interne_datei = speicher_dialog.data 
-                    shutil.copyfile(interne_datei, e.path)
-                    
-                    page.snack_bar = ft.SnackBar(
-                        ft.Text("Gespeichert! Du kannst die PDF jetzt in deinen Downloads ansehen.", color="white"), 
-                        bgcolor="green"
-                    )
-                    page.snack_bar.open = True
-                    page.update()
-                except Exception as ex:
-                    zeige_fehler(f"Fehler beim Speichern: {ex}")
-                    
-        speicher_dialog.on_result = datei_gespeichert
-        page.overlay.append(speicher_dialog)
 
         # =========================================================
         # DATEI-TRESORE
@@ -357,7 +332,7 @@ def main(page: ft.Page):
                 )
 
                 # =========================================================
-                # DIE LIMS-SICHERE PDF-FUNKTION (Klonen)
+                # DIE KUGELSICHERE PDF-FUNKTION (Nie wieder AcroForm Fehler!)
                 # =========================================================
                 def test_pdf_klick(e):
                     try:
@@ -374,7 +349,20 @@ def main(page: ft.Page):
                         ausgabe_pfad = os.path.join("assets", dateiname)
                         
                         reader = pypdf.PdfReader(eingabe_pfad)
-                        writer = pypdf.PdfWriter(clone_from=reader)
+                        writer = pypdf.PdfWriter()
+                        
+                        # Wir kopieren die Seite sanft rüber
+                        writer.append_pages_from_reader(reader)
+                        
+                        # DER ABSOLUT KUGELSICHERE FIX FÜR JEDE PDF:
+                        # 1. Fehlt AcroForm komplett? Erstellen wir es!
+                        if "/AcroForm" not in writer.root_object:
+                            writer.root_object.update({NameObject("/AcroForm"): DictionaryObject()})
+                            
+                        # 2. Fehlt das Fields-Verzeichnis im AcroForm? Erstellen wir es!
+                        acro_form = writer.root_object["/AcroForm"]
+                        if "/Fields" not in acro_form:
+                            acro_form.update({NameObject("/Fields"): ArrayObject()})
                             
                         # Deine PDF-IDs für das LIMS
                         fields = {
@@ -384,6 +372,7 @@ def main(page: ft.Page):
                             "cal_templateLaborderprobenahmeDatum": zusammengesetztes_datum
                         }
                         
+                        # Felder befüllen
                         writer.update_page_form_field_values(writer.pages[0], fields)
                         with open(ausgabe_pfad, "wb") as output_stream:
                             writer.write(output_stream)
@@ -446,7 +435,7 @@ def main(page: ft.Page):
                 ansicht.controls.append(ft.Divider(color="transparent"))
                 
                 ansicht.controls.append(ft.Text("Postausgang", size=25, weight="bold", color="white"))
-                ansicht.controls.append(ft.Text("Speichere die Datei, um sie auf dem Handy zu öffnen.", color="grey"))
+                ansicht.controls.append(ft.Text("Öffne die Datei direkt im Browser deines Handys.", color="grey"))
                 ansicht.controls.append(ft.Divider(color="white"))
                 
                 pdf_liste = []
@@ -457,17 +446,19 @@ def main(page: ft.Page):
                     ansicht.controls.append(ft.Text("Noch keine PDFs generiert.", color="grey"))
                 else:
                     for pdf_datei in pdf_liste:
-                        
-                        def klick_speichern_unter(e, datei_name=pdf_datei):
-                            speicher_dialog.data = os.path.join("assets", datei_name)
-                            speicher_dialog.save_file(dialog_title="PDF speichern", file_name=datei_name, allowed_extensions=["pdf"])
-
+                        # FIX: Wir nutzen den URL-Befehl von Flet!
+                        # Sobald du draufdrückst, startet dein Handy den Browser und lädt/öffnet die PDF
                         ansicht.controls.append(
                             ft.ListTile(
                                 leading=ft.Text("P", size=30, color="red"),
                                 title=ft.Text(pdf_datei, color="white"),
-                                subtitle=ft.Text("Im App-Tresor", color="grey"),
-                                trailing=ft.ElevatedButton("💾 In Downloads speichern", on_click=klick_speichern_unter, bgcolor="blue", color="white")
+                                subtitle=ft.Text("Tippe zum Ansehen", color="grey"),
+                                trailing=ft.ElevatedButton(
+                                    "📄 Download / Öffnen", 
+                                    url=f"/{pdf_datei}", 
+                                    bgcolor="blue", 
+                                    color="white"
+                                )
                             )
                         )
                 page.update()
