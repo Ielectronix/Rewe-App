@@ -151,7 +151,6 @@ def main(page: ft.Page):
                     aktuelle_daten = maerkte[markt_index]
                     titel = "Tour bearbeiten"
 
-                # Einheitliche Schriftgröße 12 für alle gelben Eingaben!
                 stil_tf_gelb_12 = ft.TextStyle(color="yellow", size=12)
                 stil_label_weiss = ft.TextStyle(color="white")
                 stil_cb_weiss = ft.TextStyle(color="white", size=12)
@@ -212,7 +211,6 @@ def main(page: ft.Page):
                     ft.Row([tag_dd, mon_dd, jahr_dd])
                 ])
 
-                # Einheitliches content_padding=10 für perfekten Look ohne Treppen!
                 adr_in = ft.TextField(label="Adresse Markt", value=aktuelle_daten.get("adresse"), color="yellow", text_style=stil_tf_gelb_12, label_style=stil_label_weiss, border_color="white", content_padding=10)
                 nr_in = ft.TextField(label="Marktnummer", value=aktuelle_daten.get("marktnummer"), color="yellow", text_style=stil_tf_gelb_12, label_style=stil_label_weiss, border_color="white", content_padding=10)
                 auft_in = ft.TextField(label="Auftragsnummer", value=aktuelle_daten.get("auftragsnummer"), color="yellow", text_style=stil_tf_gelb_12, label_style=stil_label_weiss, border_color="white", content_padding=10)
@@ -228,10 +226,10 @@ def main(page: ft.Page):
                 def pruefe_lims_warnung(e=None):
                     tw_hat_daten = bool((tw_zeit_in.value or "").strip() or (tw_temp_in.value or "").strip())
                     se_hat_daten = bool((se_zeit_in.value or "").strip() or (se_temp_in.value or "").strip())
-                    hfm_hack_hat_daten = bool((hfm_hack_temp_in.value or "").strip())
-                    hfm_mett_hat_daten = bool((hfm_mett_temp_in.value or "").strip())
-                    hfm_fzs_hat_daten = bool((hfm_fzs_temp_in.value or "").strip())
-                    hfm_fzg_hat_daten = bool((hfm_fzg_temp_in.value or "").strip())
+                    hfm_hack_hat_daten = bool((hfm_hack_temp_in.value or "").strip() or (hfm_hack_mhd_s_tag_dd.value or "").strip() or (hfm_hack_mhd_r_tag_dd.value or "").strip())
+                    hfm_mett_hat_daten = bool((hfm_mett_temp_in.value or "").strip() or (hfm_mett_mhd_tag_dd.value or "").strip())
+                    hfm_fzs_hat_daten = bool((hfm_fzs_temp_in.value or "").strip() or (hfm_fzs_mhd_tag_dd.value or "").strip() or (hfm_fzs_produkt_in.value or "").strip())
+                    hfm_fzg_hat_daten = bool((hfm_fzg_temp_in.value or "").strip() or (hfm_fzg_mhd_tag_dd.value or "").strip() or (hfm_fzg_produkt_in.value or "").strip())
                     
                     tw_braucht_warnung = tw_hat_daten and not tw_kalt_cb.value
                     se_braucht_warnung = se_hat_daten and not se_kalt_cb.value
@@ -240,10 +238,12 @@ def main(page: ft.Page):
                     hfm_fzs_braucht_warnung = hfm_fzs_hat_daten and not hfm_fzs_cb.value
                     hfm_fzg_braucht_warnung = hfm_fzg_hat_daten and not hfm_fzg_cb.value
                     
-                    lims_warnung.visible = tw_braucht_warnung or se_braucht_warnung or hfm_hack_braucht_warnung or hfm_mett_braucht_warnung or hfm_fzs_braucht_warnung or hfm_fzg_braucht_warnung
-                    lims_override_cb.visible = tw_braucht_warnung or se_braucht_warnung or hfm_hack_braucht_warnung or hfm_mett_braucht_warnung or hfm_fzs_braucht_warnung or hfm_fzg_braucht_warnung
+                    braucht_warnung = any([tw_braucht_warnung, se_braucht_warnung, hfm_hack_braucht_warnung, hfm_mett_braucht_warnung, hfm_fzs_braucht_warnung, hfm_fzg_braucht_warnung])
                     
-                    if not (tw_braucht_warnung or se_braucht_warnung or hfm_hack_braucht_warnung or hfm_mett_braucht_warnung or hfm_fzs_braucht_warnung or hfm_fzg_braucht_warnung):
+                    lims_warnung.visible = braucht_warnung
+                    lims_override_cb.visible = braucht_warnung
+                    
+                    if not braucht_warnung:
                         lims_override_cb.value = False
                     page.update()
 
@@ -549,7 +549,6 @@ def main(page: ft.Page):
                     pruefe_lims_warnung()
                     page.update()
 
-                # Icon Buttons für die Vorlagen-Box (spart Platz)
                 vl_load_btn = ft.IconButton(icon=ft.icons.DOWNLOAD, icon_color="white", bgcolor="blue", on_click=lade_v, tooltip="Vorlage laden")
                 vl_name_in = ft.TextField(label="Name für neue Vorlage", expand=True, color="white", text_style=ft.TextStyle(color="white", size=12), label_style=stil_label_weiss, dense=True, content_padding=10)
                 
@@ -671,10 +670,11 @@ def main(page: ft.Page):
                     ft.Text("Lieferant:", color="white", weight="bold"),
                     cb_row(hfm_hack_lief_schwein_in, hfm_hack_lief_rind_in),
                     ft.Divider(color="white24"),
-                    ft.Text("MHD-Rohware Schweinefleisch:", color="yellow", weight="bold", size=12),
-                    ft.Row([hfm_hack_mhd_s_tag_dd, hfm_hack_mhd_s_mon_dd, hfm_hack_mhd_s_jahr_dd]),
-                    ft.Text("MHD-Rohware Rindfleisch:", color="yellow", weight="bold", size=12),
-                    ft.Row([hfm_hack_mhd_r_tag_dd, hfm_hack_mhd_r_mon_dd, hfm_hack_mhd_r_jahr_dd]),
+                    ft.Text("MHD-Rohware:", color="white", weight="bold"),
+                    ft.Row([
+                        ft.Column([ft.Text("Schweinefleisch:", color="yellow", size=10), ft.Row([hfm_hack_mhd_s_tag_dd, hfm_hack_mhd_s_mon_dd, hfm_hack_mhd_s_jahr_dd], spacing=2)], expand=1),
+                        ft.Column([ft.Text("Rindfleisch:", color="yellow", size=10), ft.Row([hfm_hack_mhd_r_tag_dd, hfm_hack_mhd_r_mon_dd, hfm_hack_mhd_r_jahr_dd], spacing=2)], expand=1)
+                    ]),
                     ft.Divider(color="white24"),
                     ft.Text("Charge Rohware:", color="white", weight="bold"),
                     cb_row(hfm_hack_charge_schwein_dd, hfm_hack_charge_rind_dd),
@@ -1049,7 +1049,7 @@ def main(page: ft.Page):
                         if hfm_hack_cb.value:
                             f_map.update({
                                 "cb_0004_00": cb_val(hfm_hack_cb.value),
-                                "tf_0004_00": "",
+                                "tf_0004_00": "Hackfleisch gemischt",
                                 "dd_0004_00_ZS-001799": hfm_hack_entnahmeort_dd.value,
                                 "cal_0004_00_ZS-001810": get_date_str(hfm_hack_herst_tag_dd.value, hfm_hack_herst_mon_dd.value, hfm_hack_herst_jahr_dd.value),
                                 "tf_0004_00_ZS-1215": hfm_hack_inhalt_in.value,
@@ -1067,7 +1067,7 @@ def main(page: ft.Page):
                         if hfm_mett_cb.value:
                             f_map.update({
                                 "cb_0006_00": cb_val(hfm_mett_cb.value),
-                                "tf_0006_00": "",
+                                "tf_0006_00": "gewürztes Schweinemett",
                                 "dd_0006_00_ZS-001799": hfm_mett_entnahmeort_dd.value,
                                 "cal_0006_00_ZS-001810": get_date_str(hfm_mett_herst_tag_dd.value, hfm_mett_herst_mon_dd.value, hfm_mett_herst_jahr_dd.value),
                                 "tf_0006_00_ZS-1215": hfm_mett_inhalt_in.value,
@@ -1089,7 +1089,7 @@ def main(page: ft.Page):
 
                             f_map.update({
                                 "cb_0008_00": cb_val(hfm_fzs_cb.value),
-                                "tf_0008_00": "",
+                                "tf_0008_00": "Fleischzubereitung Schwein",
                                 "tf_0008_00_ Produkt \"Marinade\"": prod_mar_str_s,
                                 "dd_0008_00_ZS-001799": hfm_fzs_entnahmeort_dd.value,
                                 "cal_0008_00_ZS-001810": get_date_str(hfm_fzs_herst_tag_dd.value, hfm_fzs_herst_mon_dd.value, hfm_fzs_herst_jahr_dd.value),
@@ -1112,7 +1112,7 @@ def main(page: ft.Page):
 
                             f_map.update({
                                 "cb_0007_00": cb_val(hfm_fzg_cb.value),
-                                "tf_0007_00": "",
+                                "tf_0007_00": "Fleischzubereitung Geflügel",
                                 "tf_0007_00_ Produkt \"Marinade\"": prod_mar_str_g,
                                 "dd_0007_00_ZS-001799": hfm_fzg_entnahmeort_dd.value,
                                 "cal_0007_00_ZS-001810": get_date_str(hfm_fzg_herst_tag_dd.value, hfm_fzg_herst_mon_dd.value, hfm_fzg_herst_jahr_dd.value),
