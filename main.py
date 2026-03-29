@@ -108,7 +108,6 @@ def main(page: ft.Page):
                 ft.Container(height=50), 
                 ft.Row([header], alignment=ft.MainAxisAlignment.CENTER), 
                 ft.Container(height=40), 
-                # Zwingt die Felder in die Mitte!
                 ft.Row([v_in], alignment=ft.MainAxisAlignment.CENTER), 
                 ft.Row([z_in], alignment=ft.MainAxisAlignment.CENTER), 
                 ft.Container(height=40), 
@@ -185,7 +184,7 @@ def main(page: ft.Page):
                         
                     combo = ft.TextField(
                         label=label_text, value=wert, color="yellow", 
-                        text_style=ft.TextStyle(size=groesse), label_style=stil_label_weiss, 
+                        text_style=ft.TextStyle(size=groesse, color="yellow"), label_style=stil_label_weiss, 
                         border_color="white", expand=ausdehnbar, content_padding=10, 
                         on_change=on_txt_change
                     )
@@ -228,10 +227,10 @@ def main(page: ft.Page):
                 def pruefe_lims_warnung(e=None):
                     tw_hat_daten = bool((tw_zeit_in.value or "").strip() or (tw_temp_in.value or "").strip())
                     se_hat_daten = bool((se_zeit_in.value or "").strip() or (se_temp_in.value or "").strip())
-                    hfm_hack_hat_daten = bool((hfm_hack_temp_in.value or "").strip())
-                    hfm_mett_hat_daten = bool((hfm_mett_temp_in.value or "").strip())
-                    hfm_fzs_hat_daten = bool((hfm_fzs_temp_in.value or "").strip())
-                    hfm_fzg_hat_daten = bool((hfm_fzg_temp_in.value or "").strip())
+                    hfm_hack_hat_daten = bool((hfm_hack_temp_in.value or "").strip() or (hfm_hack_mhd_s_tag_dd.value or "").strip() or (hfm_hack_mhd_r_tag_dd.value or "").strip())
+                    hfm_mett_hat_daten = bool((hfm_mett_temp_in.value or "").strip() or (hfm_mett_mhd_tag_dd.value or "").strip())
+                    hfm_fzs_hat_daten = bool((hfm_fzs_temp_in.value or "").strip() or (hfm_fzs_mhd_tag_dd.value or "").strip() or (hfm_fzs_produkt_in.value or "").strip())
+                    hfm_fzg_hat_daten = bool((hfm_fzg_temp_in.value or "").strip() or (hfm_fzg_mhd_tag_dd.value or "").strip() or (hfm_fzg_produkt_in.value or "").strip())
                     
                     tw_braucht_warnung = tw_hat_daten and not tw_kalt_cb.value
                     se_braucht_warnung = se_hat_daten and not se_kalt_cb.value
@@ -240,10 +239,12 @@ def main(page: ft.Page):
                     hfm_fzs_braucht_warnung = hfm_fzs_hat_daten and not hfm_fzs_cb.value
                     hfm_fzg_braucht_warnung = hfm_fzg_hat_daten and not hfm_fzg_cb.value
                     
-                    lims_warnung.visible = tw_braucht_warnung or se_braucht_warnung or hfm_hack_braucht_warnung or hfm_mett_braucht_warnung or hfm_fzs_braucht_warnung or hfm_fzg_braucht_warnung
-                    lims_override_cb.visible = tw_braucht_warnung or se_braucht_warnung or hfm_hack_braucht_warnung or hfm_mett_braucht_warnung or hfm_fzs_braucht_warnung or hfm_fzg_braucht_warnung
+                    braucht_warnung = any([tw_braucht_warnung, se_braucht_warnung, hfm_hack_braucht_warnung, hfm_mett_braucht_warnung, hfm_fzs_braucht_warnung, hfm_fzg_braucht_warnung])
                     
-                    if not (tw_braucht_warnung or se_braucht_warnung or hfm_hack_braucht_warnung or hfm_mett_braucht_warnung or hfm_fzs_braucht_warnung or hfm_fzg_braucht_warnung):
+                    lims_warnung.visible = braucht_warnung
+                    lims_override_cb.visible = braucht_warnung
+                    
+                    if not braucht_warnung:
                         lims_override_cb.value = False
                     page.update()
 
@@ -549,9 +550,8 @@ def main(page: ft.Page):
                     pruefe_lims_warnung()
                     page.update()
 
-                # EMOJIS STATT ICONS - Kugelsicher auf jeder Flet-Version
                 vl_load_btn = sicherer_button("📥", lade_v, "blue", "white", width=60, height=40)
-                vl_name_in = ft.TextField(label="Name für neue Vorlage", expand=True, color="white", text_style=ft.TextStyle(color="white", size=12), label_style=stil_label_weiss, dense=True, content_padding=10)
+                vl_name_in = ft.TextField(label="Name für neue Vorlage", expand=True, color="yellow", text_style=ft.TextStyle(size=12, color="yellow"), label_style=stil_label_weiss, border_color="white", dense=True, content_padding=10)
                 
                 def del_v(e):
                     if vl_dd.value in alle_vorlagen:
@@ -620,7 +620,7 @@ def main(page: ft.Page):
                 def cb_row(links, rechts):
                     return ft.Row([ft.Container(links, expand=1), ft.Container(rechts, expand=1)], vertical_alignment=ft.CrossAxisAlignment.CENTER)
 
-                stamm_col = ft.Column([datum_row, adr_in, nr_in, auft_in, ag_dd, name_in, typ_dd, bem_in], visible=True)
+                stamm_col = ft.Column([datum_row, adr_in, nr_in, auft_in, ag_dd, name_in, typ_dd, bem_in], visible=True, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
                 
                 tw_col = ft.Column([
                     tw_kalt_cb,
@@ -641,7 +641,7 @@ def main(page: ft.Page):
                     ft.Divider(color="white24"),
                     ft.Text("Probenahmedetails", color="white", size=16, weight="bold"),
                     tw_zweck_dd, tw_inhalt_in, tw_verpackung_dd, tw_entnahmeort_dd, tw_bemerkung_dd
-                ], visible=False)
+                ], visible=False, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
 
                 se_col = ft.Column([
                     se_kalt_cb,
@@ -656,7 +656,7 @@ def main(page: ft.Page):
                     se_cb_ozon, se_auff_sonst_in,
                     ft.Divider(color="white24"),
                     se_inhalt_in, se_verpackung_dd, se_entnahmeort_dd, se_temp_in, se_bemerkung_dd
-                ], visible=False)
+                ], visible=False, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
 
                 # --- HFM UNTERMENÜ ---
                 hfm_hack_col = ft.Column([
@@ -671,18 +671,17 @@ def main(page: ft.Page):
                     ft.Text("Lieferant:", color="white", weight="bold"),
                     cb_row(hfm_hack_lief_schwein_in, hfm_hack_lief_rind_in),
                     ft.Divider(color="white24"),
-                    ft.Text("MHD-Rohware:", color="white", weight="bold"),
-                    ft.Row([
-                        ft.Column([ft.Text("Schweinefleisch:", color="yellow", size=10), ft.Row([hfm_hack_mhd_s_tag_dd, hfm_hack_mhd_s_mon_dd, hfm_hack_mhd_s_jahr_dd], spacing=2)], expand=1),
-                        ft.Column([ft.Text("Rindfleisch:", color="yellow", size=10), ft.Row([hfm_hack_mhd_r_tag_dd, hfm_hack_mhd_r_mon_dd, hfm_hack_mhd_r_jahr_dd], spacing=2)], expand=1)
-                    ]),
+                    ft.Text("MHD-Rohware (Schweinefleisch):", color="white", weight="bold"),
+                    ft.Row([hfm_hack_mhd_s_tag_dd, hfm_hack_mhd_s_mon_dd, hfm_hack_mhd_s_jahr_dd]),
+                    ft.Text("MHD-Rohware (Rindfleisch):", color="white", weight="bold"),
+                    ft.Row([hfm_hack_mhd_r_tag_dd, hfm_hack_mhd_r_mon_dd, hfm_hack_mhd_r_jahr_dd]),
                     ft.Divider(color="white24"),
                     ft.Text("Charge Rohware:", color="white", weight="bold"),
                     cb_row(hfm_hack_charge_schwein_dd, hfm_hack_charge_rind_dd),
                     ft.Divider(color="white24"),
                     hfm_hack_temp_in,
                     hfm_hack_bemerkung_dd
-                ], visible=True)
+                ], visible=True, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
 
                 hfm_mett_col = ft.Column([
                     hfm_mett_cb,
@@ -702,9 +701,9 @@ def main(page: ft.Page):
                     ft.Divider(color="white24"),
                     hfm_mett_temp_in,
                     hfm_mett_bemerkung_dd
-                ], visible=False)
+                ], visible=False, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
 
-                hfm_fz_schwein_col = ft.Column([
+                hfm_fzs_col = ft.Column([
                     hfm_fzs_cb,
                     hfm_fzs_entnahmeort_dd,
                     cb_row(hfm_fzs_produkt_in, hfm_fzs_marinade_in),
@@ -723,9 +722,9 @@ def main(page: ft.Page):
                     ft.Divider(color="white24"),
                     hfm_fzs_temp_in,
                     hfm_fzs_bemerkung_dd
-                ], visible=False)
+                ], visible=False, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
 
-                hfm_fz_gefluegel_col = ft.Column([
+                hfm_fzg_col = ft.Column([
                     hfm_fzg_cb,
                     hfm_fzg_entnahmeort_dd,
                     cb_row(hfm_fzg_produkt_in, hfm_fzg_marinade_in),
@@ -744,15 +743,15 @@ def main(page: ft.Page):
                     ft.Divider(color="white24"),
                     hfm_fzg_temp_in,
                     hfm_fzg_bemerkung_dd
-                ], visible=False)
+                ], visible=False, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
 
-                hfm_bio_col = ft.Column([ft.Text("Felder für: Biohackfleisch", color="yellow")], visible=False)
+                hfm_bio_col = ft.Column([ft.Text("Felder für: Biohackfleisch", color="yellow")], visible=False, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
 
                 def switch_hfm_tab(tab_name):
                     hfm_hack_col.visible = (tab_name == "hack")
                     hfm_mett_col.visible = (tab_name == "mett")
-                    hfm_fz_schwein_col.visible = (tab_name == "schwein")
-                    hfm_fz_gefluegel_col.visible = (tab_name == "gefluegel")
+                    hfm_fzs_col.visible = (tab_name == "schwein")
+                    hfm_fzg_col.visible = (tab_name == "gefluegel")
                     hfm_bio_col.visible = (tab_name == "bio")
                     
                     btn_hfm_hack.bgcolor = "red" if tab_name == "hack" else "grey"
@@ -771,8 +770,8 @@ def main(page: ft.Page):
                 hfm_col = ft.Column([
                     ft.Row([btn_hfm_hack, btn_hfm_mett, btn_hfm_fz_schwein, btn_hfm_fz_gefluegel, btn_hfm_bio], scroll=ft.ScrollMode.AUTO),
                     ft.Divider(color="white24"),
-                    hfm_hack_col, hfm_mett_col, hfm_fz_schwein_col, hfm_fz_gefluegel_col, hfm_bio_col
-                ], visible=False)
+                    hfm_hack_col, hfm_mett_col, hfm_fzs_col, hfm_fzg_col, hfm_bio_col
+                ], visible=False, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
 
                 # --- HAUPT-REITER SCHALTUNGEN ---
                 def switch_tab_stamm(e):
@@ -1148,7 +1147,7 @@ def main(page: ft.Page):
                         zeige_fehler(ex)
 
                 btn_zurueck = sicherer_button("🔙 Touren", lambda e: zeige_dashboard(), "#004400", "white", expand=True, height=45)
-                btn_speichern = sicherer_button("💾 Nur Speichern", nur_speichern, "orange", "black", expand=True, height=45)
+                btn_speichern = sicherer_button("💾 Speichern", nur_speichern, "orange", "black", expand=True, height=45)
                 btn_final = sicherer_button("📄 Bericht erstellen (PDF)", save_final, "blue", "white", expand=True, height=50)
 
                 ansicht.controls.extend([
