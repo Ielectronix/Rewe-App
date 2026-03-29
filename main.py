@@ -156,12 +156,10 @@ def main(page: ft.Page):
                 stil_label_weiss = ft.TextStyle(color="white")
                 stil_cb_weiss = ft.TextStyle(color="white", size=10)
 
-                # GLOBALE LISTEN FÜR ALLE DATUMS-DROPDOWNS
                 tage_opts = [""] + [f"{i:02d}" for i in range(1, 32)]
                 mon_opts = [""] + [f"{i:02d}" for i in range(1, 13)]
                 jahr_opts = [""] + [str(i) for i in range(2024, 2035)]
                 
-                # GLOBALE LISTEN FÜR HFM
                 charge_opts_s = ["z. Z. nicht vorrätig", "keine Eigenproduktion", "Bitte eingeben", "Kein Schweinehackfleisch"]
                 charge_opts_r = ["z. Z. nicht vorrätig", "keine Eigenproduktion", "Bitte eingeben", "Kein Rinderhackfleisch"]
                 entnahmeort_opts = ["Fischabteilung", "Produktionsraum", "Bedientheke", "Vorbereitungsraum", "Metzgerei", "Kühlraum", "SB-Theke"]
@@ -180,19 +178,68 @@ def main(page: ft.Page):
                     if not t and not m and not j: return ""
                     return f"{t}.{m}.{j}"
 
-                def erstelle_combo(label_text, wert, optionen, groesse=10, ausdehnbar=False):
-                    combo = ft.TextField(label=label_text, value=wert, color="yellow", text_style=ft.TextStyle(size=groesse), label_style=stil_label_weiss, border_color="white", expand=ausdehnbar, content_padding=10)
+                # Erweiterte Funktion: Jetzt kann man on_change übergeben!
+                def erstelle_combo(label_text, wert, optionen, groesse=10, ausdehnbar=False, on_change_func=None):
+                    def on_txt_change(e):
+                        if on_change_func: on_change_func(e)
+                        
+                    combo = ft.TextField(label=label_text, value=wert, color="yellow", text_style=ft.TextStyle(size=groesse), label_style=stil_label_weiss, border_color="white", expand=ausdehnbar, content_padding=10, on_change=on_txt_change)
                     items = []
                     for opt in optionen:
                         def erstelle_klick(txt):
                             def klick(e):
                                 combo.value = txt
                                 combo.update()
+                                if on_change_func: on_change_func(e)
                             return klick
                         items.append(ft.PopupMenuItem(content=ft.Text(opt), on_click=erstelle_klick(opt)))
                     pb = ft.PopupMenuButton(items=items, icon="arrow_drop_down", icon_color="white")
                     combo.suffix = pb 
                     return combo
+
+                lims_warnung = ft.Text("⚠️ HINWEIS: Aktivierungs-Haken fehlt!", color="red", weight="bold", visible=False)
+                lims_override_cb = ft.Checkbox(label="Trotzdem speichern", visible=False, label_style=stil_cb_weiss, fill_color="red", check_color="white")
+
+                def pruefe_lims_warnung(e=None):
+                    # Strenge Prüfung: Schon ein eingetragenes Datum oder Produkt löst die Warnung aus!
+                    tw_hat_daten = bool((tw_zeit_in.value or "").strip() or (tw_temp_in.value or "").strip())
+                    se_hat_daten = bool((se_zeit_in.value or "").strip() or (se_temp_in.value or "").strip())
+                    
+                    hfm_hack_hat_daten = bool((hfm_hack_temp_in.value or "").strip() or (hfm_hack_mhd_s_tag_dd.value or "").strip() or (hfm_hack_mhd_r_tag_dd.value or "").strip())
+                    hfm_mett_hat_daten = bool((hfm_mett_temp_in.value or "").strip() or (hfm_mett_mhd_tag_dd.value or "").strip())
+                    hfm_fzs_hat_daten = bool((hfm_fzs_temp_in.value or "").strip() or (hfm_fzs_mhd_tag_dd.value or "").strip() or (hfm_fzs_produkt_in.value or "").strip())
+                    hfm_fzg_hat_daten = bool((hfm_fzg_temp_in.value or "").strip() or (hfm_fzg_mhd_tag_dd.value or "").strip() or (hfm_fzg_produkt_in.value or "").strip())
+                    
+                    tw_braucht_warnung = tw_hat_daten and not tw_kalt_cb.value
+                    se_braucht_warnung = se_hat_daten and not se_kalt_cb.value
+                    hfm_hack_braucht_warnung = hfm_hack_hat_daten and not hfm_hack_cb.value
+                    hfm_mett_braucht_warnung = hfm_mett_hat_daten and not hfm_mett_cb.value
+                    hfm_fzs_braucht_warnung = hfm_fzs_hat_daten and not hfm_fzs_cb.value
+                    hfm_fzg_braucht_warnung = hfm_fzg_hat_daten and not hfm_fzg_cb.value
+                    
+                    braucht_warnung = any([tw_braucht_warnung, se_braucht_warnung, hfm_hack_braucht_warnung, hfm_mett_braucht_warnung, hfm_fzs_braucht_warnung, hfm_fzg_braucht_warnung])
+                    
+                    lims_warnung.visible = braucht_warnung
+                    lims_override_cb.visible = braucht_warnung
+                    
+                    if not braucht_warnung:
+                        lims_override_cb.value = False
+                    page.update()
+
+                def format_zeit(e):
+                    val = e.control.value or ""
+                    zahlen = "".join([c for c in val if c.isdigit()])[:4]
+                    neu_wert = zahlen[:2] + ":" + zahlen[2:] if len(zahlen) >= 3 else zahlen
+                    if e.control.value != neu_wert:
+                        e.control.value = neu_wert
+                        e.control.update()
+                    pruefe_lims_warnung()
+
+                def format_temp_blur(e):
+                    val = (e.control.value or "").strip().replace(" °C", "").replace("°C", "").strip()
+                    e.control.value = val + " °C" if val else ""
+                    e.control.update()
+                    pruefe_lims_warnung()
 
                 # --- 1. STAMMDATEN FELDER ---
                 d_tag, d_mon, d_jahr = parse_datum(aktuelle_daten.get("datum", heute_str), heute_str.split(".")[0], heute_str.split(".")[1], heute_str.split(".")[2])
@@ -213,42 +260,6 @@ def main(page: ft.Page):
                 
                 ag_dd = erstelle_combo("Auftraggeber", aktuelle_daten.get("auftraggeber", ""), ["03509 - REWE Hackfleischmonitoring", "3001767 - REWE Dortmund (Hackfleischmonitoring)"])
                 typ_dd = erstelle_combo("Typ der Probenahme", aktuelle_daten.get("typ_probenahme", "Standard"), ["Standard", "Nachkontrolle", "Mehrwöchig"])
-
-                lims_warnung = ft.Text("⚠️ HINWEIS: Aktivierungs-Haken fehlt!", color="red", weight="bold", visible=False)
-                lims_override_cb = ft.Checkbox(label="Trotzdem speichern", visible=False, label_style=stil_cb_weiss, fill_color="red", check_color="white")
-
-                def pruefe_lims_warnung(e=None):
-                    tw_hat_daten = bool((tw_zeit_in.value or "").strip() or (tw_temp_in.value or "").strip())
-                    se_hat_daten = bool((se_zeit_in.value or "").strip() or (se_temp_in.value or "").strip())
-                    hfm_hack_hat_daten = bool((hfm_hack_temp_in.value or "").strip())
-                    hfm_mett_hat_daten = bool((hfm_mett_temp_in.value or "").strip())
-                    
-                    tw_braucht_warnung = tw_hat_daten and not tw_kalt_cb.value
-                    se_braucht_warnung = se_hat_daten and not se_kalt_cb.value
-                    hfm_hack_braucht_warnung = hfm_hack_hat_daten and not hfm_hack_cb.value
-                    hfm_mett_braucht_warnung = hfm_mett_hat_daten and not hfm_mett_cb.value
-                    
-                    lims_warnung.visible = tw_braucht_warnung or se_braucht_warnung or hfm_hack_braucht_warnung or hfm_mett_braucht_warnung
-                    lims_override_cb.visible = tw_braucht_warnung or se_braucht_warnung or hfm_hack_braucht_warnung or hfm_mett_braucht_warnung
-                    
-                    if not (tw_braucht_warnung or se_braucht_warnung or hfm_hack_braucht_warnung or hfm_mett_braucht_warnung):
-                        lims_override_cb.value = False
-                    page.update()
-
-                def format_zeit(e):
-                    val = e.control.value or ""
-                    zahlen = "".join([c for c in val if c.isdigit()])[:4]
-                    neu_wert = zahlen[:2] + ":" + zahlen[2:] if len(zahlen) >= 3 else zahlen
-                    if e.control.value != neu_wert:
-                        e.control.value = neu_wert
-                        e.control.update()
-                    pruefe_lims_warnung()
-
-                def format_temp_blur(e):
-                    val = (e.control.value or "").strip().replace(" °C", "").replace("°C", "").strip()
-                    e.control.value = val + " °C" if val else ""
-                    e.control.update()
-                    pruefe_lims_warnung()
 
                 # --- 2. TRINKWASSER FELDER ---
                 tw_kalt_cb = ft.Checkbox(label="Trinkwasser kalt", value=aktuelle_daten.get("tw_kalt", False), on_change=pruefe_lims_warnung, label_style=stil_label_weiss, fill_color="yellow", check_color="black")
@@ -327,12 +338,12 @@ def main(page: ft.Page):
                 hfm_hack_herst_jahr_dd = erstelle_combo("Jahr", hfm_h_j, jahr_opts, ausdehnbar=True)
 
                 mhd_s_t, mhd_s_m, mhd_s_j = parse_datum(aktuelle_daten.get("hfm_hack_mhd_schwein", ""))
-                hfm_hack_mhd_s_tag_dd = erstelle_combo("Tag", mhd_s_t, tage_opts, ausdehnbar=True)
+                hfm_hack_mhd_s_tag_dd = erstelle_combo("Tag", mhd_s_t, tage_opts, ausdehnbar=True, on_change_func=pruefe_lims_warnung)
                 hfm_hack_mhd_s_mon_dd = erstelle_combo("Mon", mhd_s_m, mon_opts, ausdehnbar=True)
                 hfm_hack_mhd_s_jahr_dd = erstelle_combo("Jahr", mhd_s_j, jahr_opts, ausdehnbar=True)
 
                 mhd_r_t, mhd_r_m, mhd_r_j = parse_datum(aktuelle_daten.get("hfm_hack_mhd_rind", ""))
-                hfm_hack_mhd_r_tag_dd = erstelle_combo("Tag", mhd_r_t, tage_opts, ausdehnbar=True)
+                hfm_hack_mhd_r_tag_dd = erstelle_combo("Tag", mhd_r_t, tage_opts, ausdehnbar=True, on_change_func=pruefe_lims_warnung)
                 hfm_hack_mhd_r_mon_dd = erstelle_combo("Mon", mhd_r_m, mon_opts, ausdehnbar=True)
                 hfm_hack_mhd_r_jahr_dd = erstelle_combo("Jahr", mhd_r_j, jahr_opts, ausdehnbar=True)
 
@@ -348,7 +359,7 @@ def main(page: ft.Page):
                 hfm_hack_temp_in = ft.TextField(label="Probenahmetemperatur", value=aktuelle_daten.get("hfm_hack_temp", ""), border_color="white", color="yellow", label_style=stil_label_weiss, on_blur=format_temp_blur)
                 hfm_hack_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("hfm_hack_bemerkung", "Bitte eingeben"), ["Bitte eingeben", "Keine Besonderheiten"])
 
-                # --- 5. HFM - GEWÜRZTES SCHWEINEMETT (NEU) ---
+                # --- 5. HFM - GEWÜRZTES SCHWEINEMETT ---
                 hfm_mett_cb = ft.Checkbox(label="Gewürztes Schweinemett", value=aktuelle_daten.get("hfm_mett_cb", False), on_change=pruefe_lims_warnung, label_style=ft.TextStyle(color="white", size=16, weight="bold"), fill_color="yellow", check_color="black")
                 hfm_mett_entnahmeort_dd = erstelle_combo("Entnahmeort", aktuelle_daten.get("hfm_mett_entnahmeort", "Kühlraum"), entnahmeort_opts)
                 
@@ -358,7 +369,7 @@ def main(page: ft.Page):
                 hfm_mett_herst_jahr_dd = erstelle_combo("Jahr", hfm_m_j, jahr_opts, ausdehnbar=True)
 
                 mhd_mett_t, mhd_mett_m, mhd_mett_j = parse_datum(aktuelle_daten.get("hfm_mett_mhd", ""))
-                hfm_mett_mhd_tag_dd = erstelle_combo("Tag", mhd_mett_t, tage_opts, ausdehnbar=True)
+                hfm_mett_mhd_tag_dd = erstelle_combo("Tag", mhd_mett_t, tage_opts, ausdehnbar=True, on_change_func=pruefe_lims_warnung)
                 hfm_mett_mhd_mon_dd = erstelle_combo("Mon", mhd_mett_m, mon_opts, ausdehnbar=True)
                 hfm_mett_mhd_jahr_dd = erstelle_combo("Jahr", mhd_mett_j, jahr_opts, ausdehnbar=True)
 
@@ -371,12 +382,64 @@ def main(page: ft.Page):
                 hfm_mett_temp_in = ft.TextField(label="Probenahmetemperatur", value=aktuelle_daten.get("hfm_mett_temp", ""), border_color="white", color="yellow", label_style=stil_label_weiss, on_blur=format_temp_blur)
                 hfm_mett_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("hfm_mett_bemerkung", "Bitte eingeben"), ["Bitte eingeben", "Keine Besonderheiten"])
 
+                # --- 6. HFM - FZ SCHWEIN ---
+                hfm_fzs_cb = ft.Checkbox(label="Fleischzubereitung Schwein", value=aktuelle_daten.get("hfm_fzs_cb", False), on_change=pruefe_lims_warnung, label_style=ft.TextStyle(color="white", size=16, weight="bold"), fill_color="yellow", check_color="black")
+                hfm_fzs_entnahmeort_dd = erstelle_combo("Entnahmeort", aktuelle_daten.get("hfm_fzs_entnahmeort", "Kühlraum"), entnahmeort_opts)
+                
+                hfm_fzs_produkt_in = ft.TextField(label="Produkt", hint_text="z. B. Schweine Nacken", value=aktuelle_daten.get("hfm_fzs_produkt", ""), color="yellow", label_style=stil_label_weiss, border_color="white", on_change=pruefe_lims_warnung)
+                hfm_fzs_marinade_in = ft.TextField(label="Marinade", value=aktuelle_daten.get("hfm_fzs_marinade", ""), color="yellow", label_style=stil_label_weiss, border_color="white")
+                
+                hfm_fzs_h_t, hfm_fzs_h_m, hfm_fzs_h_j = parse_datum(aktuelle_daten.get("hfm_fzs_herstelldatum", heute_str), heute_str.split(".")[0], heute_str.split(".")[1], heute_str.split(".")[2])
+                hfm_fzs_herst_tag_dd = erstelle_combo("Tag", hfm_fzs_h_t, tage_opts, ausdehnbar=True)
+                hfm_fzs_herst_mon_dd = erstelle_combo("Mon", hfm_fzs_h_m, mon_opts, ausdehnbar=True)
+                hfm_fzs_herst_jahr_dd = erstelle_combo("Jahr", hfm_fzs_h_j, jahr_opts, ausdehnbar=True)
 
-                # --- 6. VORLAGEN LOGIK ---
+                mhd_fzs_t, mhd_fzs_m, mhd_fzs_j = parse_datum(aktuelle_daten.get("hfm_fzs_mhd", ""))
+                hfm_fzs_mhd_tag_dd = erstelle_combo("Tag", mhd_fzs_t, tage_opts, ausdehnbar=True, on_change_func=pruefe_lims_warnung)
+                hfm_fzs_mhd_mon_dd = erstelle_combo("Mon", mhd_fzs_m, mon_opts, ausdehnbar=True)
+                hfm_fzs_mhd_jahr_dd = erstelle_combo("Jahr", mhd_fzs_j, jahr_opts, ausdehnbar=True)
+
+                hfm_fzs_inhalt_in = ft.TextField(label="Inhalt", value=aktuelle_daten.get("hfm_fzs_inhalt", "ca. 200 g"), color="yellow", label_style=stil_label_weiss, border_color="white")
+                hfm_fzs_verpackung_dd = erstelle_combo("Verpackung", aktuelle_daten.get("hfm_fzs_verpackung", "steriler Probenbeutel"), verpackung_opts)
+                
+                hfm_fzs_lief_in = ft.TextField(label="Lieferant Rohware", value=aktuelle_daten.get("hfm_fzs_lief", ""), color="yellow", label_style=stil_label_weiss, border_color="white")
+                hfm_fzs_charge_dd = erstelle_combo("Charge Rohware", aktuelle_daten.get("hfm_fzs_charge", "Bitte eingeben"), charge_opts_s)
+                
+                hfm_fzs_temp_in = ft.TextField(label="Probenahmetemperatur", value=aktuelle_daten.get("hfm_fzs_temp", ""), border_color="white", color="yellow", label_style=stil_label_weiss, on_blur=format_temp_blur)
+                hfm_fzs_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("hfm_fzs_bemerkung", "Bitte eingeben"), ["Bitte eingeben", "Keine Besonderheiten"])
+
+                # --- 7. HFM - FZ GEFLÜGEL ---
+                hfm_fzg_cb = ft.Checkbox(label="Fleischzubereitung Geflügel", value=aktuelle_daten.get("hfm_fzg_cb", False), on_change=pruefe_lims_warnung, label_style=ft.TextStyle(color="white", size=16, weight="bold"), fill_color="yellow", check_color="black")
+                hfm_fzg_entnahmeort_dd = erstelle_combo("Entnahmeort", aktuelle_daten.get("hfm_fzg_entnahmeort", "Kühlraum"), entnahmeort_opts)
+                
+                hfm_fzg_produkt_in = ft.TextField(label="Produkt", hint_text="z. B. Hähnchenbrust", value=aktuelle_daten.get("hfm_fzg_produkt", ""), color="yellow", label_style=stil_label_weiss, border_color="white", on_change=pruefe_lims_warnung)
+                hfm_fzg_marinade_in = ft.TextField(label="Marinade", value=aktuelle_daten.get("hfm_fzg_marinade", ""), color="yellow", label_style=stil_label_weiss, border_color="white")
+                
+                hfm_fzg_h_t, hfm_fzg_h_m, hfm_fzg_h_j = parse_datum(aktuelle_daten.get("hfm_fzg_herstelldatum", heute_str), heute_str.split(".")[0], heute_str.split(".")[1], heute_str.split(".")[2])
+                hfm_fzg_herst_tag_dd = erstelle_combo("Tag", hfm_fzg_h_t, tage_opts, ausdehnbar=True)
+                hfm_fzg_herst_mon_dd = erstelle_combo("Mon", hfm_fzg_h_m, mon_opts, ausdehnbar=True)
+                hfm_fzg_herst_jahr_dd = erstelle_combo("Jahr", hfm_fzg_h_j, jahr_opts, ausdehnbar=True)
+
+                mhd_fzg_t, mhd_fzg_m, mhd_fzg_j = parse_datum(aktuelle_daten.get("hfm_fzg_mhd", ""))
+                hfm_fzg_mhd_tag_dd = erstelle_combo("Tag", mhd_fzg_t, tage_opts, ausdehnbar=True, on_change_func=pruefe_lims_warnung)
+                hfm_fzg_mhd_mon_dd = erstelle_combo("Mon", mhd_fzg_m, mon_opts, ausdehnbar=True)
+                hfm_fzg_mhd_jahr_dd = erstelle_combo("Jahr", mhd_fzg_j, jahr_opts, ausdehnbar=True)
+
+                hfm_fzg_inhalt_in = ft.TextField(label="Inhalt", value=aktuelle_daten.get("hfm_fzg_inhalt", "ca. 200 g"), color="yellow", label_style=stil_label_weiss, border_color="white")
+                hfm_fzg_verpackung_dd = erstelle_combo("Verpackung", aktuelle_daten.get("hfm_fzg_verpackung", "steriler Probenbeutel"), verpackung_opts)
+                
+                hfm_fzg_lief_in = ft.TextField(label="Lieferant Rohware", value=aktuelle_daten.get("hfm_fzg_lief", ""), color="yellow", label_style=stil_label_weiss, border_color="white")
+                hfm_fzg_charge_dd = erstelle_combo("Charge Rohware", aktuelle_daten.get("hfm_fzg_charge", "Bitte eingeben"), ["z. Z. nicht vorrätig", "keine Eigenproduktion", "Bitte eingeben", "Kein Geflügel"])
+                
+                hfm_fzg_temp_in = ft.TextField(label="Probenahmetemperatur", value=aktuelle_daten.get("hfm_fzg_temp", ""), border_color="white", color="yellow", label_style=stil_label_weiss, on_blur=format_temp_blur)
+                hfm_fzg_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("hfm_fzg_bemerkung", "Bitte eingeben"), ["Bitte eingeben", "Keine Besonderheiten"])
+
+
+                # --- 8. VORLAGEN LOGIK (KOMPAKT) ---
                 alle_vorlagen = lade_vorlagen()
                 vorlagen_status = ft.Text("", weight="bold") 
                 
-                vl_dd = ft.Dropdown(options=[ft.dropdown.Option(k) for k in alle_vorlagen.keys()], expand=1)
+                vl_dd = ft.Dropdown(options=[ft.dropdown.Option(k) for k in alle_vorlagen.keys()], expand=True, dense=True, content_padding=10)
                 
                 def lade_v(e):
                     if not vl_dd.value: return
@@ -388,6 +451,8 @@ def main(page: ft.Page):
                         tag_dd.value = h_t; mon_dd.value = h_m; jahr_dd.value = h_j
                         hfm_hack_herst_tag_dd.value = h_t; hfm_hack_herst_mon_dd.value = h_m; hfm_hack_herst_jahr_dd.value = h_j
                         hfm_mett_herst_tag_dd.value = h_t; hfm_mett_herst_mon_dd.value = h_m; hfm_mett_herst_jahr_dd.value = h_j
+                        hfm_fzs_herst_tag_dd.value = h_t; hfm_fzs_herst_mon_dd.value = h_m; hfm_fzs_herst_jahr_dd.value = h_j
+                        hfm_fzg_herst_tag_dd.value = h_t; hfm_fzg_herst_mon_dd.value = h_m; hfm_fzg_herst_jahr_dd.value = h_j
                     except: pass
                     
                     adr_in.value = ""; nr_in.value = ""; auft_in.value = ""
@@ -401,6 +466,12 @@ def main(page: ft.Page):
 
                     hfm_mett_cb.value = False; hfm_mett_temp_in.value = ""; hfm_mett_lief_in.value = ""
                     hfm_mett_mhd_tag_dd.value = ""; hfm_mett_mhd_mon_dd.value = ""; hfm_mett_mhd_jahr_dd.value = ""
+
+                    hfm_fzs_cb.value = False; hfm_fzs_temp_in.value = ""; hfm_fzs_lief_in.value = ""; hfm_fzs_produkt_in.value = ""; hfm_fzs_marinade_in.value = ""
+                    hfm_fzs_mhd_tag_dd.value = ""; hfm_fzs_mhd_mon_dd.value = ""; hfm_fzs_mhd_jahr_dd.value = ""
+
+                    hfm_fzg_cb.value = False; hfm_fzg_temp_in.value = ""; hfm_fzg_lief_in.value = ""; hfm_fzg_produkt_in.value = ""; hfm_fzg_marinade_in.value = ""
+                    hfm_fzg_mhd_tag_dd.value = ""; hfm_fzg_mhd_mon_dd.value = ""; hfm_fzg_mhd_jahr_dd.value = ""
                     
                     for cb in [cb_pn, cb_zwei, cb_sensor, cb_knie, cb_ein, cb_ein_g, cb_eck, cb_auff_ja, cb_auff_nein, cb_auff_perl, cb_auff_verkalk, cb_auff_verbrueh, cb_auff_durchlauf, cb_auff_unterbau, cb_auff_eck_zu, cb_auff_nichtmoeglich, cb_auff_dusche, cb_auff_handbrause, cb_auff_sonst, se_cb_eiswanne, se_cb_ozon]: cb.value = False
                     tw_unterbau_l_in.value = ""; tw_auff_sonstiges_in.value = ""; se_tech_sonst_in.value = ""; se_auff_sonst_in.value = ""
@@ -453,14 +524,32 @@ def main(page: ft.Page):
                     if "hfm_mett_lief" in v: hfm_mett_lief_in.value = v["hfm_mett_lief"]
                     if "hfm_mett_charge" in v: hfm_mett_charge_dd.value = v["hfm_mett_charge"]
                     if "hfm_mett_bemerkung" in v: hfm_mett_bemerkung_dd.value = v["hfm_mett_bemerkung"]
+
+                    if "hfm_fzs_entnahmeort" in v: hfm_fzs_entnahmeort_dd.value = v["hfm_fzs_entnahmeort"]
+                    if "hfm_fzs_produkt" in v: hfm_fzs_produkt_in.value = v["hfm_fzs_produkt"]
+                    if "hfm_fzs_marinade" in v: hfm_fzs_marinade_in.value = v["hfm_fzs_marinade"]
+                    if "hfm_fzs_inhalt" in v: hfm_fzs_inhalt_in.value = v["hfm_fzs_inhalt"]
+                    if "hfm_fzs_verpackung" in v: hfm_fzs_verpackung_dd.value = v["hfm_fzs_verpackung"]
+                    if "hfm_fzs_lief" in v: hfm_fzs_lief_in.value = v["hfm_fzs_lief"]
+                    if "hfm_fzs_charge" in v: hfm_fzs_charge_dd.value = v["hfm_fzs_charge"]
+                    if "hfm_fzs_bemerkung" in v: hfm_fzs_bemerkung_dd.value = v["hfm_fzs_bemerkung"]
+
+                    if "hfm_fzg_entnahmeort" in v: hfm_fzg_entnahmeort_dd.value = v["hfm_fzg_entnahmeort"]
+                    if "hfm_fzg_produkt" in v: hfm_fzg_produkt_in.value = v["hfm_fzg_produkt"]
+                    if "hfm_fzg_marinade" in v: hfm_fzg_marinade_in.value = v["hfm_fzg_marinade"]
+                    if "hfm_fzg_inhalt" in v: hfm_fzg_inhalt_in.value = v["hfm_fzg_inhalt"]
+                    if "hfm_fzg_verpackung" in v: hfm_fzg_verpackung_dd.value = v["hfm_fzg_verpackung"]
+                    if "hfm_fzg_lief" in v: hfm_fzg_lief_in.value = v["hfm_fzg_lief"]
+                    if "hfm_fzg_charge" in v: hfm_fzg_charge_dd.value = v["hfm_fzg_charge"]
+                    if "hfm_fzg_bemerkung" in v: hfm_fzg_bemerkung_dd.value = v["hfm_fzg_bemerkung"]
                     
                     vorlagen_status.value = f"✅ '{vl_dd.value}' geladen!"
                     vorlagen_status.color = "green"
                     pruefe_lims_warnung()
                     page.update()
 
-                vl_load_btn = sicherer_button("Laden", lade_v, "blue", "white")
-                vl_name_in = ft.TextField(label="Name für neue Vorlage", expand=1, label_style=stil_label_weiss)
+                vl_load_btn = sicherer_button("Laden", lade_v, "blue", "white", height=40)
+                vl_name_in = ft.TextField(label="Name für neue Vorlage", expand=True, label_style=stil_label_weiss, dense=True, content_padding=10)
                 
                 def del_v(e):
                     if vl_dd.value in alle_vorlagen:
@@ -472,7 +561,7 @@ def main(page: ft.Page):
                         vl_dd.value = None
                         page.update()
 
-                vl_del_btn = sicherer_button("🗑️", del_v, "red", "white")
+                vl_del_btn = sicherer_button("🗑️", del_v, "red", "white", height=40)
                 
                 def save_v(e):
                     if not vl_name_in.value: return
@@ -486,12 +575,24 @@ def main(page: ft.Page):
                         "tw_entnahmeort_dd": tw_entnahmeort_dd.value, "tw_bemerkung_dd": tw_bemerkung_dd.value,
                         "se_zapf_dd": se_zapf_dd.value, "se_desinf_dd": se_desinf_dd.value, "se_inhalt_in": se_inhalt_in.value,
                         "se_verpackung_dd": se_verpackung_dd.value, "se_entnahmeort_dd": se_entnahmeort_dd.value, "se_bemerkung_dd": se_bemerkung_dd.value,
+                        
                         "hfm_hack_entnahmeort": hfm_hack_entnahmeort_dd.value, "hfm_hack_inhalt": hfm_hack_inhalt_in.value,
                         "hfm_hack_verpackung": hfm_hack_verpackung_dd.value, "hfm_hack_charge_schwein": hfm_hack_charge_schwein_dd.value,
                         "hfm_hack_charge_rind": hfm_hack_charge_rind_dd.value, "hfm_hack_bemerkung": hfm_hack_bemerkung_dd.value,
+                        
                         "hfm_mett_entnahmeort": hfm_mett_entnahmeort_dd.value, "hfm_mett_inhalt": hfm_mett_inhalt_in.value,
                         "hfm_mett_verpackung": hfm_mett_verpackung_dd.value, "hfm_mett_lief": hfm_mett_lief_in.value,
-                        "hfm_mett_charge": hfm_mett_charge_dd.value, "hfm_mett_bemerkung": hfm_mett_bemerkung_dd.value
+                        "hfm_mett_charge": hfm_mett_charge_dd.value, "hfm_mett_bemerkung": hfm_mett_bemerkung_dd.value,
+                        
+                        "hfm_fzs_entnahmeort": hfm_fzs_entnahmeort_dd.value, "hfm_fzs_produkt": hfm_fzs_produkt_in.value,
+                        "hfm_fzs_marinade": hfm_fzs_marinade_in.value, "hfm_fzs_inhalt": hfm_fzs_inhalt_in.value,
+                        "hfm_fzs_verpackung": hfm_fzs_verpackung_dd.value, "hfm_fzs_lief": hfm_fzs_lief_in.value,
+                        "hfm_fzs_charge": hfm_fzs_charge_dd.value, "hfm_fzs_bemerkung": hfm_fzs_bemerkung_dd.value,
+
+                        "hfm_fzg_entnahmeort": hfm_fzg_entnahmeort_dd.value, "hfm_fzg_produkt": hfm_fzg_produkt_in.value,
+                        "hfm_fzg_marinade": hfm_fzg_marinade_in.value, "hfm_fzg_inhalt": hfm_fzg_inhalt_in.value,
+                        "hfm_fzg_verpackung": hfm_fzg_verpackung_dd.value, "hfm_fzg_lief": hfm_fzg_lief_in.value,
+                        "hfm_fzg_charge": hfm_fzg_charge_dd.value, "hfm_fzg_bemerkung": hfm_fzg_bemerkung_dd.value
                     }
                     alle_vorlagen[vl_name_in.value] = d_v
                     speichere_vorlagen(alle_vorlagen)
@@ -501,18 +602,16 @@ def main(page: ft.Page):
                     vl_name_in.value = ""
                     page.update()
 
-                vl_save_btn = sicherer_button("⭐ Speichern", save_v, "orange", "black")
+                vl_save_btn = sicherer_button("⭐ Speichern", save_v, "orange", "black", height=40)
                 
+                # KOMPAKTE VORLAGEN BOX
                 vorlagen_container = ft.Container(
-                    bgcolor="#002200", padding=15, border_radius=10,
+                    bgcolor="#002200", padding=10, border_radius=10,
                     content=ft.Column([
-                        ft.Row([ft.Text("📋 Globale Tour-Vorlagen", color="white", weight="bold", size=16), vorlagen_status]),
-                        vl_dd,
-                        ft.Row([vl_del_btn, vl_load_btn], alignment=ft.MainAxisAlignment.END),
-                        ft.Divider(color="white24"),
-                        vl_name_in,
-                        ft.Row([vl_save_btn], alignment=ft.MainAxisAlignment.END)
-                    ], spacing=10)
+                        ft.Row([ft.Text("📋 Vorlagen", color="white", weight="bold", size=14), vorlagen_status]),
+                        ft.Row([vl_dd, vl_load_btn, vl_del_btn]),
+                        ft.Row([vl_name_in, vl_save_btn])
+                    ], spacing=5)
                 )
 
                 # --- ZUSAMMENBAU DES LAYOUTS ---
@@ -557,7 +656,7 @@ def main(page: ft.Page):
                     se_inhalt_in, se_verpackung_dd, se_entnahmeort_dd, se_temp_in, se_bemerkung_dd
                 ], visible=False)
 
-                # --- 5. HFM UNTERMENÜ & PLATZHALTER ---
+                # --- HFM UNTERMENÜ ---
                 hfm_hack_col = ft.Column([
                     hfm_hack_cb,
                     hfm_hack_entnahmeort_dd,
@@ -603,8 +702,48 @@ def main(page: ft.Page):
                     hfm_mett_bemerkung_dd
                 ], visible=False)
 
-                hfm_fz_schwein_col = ft.Column([ft.Text("Felder für: Fleischzubereitung Schwein", color="yellow")], visible=False)
-                hfm_fz_gefluegel_col = ft.Column([ft.Text("Felder für: Fleischzubereitung Geflügel", color="yellow")], visible=False)
+                hfm_fz_schwein_col = ft.Column([
+                    hfm_fzs_cb,
+                    hfm_fzs_entnahmeort_dd,
+                    cb_row(hfm_fzs_produkt_in, hfm_fzs_marinade_in),
+                    ft.Divider(color="white24"),
+                    ft.Text("Herstellungsdatum:", color="white", weight="bold"),
+                    ft.Row([hfm_fzs_herst_tag_dd, hfm_fzs_herst_mon_dd, hfm_fzs_herst_jahr_dd]),
+                    hfm_fzs_inhalt_in,
+                    hfm_fzs_verpackung_dd,
+                    ft.Divider(color="white24"),
+                    hfm_fzs_lief_in,
+                    ft.Divider(color="white24"),
+                    ft.Text("MHD-Rohware:", color="white", weight="bold"),
+                    ft.Row([hfm_fzs_mhd_tag_dd, hfm_fzs_mhd_mon_dd, hfm_fzs_mhd_jahr_dd]),
+                    ft.Divider(color="white24"),
+                    hfm_fzs_charge_dd,
+                    ft.Divider(color="white24"),
+                    hfm_fzs_temp_in,
+                    hfm_fzs_bemerkung_dd
+                ], visible=False)
+
+                hfm_fz_gefluegel_col = ft.Column([
+                    hfm_fzg_cb,
+                    hfm_fzg_entnahmeort_dd,
+                    cb_row(hfm_fzg_produkt_in, hfm_fzg_marinade_in),
+                    ft.Divider(color="white24"),
+                    ft.Text("Herstellungsdatum:", color="white", weight="bold"),
+                    ft.Row([hfm_fzg_herst_tag_dd, hfm_fzg_herst_mon_dd, hfm_fzg_herst_jahr_dd]),
+                    hfm_fzg_inhalt_in,
+                    hfm_fzg_verpackung_dd,
+                    ft.Divider(color="white24"),
+                    hfm_fzg_lief_in,
+                    ft.Divider(color="white24"),
+                    ft.Text("MHD-Rohware:", color="white", weight="bold"),
+                    ft.Row([hfm_fzg_mhd_tag_dd, hfm_fzg_mhd_mon_dd, hfm_fzg_mhd_jahr_dd]),
+                    ft.Divider(color="white24"),
+                    hfm_fzg_charge_dd,
+                    ft.Divider(color="white24"),
+                    hfm_fzg_temp_in,
+                    hfm_fzg_bemerkung_dd
+                ], visible=False)
+
                 hfm_bio_col = ft.Column([ft.Text("Felder für: Biohackfleisch", color="yellow")], visible=False)
 
                 def switch_hfm_tab(tab_name):
@@ -702,7 +841,25 @@ def main(page: ft.Page):
                         "hfm_mett_lief": hfm_mett_lief_in.value, 
                         "hfm_mett_mhd": get_date_str(hfm_mett_mhd_tag_dd.value, hfm_mett_mhd_mon_dd.value, hfm_mett_mhd_jahr_dd.value),
                         "hfm_mett_charge": hfm_mett_charge_dd.value, "hfm_mett_temp": hfm_mett_temp_in.value,
-                        "hfm_mett_bemerkung": hfm_mett_bemerkung_dd.value
+                        "hfm_mett_bemerkung": hfm_mett_bemerkung_dd.value,
+
+                        "hfm_fzs_cb": hfm_fzs_cb.value, "hfm_fzs_entnahmeort": hfm_fzs_entnahmeort_dd.value,
+                        "hfm_fzs_produkt": hfm_fzs_produkt_in.value, "hfm_fzs_marinade": hfm_fzs_marinade_in.value,
+                        "hfm_fzs_herstelldatum": get_date_str(hfm_fzs_herst_tag_dd.value, hfm_fzs_herst_mon_dd.value, hfm_fzs_herst_jahr_dd.value),
+                        "hfm_fzs_inhalt": hfm_fzs_inhalt_in.value, "hfm_fzs_verpackung": hfm_fzs_verpackung_dd.value,
+                        "hfm_fzs_lief": hfm_fzs_lief_in.value, 
+                        "hfm_fzs_mhd": get_date_str(hfm_fzs_mhd_tag_dd.value, hfm_fzs_mhd_mon_dd.value, hfm_fzs_mhd_jahr_dd.value),
+                        "hfm_fzs_charge": hfm_fzs_charge_dd.value, "hfm_fzs_temp": hfm_fzs_temp_in.value,
+                        "hfm_fzs_bemerkung": hfm_fzs_bemerkung_dd.value,
+
+                        "hfm_fzg_cb": hfm_fzg_cb.value, "hfm_fzg_entnahmeort": hfm_fzg_entnahmeort_dd.value,
+                        "hfm_fzg_produkt": hfm_fzg_produkt_in.value, "hfm_fzg_marinade": hfm_fzg_marinade_in.value,
+                        "hfm_fzg_herstelldatum": get_date_str(hfm_fzg_herst_tag_dd.value, hfm_fzg_herst_mon_dd.value, hfm_fzg_herst_jahr_dd.value),
+                        "hfm_fzg_inhalt": hfm_fzg_inhalt_in.value, "hfm_fzg_verpackung": hfm_fzg_verpackung_dd.value,
+                        "hfm_fzg_lief": hfm_fzg_lief_in.value, 
+                        "hfm_fzg_mhd": get_date_str(hfm_fzg_mhd_tag_dd.value, hfm_fzg_mhd_mon_dd.value, hfm_fzg_mhd_jahr_dd.value),
+                        "hfm_fzg_charge": hfm_fzg_charge_dd.value, "hfm_fzg_temp": hfm_fzg_temp_in.value,
+                        "hfm_fzg_bemerkung": hfm_fzg_bemerkung_dd.value
                     }
 
                 def nur_speichern(e):
@@ -741,9 +898,12 @@ def main(page: ft.Page):
                     
                     hat_tw_daten = bool((tw_zeit_in.value or "").strip() or (tw_temp_in.value or "").strip())
                     hat_se_daten = bool((se_zeit_in.value or "").strip() or (se_temp_in.value or "").strip())
-                    hat_hfm_hack = bool((hfm_hack_temp_in.value or "").strip())
-                    hat_hfm_mett = bool((hfm_mett_temp_in.value or "").strip())
+                    hat_hfm_hack = bool((hfm_hack_temp_in.value or "").strip() or (hfm_hack_mhd_s_tag_dd.value or "").strip() or (hfm_hack_mhd_r_tag_dd.value or "").strip())
+                    hat_hfm_mett = bool((hfm_mett_temp_in.value or "").strip() or (hfm_mett_mhd_tag_dd.value or "").strip())
+                    hat_hfm_fzs = bool((hfm_fzs_temp_in.value or "").strip() or (hfm_fzs_mhd_tag_dd.value or "").strip() or (hfm_fzs_produkt_in.value or "").strip())
+                    hat_hfm_fzg = bool((hfm_fzg_temp_in.value or "").strip() or (hfm_fzg_mhd_tag_dd.value or "").strip() or (hfm_fzg_produkt_in.value or "").strip())
                     
+                    # 1. Haken vergessen Warnung (LIMS-Override)
                     if hat_tw_daten and not tw_kalt_cb.value and not lims_override_cb.value:
                         switch_tab_tw(None)
                         fehler_text.value="⚠️ AKTIVIERUNGS-HAKEN BEI TRINKWASSER FEHLT!"
@@ -770,6 +930,50 @@ def main(page: ft.Page):
                         fehler_text.visible=True; status_text.value=""
                         page.update(); return
 
+                    if hat_hfm_fzs and not hfm_fzs_cb.value and not lims_override_cb.value:
+                        switch_tab_hfm(None)
+                        switch_hfm_tab("schwein")
+                        fehler_text.value="⚠️ AKTIVIERUNGS-HAKEN BEI FZ SCHWEIN FEHLT!"
+                        fehler_text.visible=True; status_text.value=""
+                        page.update(); return
+
+                    if hat_hfm_fzg and not hfm_fzg_cb.value and not lims_override_cb.value:
+                        switch_tab_hfm(None)
+                        switch_hfm_tab("gefluegel")
+                        fehler_text.value="⚠️ AKTIVIERUNGS-HAKEN BEI FZ GEFLÜGEL FEHLT!"
+                        fehler_text.visible=True; status_text.value=""
+                        page.update(); return
+
+                    # 2. PFLICHTFELD WARNUNG (Uhrzeit, Temperatur, MHD)
+                    fehlende_pflicht = []
+                    if tw_kalt_cb.value:
+                        if not tw_zeit_in.value.strip(): fehlende_pflicht.append("TW: Uhrzeit")
+                        if not tw_temp_in.value.strip(): fehlende_pflicht.append("TW: Temperatur")
+                    if se_kalt_cb.value:
+                        if not se_zeit_in.value.strip(): fehlende_pflicht.append("Eis: Uhrzeit")
+                        if not se_temp_in.value.strip(): fehlende_pflicht.append("Eis: Temperatur")
+                    if hfm_hack_cb.value:
+                        if not hfm_hack_temp_in.value.strip(): fehlende_pflicht.append("Hack: Temperatur")
+                        if not hfm_hack_mhd_s_tag_dd.value.strip() and not hfm_hack_mhd_r_tag_dd.value.strip():
+                            fehlende_pflicht.append("Hack: MHD (Schwein oder Rind)")
+                    if hfm_mett_cb.value:
+                        if not hfm_mett_temp_in.value.strip(): fehlende_pflicht.append("Mett: Temperatur")
+                        if not hfm_mett_mhd_tag_dd.value.strip() or not hfm_mett_mhd_mon_dd.value.strip() or not hfm_mett_mhd_jahr_dd.value.strip():
+                            fehlende_pflicht.append("Mett: MHD")
+                    if hfm_fzs_cb.value:
+                        if not hfm_fzs_temp_in.value.strip(): fehlende_pflicht.append("FZ Schwein: Temperatur")
+                        if not hfm_fzs_mhd_tag_dd.value.strip() or not hfm_fzs_mhd_mon_dd.value.strip() or not hfm_fzs_mhd_jahr_dd.value.strip():
+                            fehlende_pflicht.append("FZ Schwein: MHD")
+                    if hfm_fzg_cb.value:
+                        if not hfm_fzg_temp_in.value.strip(): fehlende_pflicht.append("FZ Geflügel: Temperatur")
+                        if not hfm_fzg_mhd_tag_dd.value.strip() or not hfm_fzg_mhd_mon_dd.value.strip() or not hfm_fzg_mhd_jahr_dd.value.strip():
+                            fehlende_pflicht.append("FZ Geflügel: MHD")
+                            
+                    if fehlende_pflicht:
+                        fehler_text.value = f"⚠️ PFLICHTFELDER FEHLEN:\n{', '.join(fehlende_pflicht)}"
+                        fehler_text.visible = True; status_text.value = ""
+                        page.update(); return
+
                     try:
                         fehler_text.visible = False
                         status_text.value = "⏳ Speichere und erstelle PDF..."
@@ -792,6 +996,8 @@ def main(page: ft.Page):
                         writer.append(pypdf.PdfReader(os.path.join("assets", "scherbeneis.pdf")))
                         writer.append(pypdf.PdfReader(os.path.join("assets", "hackfleisch_gemischt.pdf")))
                         writer.append(pypdf.PdfReader(os.path.join("assets", "schweinemett.pdf")))
+                        writer.append(pypdf.PdfReader(os.path.join("assets", "fz_schwein.pdf")))
+                        writer.append(pypdf.PdfReader(os.path.join("assets", "fz_huhn.pdf")))
                         
                         def cb_val(val): return "/Yes" if val else "/Off"
                             
@@ -871,6 +1077,52 @@ def main(page: ft.Page):
                                 "tf_0006_00_ZS-1441": hfm_mett_temp_in.value,
                                 "dd_0006_00_ZS-001796": hfm_mett_bemerkung_dd.value
                             })
+
+                        if hfm_fzs_cb.value:
+                            prod_s = hfm_fzs_produkt_in.value.strip()
+                            mar_s = hfm_fzs_marinade_in.value.strip()
+                            if prod_s and mar_s:
+                                prod_mar_str_s = f"{prod_s} / {mar_s}"
+                            else:
+                                prod_mar_str_s = prod_s or mar_s
+
+                            f_map.update({
+                                "cb_0008_00": cb_val(hfm_fzs_cb.value),
+                                "tf_0008_00": "",
+                                "tf_0008_00_ Produkt \"Marinade\"": prod_mar_str_s,
+                                "dd_0008_00_ZS-001799": hfm_fzs_entnahmeort_dd.value,
+                                "cal_0008_00_ZS-001810": get_date_str(hfm_fzs_herst_tag_dd.value, hfm_fzs_herst_mon_dd.value, hfm_fzs_herst_jahr_dd.value),
+                                "tf_0008_00_ZS-1215": hfm_fzs_inhalt_in.value,
+                                "dd_0008_00_ZS-001798": hfm_fzs_verpackung_dd.value,
+                                "tf_0008_00_ZS-1209": hfm_fzs_lief_in.value,
+                                "tf_0008_00_ZS-001835": get_date_str(hfm_fzs_mhd_tag_dd.value, hfm_fzs_mhd_mon_dd.value, hfm_fzs_mhd_jahr_dd.value),
+                                "tf_0008_00_ZS-002081": hfm_fzs_charge_dd.value,
+                                "tf_0008_00_ZS-1441": hfm_fzs_temp_in.value,
+                                "dd_0008_00_ZS-001796": hfm_fzs_bemerkung_dd.value
+                            })
+
+                        if hfm_fzg_cb.value:
+                            prod_g = hfm_fzg_produkt_in.value.strip()
+                            mar_g = hfm_fzg_marinade_in.value.strip()
+                            if prod_g and mar_g:
+                                prod_mar_str_g = f"{prod_g} / {mar_g}"
+                            else:
+                                prod_mar_str_g = prod_g or mar_g
+
+                            f_map.update({
+                                "cb_0007_00": cb_val(hfm_fzg_cb.value),
+                                "tf_0007_00": "",
+                                "tf_0007_00_ Produkt \"Marinade\"": prod_mar_str_g,
+                                "dd_0007_00_ZS-001799": hfm_fzg_entnahmeort_dd.value,
+                                "cal_0007_00_ZS-001810": get_date_str(hfm_fzg_herst_tag_dd.value, hfm_fzg_herst_mon_dd.value, hfm_fzg_herst_jahr_dd.value),
+                                "tf_0007_00_ZS-1215": hfm_fzg_inhalt_in.value,
+                                "dd_0007_00_ZS-001798": hfm_fzg_verpackung_dd.value,
+                                "tf_0007_00_ZS-1209": hfm_fzg_lief_in.value,
+                                "tf_0007_00_ZS-001835": get_date_str(hfm_fzg_mhd_tag_dd.value, hfm_fzg_mhd_mon_dd.value, hfm_fzg_mhd_jahr_dd.value),
+                                "tf_0007_00_ZS-002081": hfm_fzg_charge_dd.value,
+                                "tf_0007_00_ZS-1441": hfm_fzg_temp_in.value,
+                                "dd_0007_00_ZS-001796": hfm_fzg_bemerkung_dd.value
+                            })
                             
                         if "/AcroForm" not in writer.root_object: 
                             writer.root_object.update({NameObject("/AcroForm"): DictionaryObject()})
@@ -893,8 +1145,8 @@ def main(page: ft.Page):
                         status_text.color = "red"
                         zeige_fehler(ex)
 
-                btn_zurueck = sicherer_button("🔙 Zurück", lambda e: zeige_dashboard(), "#004400", "white", expand=True)
-                btn_speichern = sicherer_button("💾 Nur Speichern", nur_speichern, "orange", "black", expand=True)
+                btn_zurueck = sicherer_button("🔙 Touren", lambda e: zeige_dashboard(), "#004400", "white", expand=True, height=45)
+                btn_speichern = sicherer_button("💾 Nur Speichern", nur_speichern, "orange", "black", expand=True, height=45)
                 btn_final = sicherer_button("📄 Bericht erstellen (PDF)", save_final, "blue", "white", expand=True, height=50)
 
                 ansicht.controls.extend([
