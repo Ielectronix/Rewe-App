@@ -108,7 +108,9 @@ def main(page: ft.Page):
                 ft.Container(height=50), 
                 ft.Row([header], alignment=ft.MainAxisAlignment.CENTER), 
                 ft.Container(height=40), 
-                ft.Column([v_in, z_in], horizontal_alignment=ft.CrossAxisAlignment.CENTER), 
+                # Zwingt die Felder in die Mitte!
+                ft.Row([v_in], alignment=ft.MainAxisAlignment.CENTER), 
+                ft.Row([z_in], alignment=ft.MainAxisAlignment.CENTER), 
                 ft.Container(height=40), 
                 ft.Row([btn_start], alignment=ft.MainAxisAlignment.CENTER)
             ])
@@ -226,10 +228,10 @@ def main(page: ft.Page):
                 def pruefe_lims_warnung(e=None):
                     tw_hat_daten = bool((tw_zeit_in.value or "").strip() or (tw_temp_in.value or "").strip())
                     se_hat_daten = bool((se_zeit_in.value or "").strip() or (se_temp_in.value or "").strip())
-                    hfm_hack_hat_daten = bool((hfm_hack_temp_in.value or "").strip() or (hfm_hack_mhd_s_tag_dd.value or "").strip() or (hfm_hack_mhd_r_tag_dd.value or "").strip())
-                    hfm_mett_hat_daten = bool((hfm_mett_temp_in.value or "").strip() or (hfm_mett_mhd_tag_dd.value or "").strip())
-                    hfm_fzs_hat_daten = bool((hfm_fzs_temp_in.value or "").strip() or (hfm_fzs_mhd_tag_dd.value or "").strip() or (hfm_fzs_produkt_in.value or "").strip())
-                    hfm_fzg_hat_daten = bool((hfm_fzg_temp_in.value or "").strip() or (hfm_fzg_mhd_tag_dd.value or "").strip() or (hfm_fzg_produkt_in.value or "").strip())
+                    hfm_hack_hat_daten = bool((hfm_hack_temp_in.value or "").strip())
+                    hfm_mett_hat_daten = bool((hfm_mett_temp_in.value or "").strip())
+                    hfm_fzs_hat_daten = bool((hfm_fzs_temp_in.value or "").strip())
+                    hfm_fzg_hat_daten = bool((hfm_fzg_temp_in.value or "").strip())
                     
                     tw_braucht_warnung = tw_hat_daten and not tw_kalt_cb.value
                     se_braucht_warnung = se_hat_daten and not se_kalt_cb.value
@@ -238,12 +240,10 @@ def main(page: ft.Page):
                     hfm_fzs_braucht_warnung = hfm_fzs_hat_daten and not hfm_fzs_cb.value
                     hfm_fzg_braucht_warnung = hfm_fzg_hat_daten and not hfm_fzg_cb.value
                     
-                    braucht_warnung = any([tw_braucht_warnung, se_braucht_warnung, hfm_hack_braucht_warnung, hfm_mett_braucht_warnung, hfm_fzs_braucht_warnung, hfm_fzg_braucht_warnung])
+                    lims_warnung.visible = tw_braucht_warnung or se_braucht_warnung or hfm_hack_braucht_warnung or hfm_mett_braucht_warnung or hfm_fzs_braucht_warnung or hfm_fzg_braucht_warnung
+                    lims_override_cb.visible = tw_braucht_warnung or se_braucht_warnung or hfm_hack_braucht_warnung or hfm_mett_braucht_warnung or hfm_fzs_braucht_warnung or hfm_fzg_braucht_warnung
                     
-                    lims_warnung.visible = braucht_warnung
-                    lims_override_cb.visible = braucht_warnung
-                    
-                    if not braucht_warnung:
+                    if not (tw_braucht_warnung or se_braucht_warnung or hfm_hack_braucht_warnung or hfm_mett_braucht_warnung or hfm_fzs_braucht_warnung or hfm_fzg_braucht_warnung):
                         lims_override_cb.value = False
                     page.update()
 
@@ -436,7 +436,7 @@ def main(page: ft.Page):
                 hfm_fzg_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("hfm_fzg_bemerkung", "Bitte eingeben"), ["Bitte eingeben", "Keine Besonderheiten"])
 
 
-                # --- 8. VORLAGEN LOGIK (KOMPAKT MIT ICONS) ---
+                # --- 8. VORLAGEN LOGIK (KOMPAKT MIT EMOJIS) ---
                 alle_vorlagen = lade_vorlagen()
                 vorlagen_status = ft.Text("", weight="bold") 
                 
@@ -549,7 +549,8 @@ def main(page: ft.Page):
                     pruefe_lims_warnung()
                     page.update()
 
-                vl_load_btn = ft.IconButton(icon=ft.icons.DOWNLOAD, icon_color="white", bgcolor="blue", on_click=lade_v, tooltip="Vorlage laden")
+                # EMOJIS STATT ICONS - Kugelsicher auf jeder Flet-Version
+                vl_load_btn = sicherer_button("📥", lade_v, "blue", "white", width=60, height=40)
                 vl_name_in = ft.TextField(label="Name für neue Vorlage", expand=True, color="white", text_style=ft.TextStyle(color="white", size=12), label_style=stil_label_weiss, dense=True, content_padding=10)
                 
                 def del_v(e):
@@ -562,7 +563,7 @@ def main(page: ft.Page):
                         vl_dd.value = None
                         page.update()
 
-                vl_del_btn = ft.IconButton(icon=ft.icons.DELETE, icon_color="white", bgcolor="red", on_click=del_v, tooltip="Vorlage löschen")
+                vl_del_btn = sicherer_button("🗑️", del_v, "red", "white", width=60, height=40)
                 
                 def save_v(e):
                     if not vl_name_in.value: return
@@ -603,7 +604,7 @@ def main(page: ft.Page):
                     vl_name_in.value = ""
                     page.update()
 
-                vl_save_btn = ft.IconButton(icon=ft.icons.SAVE, icon_color="black", bgcolor="orange", on_click=save_v, tooltip="Vorlage speichern")
+                vl_save_btn = sicherer_button("💾", save_v, "orange", "black", width=60, height=40)
                 
                 # KOMPAKTE VORLAGEN BOX
                 vorlagen_container = ft.Container(
