@@ -40,7 +40,7 @@ def main(page: ft.Page):
 
         SPEICHER_DATEI = "meine_monitoring_daten.json"
         BENUTZER_DATEI = "benutzer_daten.json"
-        FAVORITEN_DATEI = "meine_favoriten.json"
+        VORLAGEN_DATEI = "tour_vorlagen.json"
 
         def lade_maerkte():
             if os.path.exists(SPEICHER_DATEI):
@@ -60,13 +60,13 @@ def main(page: ft.Page):
         def speichere_benutzer(v, z):
             with open(BENUTZER_DATEI, "w", encoding="utf-8") as d: json.dump({"vorname": v, "zuname": z}, d)
 
-        def lade_favoriten():
-            if os.path.exists(FAVORITEN_DATEI):
-                with open(FAVORITEN_DATEI, "r", encoding="utf-8") as d: return json.load(d)
+        def lade_vorlagen():
+            if os.path.exists(VORLAGEN_DATEI):
+                with open(VORLAGEN_DATEI, "r", encoding="utf-8") as d: return json.load(d)
             return {}
 
-        def speichere_favoriten(daten):
-            with open(FAVORITEN_DATEI, "w", encoding="utf-8") as d: json.dump(daten, d)
+        def speichere_vorlagen(daten):
+            with open(VORLAGEN_DATEI, "w", encoding="utf-8") as d: json.dump(daten, d)
 
         def nav_leiste():
             return ft.Container(bgcolor="#001100", padding=10, border_radius=10, content=ft.Row(alignment=ft.MainAxisAlignment.SPACE_EVENLY, controls=[ft.ElevatedButton("Touren", on_click=lambda e: zeige_dashboard(), bgcolor="#004400", color="white"), ft.ElevatedButton("Senden", on_click=lambda e: zeige_postausgang(), bgcolor="#004400", color="white"), ft.ElevatedButton("Archiv", on_click=lambda e: zeige_archiv(), bgcolor="#004400", color="white")]))
@@ -103,21 +103,10 @@ def main(page: ft.Page):
         def zeige_maske(markt_index):
             ansicht.controls.clear()
             maerkte = lade_maerkte()
-            favs = lade_favoriten() # Lade Vorlage
             v, z = lade_benutzer()
             
             if markt_index is None:
-                # Neue Tour -> Statische Daten aus Favoriten, dynamische Daten strikt LEER!
-                aktuelle_daten = {
-                    "adresse": "", "marktnummer": "", "auftragsnummer": "", "bemerkung": "",
-                    "mitarbeiter_name": favs.get("mitarbeiter_name", f"{v} {z}".strip()), 
-                    "auftraggeber": favs.get("auftraggeber", "03509 - REWE Hackfleischmonitoring"), 
-                    "typ_probenahme": favs.get("typ_probenahme", "Standard"), 
-                    "tw_zeit": "", "tw_temp": "", "tw_tempkonst": "", "tw_unterbau_l": "", "tw_auff_sonstiges": ""
-                }
-                for key, val in favs.items():
-                    if (key.startswith("tw_") or key.startswith("cb_")) and key not in ["tw_zeit", "tw_temp", "tw_tempkonst", "tw_unterbau_l", "tw_auff_sonstiges", "tw_lims_override"]:
-                        aktuelle_daten[key] = val
+                aktuelle_daten = {"adresse": "", "marktnummer": "", "auftragsnummer": "", "mitarbeiter_name": f"{v} {z}".strip(), "auftraggeber": "03509 - REWE Hackfleischmonitoring", "typ_probenahme": "Standard", "bemerkung": ""}
                 titel = "Neue Tour anlegen"
             else:
                 aktuelle_daten = maerkte[markt_index]
@@ -143,33 +132,17 @@ def main(page: ft.Page):
             btn_tab_tw.on_click = wechsle_zu_tw
 
             # ==========================================
-            # STAMMDATEN Felder
+            # ALLE FELDER DEFINIEREN
             # ==========================================
+            
             adr_in = ft.TextField(label="Adresse Markt", value=aktuelle_daten.get("adresse"), color="yellow", text_style=stil_tf_gelb_10, label_style=stil_label_weiss, border_color="white", text_size=10)
             nr_in = ft.TextField(label="Marktnummer", value=aktuelle_daten.get("marktnummer"), color="yellow", text_style=stil_tf_gelb_12, label_style=stil_label_weiss, border_color="white", text_size=12)
             auft_in = ft.TextField(label="Auftragsnummer", hint_text="Etikettennummer: XX-XXXXXX", hint_style=ft.TextStyle(color="white54", size=10), value=aktuelle_daten.get("auftragsnummer"), color="yellow", text_style=stil_tf_gelb_12, label_style=stil_label_weiss, border_color="white", text_size=12)
             name_in = ft.TextField(label="Name Probenehmer", value=aktuelle_daten.get("mitarbeiter_name"), color="yellow", text_style=stil_tf_gelb_10, label_style=stil_label_weiss, border_color="white", text_size=10)
-            
-            bem_in = ft.TextField(label="Zusätzliche Bemerkung", value=aktuelle_daten.get("bemerkung"), color="yellow", text_style=stil_tf_gelb_10, label_style=stil_label_weiss, border_color="white", text_size=10, expand=1, visible=True)
-            vor_dd = ft.Dropdown(label="Zusätzliche Bemerkung ▼", color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_weiss, expand=1, options=[ft.dropdown.Option("keine Fertiggerichte"), ft.dropdown.Option("keine Convinience heute"), ft.dropdown.Option("keine HFM heute"), ft.dropdown.Option("keine Convinience generell")], visible=False)
-
-            def aktiviere_manuell(e):
-                bem_in.visible = True; vor_dd.visible = False; page.update()
-            def aktiviere_vorlage(e):
-                bem_in.visible = False; vor_dd.visible = True; page.update()
-
-            btn_manuell = ft.ElevatedButton("✍️ Selbst schreiben", on_click=aktiviere_manuell, bgcolor="red", color="white", height=30, style=ft.ButtonStyle(padding=5, text_style=ft.TextStyle(size=10)))
-            btn_vorlage = ft.ElevatedButton("📋 Vorlage", on_click=aktiviere_vorlage, bgcolor="grey", color="white", height=30, style=ft.ButtonStyle(padding=5, text_style=ft.TextStyle(size=10)))
-            weiche_reihe = ft.Row([btn_manuell, btn_vorlage], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
-            
+            bem_in = ft.TextField(label="Zusätzliche Bemerkung", value=aktuelle_daten.get("bemerkung"), color="yellow", text_style=stil_tf_gelb_10, label_style=stil_label_weiss, border_color="white", text_size=10)
             ag_dd = ft.Dropdown(label="Auftraggeber ▼", value=aktuelle_daten.get("auftraggeber"), color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_weiss, options=[ft.dropdown.Option("03509 - REWE Hackfleischmonitoring"), ft.dropdown.Option("3001767 - REWE Dortmund (Hackfleischmonitoring)")])
             typ_dd = ft.Dropdown(label="Typ der Probenahme ▼", value=aktuelle_daten.get("typ_probenahme"), color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_weiss, options=[ft.dropdown.Option("Standard"), ft.dropdown.Option("Nachkontrolle"), ft.dropdown.Option("Mehrwöchig")])
             
-            stammdaten_spalte = ft.Column([adr_in, nr_in, auft_in, ag_dd, name_in, typ_dd, weiche_reihe, bem_in, vor_dd], horizontal_alignment=ft.CrossAxisAlignment.STRETCH, visible=True)
-
-            # ==========================================
-            # TRINKWASSER Felder & WÄCHTER
-            # ==========================================
             tw_lims_warnung = ft.Text("⚠️ HINWEIS: Daten eingetragen, aber der Aktivierungs-Haken oben fehlt!", color="red", size=14, weight="bold", visible=False)
             tw_lims_override_cb = ft.Checkbox(label="Trotzdem ohne Aktivierung speichern", value=aktuelle_daten.get("tw_lims_override", False), label_style=ft.TextStyle(color="red", size=12, weight="bold"), fill_color="red", check_color="white", visible=False)
 
@@ -186,20 +159,25 @@ def main(page: ft.Page):
             def format_zeit(e):
                 val = e.control.value or ""
                 zahlen = "".join([c for c in val if c.isdigit()])[:4]
-                if len(zahlen) >= 3: e.control.value = zahlen[:2] + ":" + zahlen[2:]
-                else: e.control.value = zahlen
-                e.control.update(); pruefe_lims_warnung()
+                neu_wert = zahlen[:2] + ":" + zahlen[2:] if len(zahlen) >= 3 else zahlen
+                if e.control.value != neu_wert:
+                    e.control.value = neu_wert
+                    e.control.update()
+                pruefe_lims_warnung()
 
             def format_temp_blur(e):
-                val = (e.control.value or "").strip().replace(" °C", "").replace("°C", "")
-                if val: e.control.value = val + " °C"
-                e.control.update(); pruefe_lims_warnung()
+                val = (e.control.value or "").strip().replace(" °C", "").replace("°C", "").strip()
+                e.control.value = val + " °C" if val else ""
+                e.control.update()
+                pruefe_lims_warnung()
 
-            # --- SEITE 2 FELDER ---
             tw_kalt_cb = ft.Checkbox(label="Trinkwasser kalt", value=aktuelle_daten.get("tw_kalt", False), label_style=ft.TextStyle(color="white", size=16, weight="bold"), fill_color="yellow", check_color="black", on_change=pruefe_lims_warnung)
             tw_zeit_in = ft.TextField(label="Probenahmezeit", value=aktuelle_daten.get("tw_zeit"), color="yellow", text_style=stil_tf_gelb_12, label_style=stil_label_weiss, border_color="white", on_change=format_zeit)
             tw_temp_in = ft.TextField(label="Probenahmetemperatur (nur Zahl tippen)", value=aktuelle_daten.get("tw_temp"), color="yellow", text_style=stil_tf_gelb_12, label_style=stil_label_weiss, border_color="white", on_blur=format_temp_blur)
-            tw_desinf_dd = ft.Dropdown(label="Art der Desinfektion ▼", value=aktuelle_daten.get("tw_desinf", "Abflammen"), color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_weiss, options=[ft.dropdown.Option("Abflammen"), ft.dropdown.Option("Alkohol")])
+            
+            # --- ÜBERARBEITETE DROPDOWNS GEMÄß SCREENSHOTS ---
+            
+            tw_desinf_dd = ft.Dropdown(label="Art der Desinfektion ▼", value=aktuelle_daten.get("tw_desinf", "Abflammen"), color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_weiss, options=[ft.dropdown.Option("Abflammen"), ft.dropdown.Option("Sprühdesinfektion"), ft.dropdown.Option("ohne Desinfektion")])
             tw_zapf_dd = ft.Dropdown(label="Zapfstelle (TW) ▼", value=aktuelle_daten.get("tw_zapf", "Spülbecken"), color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_weiss, options=[ft.dropdown.Option("Spülbecken"), ft.dropdown.Option("Handwaschbecken")])
             
             cb_pn = ft.Checkbox(label="PN-Hahn", value=aktuelle_daten.get("tw_cb_pn", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
@@ -209,16 +187,17 @@ def main(page: ft.Page):
             cb_ein = ft.Checkbox(label="Einhebel-Mischarmatur", value=aktuelle_daten.get("tw_cb_ein", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
             cb_ein_g = ft.Checkbox(label="Eingriff-Armatur", value=aktuelle_daten.get("tw_cb_ein_g", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
             cb_eck = ft.Checkbox(label="Eckventil", value=aktuelle_daten.get("tw_cb_eck", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
-            tw_zapf_sonst_dd = ft.Dropdown(label="Sonstiges Zapfstelle ▼", value=aktuelle_daten.get("tw_zapf_sonst"), color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_weiss, options=[ft.dropdown.Option("Bitte wählen...")])
-
-            # --- SEITE 3 FELDER ---
+            
+            tw_zapf_sonst_dd = ft.Dropdown(label="Sonstiges Zapfstelle ▼", value=aktuelle_daten.get("tw_zapf_sonst"), color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_weiss, options=[ft.dropdown.Option(""), ft.dropdown.Option("Schlaucharmatur"), ft.dropdown.Option("Schlauchbrause"), ft.dropdown.Option("Schlauch mit Brause")])
+            
             tw_inaktiv_dd = ft.Dropdown(label="Inaktivierungsmittel ▼", value=aktuelle_daten.get("tw_inaktiv", "Na-Thiosulfat"), color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_weiss, options=[ft.dropdown.Option("Na-Thiosulfat")])
-            kurz_opts = [ft.dropdown.Option("1 - nicht wahrnehmbar"), ft.dropdown.Option("2 - wahrnehmbar")]
+            
+            kurz_opts = [ft.dropdown.Option("1 - nicht wahrnehmbar"), ft.dropdown.Option("2 - wahrnehmbar"), ft.dropdown.Option("3 - deutlich wahrnehmbar")]
             tw_kurz1_dd = ft.Dropdown(value=aktuelle_daten.get("tw_kurz1", "1 - nicht wahrnehmbar"), color="yellow", border_color="white", text_style=stil_tf_gelb_10, text_size=10, expand=1, options=kurz_opts)
             tw_kurz2_dd = ft.Dropdown(value=aktuelle_daten.get("tw_kurz2", "1 - nicht wahrnehmbar"), color="yellow", border_color="white", text_style=stil_tf_gelb_10, text_size=10, expand=1, options=kurz_opts)
             tw_kurz3_dd = ft.Dropdown(value=aktuelle_daten.get("tw_kurz3", "1 - nicht wahrnehmbar"), color="yellow", border_color="white", text_style=stil_tf_gelb_10, text_size=10, expand=1, options=kurz_opts)
             tw_kurz4_dd = ft.Dropdown(value=aktuelle_daten.get("tw_kurz4", "1 - nicht wahrnehmbar"), color="yellow", border_color="white", text_style=stil_tf_gelb_10, text_size=10, expand=1, options=kurz_opts)
-
+            
             cb_auff_ja = ft.Checkbox(label="ja", value=aktuelle_daten.get("cb_auff_ja", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
             cb_auff_nein = ft.Checkbox(label="nein", value=aktuelle_daten.get("cb_auff_nein", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
             cb_auff_perl = ft.Checkbox(label="Perlator nicht entfernbar", value=aktuelle_daten.get("cb_auff_perl", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
@@ -233,101 +212,277 @@ def main(page: ft.Page):
             cb_auff_handbrause = ft.Checkbox(label="Handbrause", value=aktuelle_daten.get("cb_auff_handbrause", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
             cb_auff_sonst = ft.Checkbox(label="Sonstiges", value=aktuelle_daten.get("cb_auff_sonst", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
             tw_auff_sonstiges_in = ft.TextField(label="Sonstiges (Auffälligkeiten)", value=aktuelle_daten.get("tw_auff_sonstiges"), color="yellow", text_style=stil_tf_gelb_10, label_style=stil_label_weiss, border_color="white", text_size=10, multiline=True)
-
-            # --- SEITE 4 FELDER ---
-            tw_zweck_dd = ft.Dropdown(label="Zweck der PN ▼", value=aktuelle_daten.get("tw_zweck", "DIN EN ISO 19458 Zweck B"), color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_weiss, options=[ft.dropdown.Option("DIN EN ISO 19458 Zweck B"), ft.dropdown.Option("Zweck A"), ft.dropdown.Option("Zweck C")])
+            
+            # Formatiert alte Speicherwerte auf das neue kurze Format
+            alt_zweck = aktuelle_daten.get("tw_zweck", "Zweck B")
+            start_zweck = "Zweck A" if "Zweck A" in alt_zweck else "Zweck C" if "Zweck C" in alt_zweck else "Zweck B"
+            
+            tw_zweck_dd = ft.Dropdown(label="Zweck der PN ▼", value=start_zweck, color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_weiss, options=[ft.dropdown.Option("Zweck A"), ft.dropdown.Option("Zweck B"), ft.dropdown.Option("Zweck C")])
             tw_inhalt_in = ft.TextField(label="Inhalt", value=aktuelle_daten.get("tw_inhalt", "ca. 500 ml"), color="yellow", text_style=stil_tf_gelb_12, label_style=stil_label_weiss, border_color="white", text_size=12)
             tw_verpackung_dd = ft.Dropdown(label="Verpackung ▼", value=aktuelle_daten.get("tw_verpackung", "500ml Kunststoff-Flasche mit Natriumthiosulfat"), color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_weiss, options=[ft.dropdown.Option("500ml Kunststoff-Flasche mit Natriumthiosulfat")])
-            tw_entnahmeort_dd = ft.Dropdown(label="Entnahmeort ▼", value=aktuelle_daten.get("tw_entnahmeort", "Metzgerei"), color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_weiss, options=[ft.dropdown.Option("Metzgerei"), ft.dropdown.Option("Käsetheke"), ft.dropdown.Option("Fischtheke")])
+            
+            tw_entnahmeort_dd = ft.Dropdown(label="Entnahmeort ▼", value=aktuelle_daten.get("tw_entnahmeort", "Metzgerei"), color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_weiss, options=[
+                ft.dropdown.Option("Produktionsraum"), ft.dropdown.Option("Bedientheke"), ft.dropdown.Option("Vorbereitungsraum"), ft.dropdown.Option("Metzgerei"),
+                ft.dropdown.Option("Kühlraum"), ft.dropdown.Option("SB-Theke"), ft.dropdown.Option("Salatbar"), ft.dropdown.Option("Convenience Küche")
+            ])
+            
             tw_tempkonst_in = ft.TextField(label="Temperaturkonstante (nur Zahl tippen)", value=aktuelle_daten.get("tw_tempkonst"), color="yellow", text_style=stil_tf_gelb_12, label_style=stil_label_weiss, border_color="white", on_blur=format_temp_blur)
             tw_bemerkung_dd = ft.Dropdown(label="Bemerkungen für Trinkwasser ▼", value=aktuelle_daten.get("tw_bemerkung", "Bitte eingeben"), color="yellow", border_color="white", text_style=stil_tf_gelb_10, label_style=stil_label_weiss, options=[ft.dropdown.Option("Bitte eingeben"), ft.dropdown.Option("Keine Besonderheiten")])
 
+
+            # ==========================================
+            # DIE GLOBALE MASKEN-VORLAGE (RESET & LOAD)
+            # ==========================================
+            alle_vorlagen = lade_vorlagen()
+            
+            def dropdown_geandert(e):
+                vl_load_btn.text = "Laden"
+                vl_load_btn.bgcolor = "blue"
+                page.update()
+
+            vl_dd = ft.Dropdown(label="Gespeicherte Vorlagen laden ▼", options=[ft.dropdown.Option(k) for k in alle_vorlagen.keys()], expand=1, color="yellow", border_color="white", text_size=12, label_style=stil_label_weiss)
+            vl_dd.on_change = dropdown_geandert
+            
+            def lade_v(e):
+                if not vl_dd.value: return
+                v = alle_vorlagen.get(vl_dd.value, {})
+                if not v: return 
+                
+                # 1. RUNDUMSCHLAG: Alle variablen Felder werden komplett WEGGEPUTZT!
+                adr_in.value = ""
+                nr_in.value = ""
+                auft_in.value = ""
+                tw_kalt_cb.value = False
+                tw_zeit_in.value = ""
+                tw_temp_in.value = ""
+                tw_tempkonst_in.value = ""
+                
+                cb_pn.value = False
+                cb_zwei.value = False
+                cb_sensor.value = False
+                cb_knie.value = False
+                cb_ein.value = False
+                cb_ein_g.value = False
+                cb_eck.value = False
+                cb_auff_ja.value = False
+                cb_auff_nein.value = False
+                cb_auff_perl.value = False
+                cb_auff_verkalk.value = False
+                cb_auff_verbrueh.value = False
+                cb_auff_durchlauf.value = False
+                cb_auff_unterbau.value = False
+                tw_unterbau_l_in.value = ""
+                cb_auff_eck_zu.value = False
+                cb_auff_nichtmoeglich.value = False
+                cb_auff_dusche.value = False
+                cb_auff_handbrause.value = False
+                cb_auff_sonst.value = False
+                tw_auff_sonstiges_in.value = ""
+
+                # 2. NUR DIE FESTEN DROPDOWNS AUS DER VORLAGE EINSETZEN
+                if "name_in" in v: name_in.value = v["name_in"]
+                if "ag_dd" in v: ag_dd.value = v["ag_dd"]
+                if "typ_dd" in v: typ_dd.value = v["typ_dd"]
+                if "bem_in" in v: bem_in.value = v["bem_in"]
+                if "tw_desinf_dd" in v: tw_desinf_dd.value = v["tw_desinf_dd"]
+                if "tw_zapf_dd" in v: tw_zapf_dd.value = v["tw_zapf_dd"]
+                if "tw_zapf_sonst_dd" in v: tw_zapf_sonst_dd.value = v["tw_zapf_sonst_dd"]
+                if "tw_inaktiv_dd" in v: tw_inaktiv_dd.value = v["tw_inaktiv_dd"]
+                if "tw_kurz1_dd" in v: tw_kurz1_dd.value = v["tw_kurz1_dd"]
+                if "tw_kurz2_dd" in v: tw_kurz2_dd.value = v["tw_kurz2_dd"]
+                if "tw_kurz3_dd" in v: tw_kurz3_dd.value = v["tw_kurz3_dd"]
+                if "tw_kurz4_dd" in v: tw_kurz4_dd.value = v["tw_kurz4_dd"]
+                if "tw_zweck_dd" in v: tw_zweck_dd.value = v["tw_zweck_dd"]
+                if "tw_inhalt_in" in v: tw_inhalt_in.value = v["tw_inhalt_in"]
+                if "tw_verpackung_dd" in v: tw_verpackung_dd.value = v["tw_verpackung_dd"]
+                if "tw_entnahmeort_dd" in v: tw_entnahmeort_dd.value = v["tw_entnahmeort_dd"]
+                if "tw_bemerkung_dd" in v: tw_bemerkung_dd.value = v["tw_bemerkung_dd"]
+
+                pruefe_lims_warnung()
+
+                vl_load_btn.text = "✅ Geladen"
+                vl_load_btn.bgcolor = "green"
+                page.update()
+
+            vl_load_btn = ft.ElevatedButton("Laden", on_click=lade_v, bgcolor="blue", color="white")
+            vl_name_in = ft.TextField(label="Name für neue Vorlage", expand=1, color="yellow", border_color="white", text_size=12, label_style=stil_label_weiss)
+            
+            def save_v(e):
+                if not vl_name_in.value: return
+                
+                alle_vorlagen[vl_name_in.value] = {
+                    "name_in": name_in.value, "ag_dd": ag_dd.value, "typ_dd": typ_dd.value, "bem_in": bem_in.value,
+                    "tw_desinf_dd": tw_desinf_dd.value, "tw_zapf_dd": tw_zapf_dd.value, "tw_zapf_sonst_dd": tw_zapf_sonst_dd.value,
+                    "tw_inaktiv_dd": tw_inaktiv_dd.value, "tw_kurz1_dd": tw_kurz1_dd.value, "tw_kurz2_dd": tw_kurz2_dd.value,
+                    "tw_kurz3_dd": tw_kurz3_dd.value, "tw_kurz4_dd": tw_kurz4_dd.value, "tw_zweck_dd": tw_zweck_dd.value, 
+                    "tw_inhalt_in": tw_inhalt_in.value, "tw_verpackung_dd": tw_verpackung_dd.value, 
+                    "tw_entnahmeort_dd": tw_entnahmeort_dd.value, "tw_bemerkung_dd": tw_bemerkung_dd.value
+                }
+                speichere_vorlagen(alle_vorlagen)
+                vl_dd.options = [ft.dropdown.Option(k) for k in alle_vorlagen.keys()]
+                vl_name_in.value = ""
+                vl_save_btn.bgcolor = "green"; vl_save_btn.text = "✅ Gespeichert!"
+                page.update()
+
+            def del_v(e):
+                if vl_dd.value and vl_dd.value in alle_vorlagen:
+                    del alle_vorlagen[vl_dd.value]
+                    speichere_vorlagen(alle_vorlagen)
+                    vl_dd.options = [ft.dropdown.Option(k) for k in alle_vorlagen.keys()]
+                    vl_dd.value = None
+                    vl_load_btn.text = "Laden"
+                    vl_load_btn.bgcolor = "blue"
+                    page.update()
+
+            vl_save_btn = ft.ElevatedButton("⭐ Speichern", on_click=save_v, bgcolor="orange", color="black")
+            vl_del_btn = ft.ElevatedButton("🗑️", on_click=del_v, bgcolor="red", color="white")
+
+            vorlagen_container = ft.Container(
+                bgcolor="#002200", padding=10, border_radius=10,
+                content=ft.Column([
+                    ft.Text("📋 Globale Tour-Vorlagen", color="white", weight="bold"),
+                    ft.Row([vl_dd, vl_load_btn, vl_del_btn]),
+                    ft.Row([vl_name_in, vl_save_btn])
+                ])
+            )
+
+            # ==========================================
+            # ZUSAMMENBAU DER SEITEN
+            # ==========================================
+            stammdaten_spalte = ft.Column([
+                adr_in, nr_in, auft_in, ag_dd, name_in, typ_dd, bem_in
+            ], horizontal_alignment=ft.CrossAxisAlignment.STRETCH, visible=True)
+
             trinkwasser_spalte = ft.Column([
-                tw_kalt_cb, tw_lims_warnung, tw_lims_override_cb, tw_zeit_in, tw_temp_in, tw_desinf_dd, tw_zapf_dd,
+                tw_kalt_cb, tw_lims_warnung, tw_lims_override_cb,
+                tw_zeit_in, tw_temp_in, tw_desinf_dd, tw_zapf_dd,
+                
                 ft.Text("Probenahmetechnik / Art der Zapfstelle:", color="white", weight="bold"),
-                ft.Row([ft.Column([cb_pn, cb_zwei, cb_sensor, cb_knie], expand=1), ft.Column([cb_ein, cb_ein_g, cb_eck, ft.Container(height=30)], expand=1)], alignment=ft.MainAxisAlignment.START),
-                tw_zapf_sonst_dd, ft.Divider(color="white"), ft.Text("Sensorik & Auffälligkeiten", color="white", size=16, weight="bold"), tw_inaktiv_dd,
-                ft.Text("Kurzsensorik:", color="white", weight="bold"), ft.Row([tw_kurz1_dd, tw_kurz2_dd]), ft.Row([tw_kurz3_dd, tw_kurz4_dd]),
+                ft.Row([
+                    ft.Column([cb_pn, cb_zwei, cb_sensor, cb_knie], expand=1),
+                    ft.Column([cb_ein, cb_ein_g, cb_eck, ft.Container(height=30)], expand=1)
+                ], alignment=ft.MainAxisAlignment.START),
+                tw_zapf_sonst_dd,
+                
+                ft.Divider(color="white"),
+                ft.Text("Sensorik & Auffälligkeiten", color="white", size=16, weight="bold"),
+                tw_inaktiv_dd,
+                
+                ft.Text("Kurzsensorik:", color="white", weight="bold"),
+                ft.Row([tw_kurz1_dd, tw_kurz2_dd]),
+                ft.Row([tw_kurz3_dd, tw_kurz4_dd]),
+                
                 ft.Text("Auffälligkeiten:", color="white", weight="bold"),
-                ft.Row([ft.Column([cb_auff_ja, cb_auff_perl, cb_auff_verbrueh, ft.Row([cb_auff_unterbau, tw_unterbau_l_in]), cb_auff_nichtmoeglich, cb_auff_handbrause], expand=1), ft.Column([cb_auff_nein, cb_auff_verkalk, cb_auff_durchlauf, cb_auff_eck_zu, cb_auff_dusche, cb_auff_sonst], expand=1)], alignment=ft.MainAxisAlignment.START),
-                tw_auff_sonstiges_in, ft.Divider(color="white"), ft.Text("Probenahmedetails", color="white", size=16, weight="bold"),
+                ft.Row([
+                    ft.Column([cb_auff_ja, cb_auff_perl, cb_auff_verbrueh, ft.Row([cb_auff_unterbau, tw_unterbau_l_in]), cb_auff_nichtmoeglich, cb_auff_handbrause], expand=1),
+                    ft.Column([cb_auff_nein, cb_auff_verkalk, cb_auff_durchlauf, cb_auff_eck_zu, cb_auff_dusche, cb_auff_sonst], expand=1)
+                ], alignment=ft.MainAxisAlignment.START),
+                tw_auff_sonstiges_in,
+
+                ft.Divider(color="white"),
+                ft.Text("Probenahmedetails", color="white", size=16, weight="bold"),
                 tw_zweck_dd, tw_inhalt_in, tw_verpackung_dd, tw_entnahmeort_dd, tw_tempkonst_in, tw_bemerkung_dd
             ], horizontal_alignment=ft.CrossAxisAlignment.STRETCH, visible=False)
             
             pruefe_lims_warnung()
 
             # ==========================================
-            # BUTTON-LOGIK
+            # FEHLER-LOGIK & PDF-GENERIERUNG
             # ==========================================
             fehler_text = ft.Text("", color="red", size=14, weight="bold", visible=False)
 
             def check_pflichtfelder():
-                if not (nr_in.value or "").strip() or not (auft_in.value or "").strip():
-                    wechsle_zu_stamm(); fehler_text.value = "⚠️ FEHLER: Bitte Marktnummer und Auftragsnummer eingeben!"; fehler_text.visible = True; page.update(); return False
-                if bool((tw_zeit_in.value or "").strip() or (tw_temp_in.value or "").strip()) and not tw_kalt_cb.value and not tw_lims_override_cb.value:
-                    wechsle_zu_tw(); fehler_text.value = "⚠️ FEHLER: Bitte Aktivierungs-Haken setzen oder Ausnahme bestätigen!"; fehler_text.visible = True; page.update(); return False
-                fehler_text.visible = False; return True
+                nr_val = (nr_in.value or "").strip()
+                auft_val = (auft_in.value or "").strip()
+                if not nr_val or not auft_val:
+                    wechsle_zu_stamm()
+                    fehler_text.value = "⚠️ FEHLER: Bitte Marktnummer und Auftragsnummer eingeben!"
+                    fehler_text.visible = True; page.update()
+                    return False
+                
+                hat_daten = bool((tw_zeit_in.value or "").strip() or (tw_temp_in.value or "").strip() or tw_kalt_cb.value)
+                if hat_daten and not tw_kalt_cb.value:
+                    if not tw_lims_override_cb.value:
+                        wechsle_zu_tw()
+                        fehler_text.value = "⚠️ FEHLER: Bitte Aktivierungs-Haken setzen oder Ausnahme bestätigen!"
+                        fehler_text.visible = True; page.update()
+                        return False
 
-            def hole_aktuelle_masken_daten():
-                return {
-                    "adresse": adr_in.value, "marktnummer": nr_in.value, "auftragsnummer": auft_in.value, "mitarbeiter_name": name_in.value, "auftraggeber": ag_dd.value, "typ_probenahme": typ_dd.value, "bemerkung": (bem_in.value if bem_in.visible else vor_dd.value),
-                    "tw_kalt": tw_kalt_cb.value, "tw_lims_override": tw_lims_override_cb.value, "tw_zeit": tw_zeit_in.value, "tw_temp": tw_temp_in.value, "tw_desinf": tw_desinf_dd.value, "tw_zapf": tw_zapf_dd.value,
-                    "tw_cb_pn": cb_pn.value, "tw_cb_zwei": cb_zwei.value, "tw_cb_sensor": cb_sensor.value, "tw_cb_knie": cb_knie.value, "tw_cb_ein": cb_ein.value, "tw_cb_ein_g": cb_ein_g.value, "tw_cb_eck": cb_eck.value, "tw_zapf_sonst": tw_zapf_sonst_dd.value,
-                    "tw_inaktiv": tw_inaktiv_dd.value, "tw_kurz1": tw_kurz1_dd.value, "tw_kurz2": tw_kurz2_dd.value, "tw_kurz3": tw_kurz3_dd.value, "tw_kurz4": tw_kurz4_dd.value,
-                    "cb_auff_ja": cb_auff_ja.value, "cb_auff_nein": cb_auff_nein.value, "cb_auff_perl": cb_auff_perl.value, "cb_auff_verkalk": cb_auff_verkalk.value, "cb_auff_verbrueh": cb_auff_verbrueh.value, "cb_auff_durchlauf": cb_auff_durchlauf.value,
-                    "cb_auff_unterbau": cb_auff_unterbau.value, "tw_unterbau_l": tw_unterbau_l_in.value, "cb_auff_eck_zu": cb_auff_eck_zu.value, "cb_auff_nichtmoeglich": cb_auff_nichtmoeglich.value, "cb_auff_dusche": cb_auff_dusche.value, "cb_auff_handbrause": cb_auff_handbrause.value, "cb_auff_sonst": cb_auff_sonst.value, "tw_auff_sonstiges": tw_auff_sonstiges_in.value,
-                    "tw_zweck": tw_zweck_dd.value, "tw_inhalt": tw_inhalt_in.value, "tw_verpackung": tw_verpackung_dd.value, "tw_entnahmeort": tw_entnahmeort_dd.value, "tw_tempkonst": tw_tempkonst_in.value, "tw_bemerkung": tw_bemerkung_dd.value
-                }
+                fehler_text.visible = False; page.update(); return True
 
-            def fav_speichern_klick(e):
-                d = hole_aktuelle_masken_daten()
-                # DIE SCHWARZE LISTE: Alles, was hier steht, wird IGNORIERT!
-                ignore = ["adresse", "marktnummer", "auftragsnummer", "bemerkung", "tw_zeit", "tw_temp", "tw_tempkonst", "tw_lims_override", "tw_unterbau_l", "tw_auff_sonstiges"]
-                fav_daten = {k: v for k, v in d.items() if k not in ignore}
-                speichere_favoriten(fav_daten)
-                e.control.text = "✅ Favorit gemerkt!"; e.control.bgcolor = "orange"; page.update()
-
-            def save_klick(e):
-                if not check_pflichtfelder(): return 
-                d = hole_aktuelle_masken_daten()
-                if markt_index is None: maerkte.append(d)
-                else: maerkte[markt_index] = d
-                speichere_maerkte(maerkte); e.control.bgcolor = "green"; e.control.text = "✅ Gespeichert!"; page.update()
-
-            def pdf_speichern_klick(e):
+            def alles_speichern_und_pdf_bauen(e):
                 if not check_pflichtfelder(): return 
                 try:
                     e.control.text = "Lädt..."; page.update()
-                    d = hole_aktuelle_masken_daten()
+                    
+                    d = {
+                        "adresse": adr_in.value, "marktnummer": nr_in.value, "auftragsnummer": auft_in.value, "mitarbeiter_name": name_in.value, "auftraggeber": ag_dd.value, "typ_probenahme": typ_dd.value, "bemerkung": bem_in.value,
+                        "tw_kalt": tw_kalt_cb.value, "tw_lims_override": tw_lims_override_cb.value, "tw_zeit": tw_zeit_in.value, "tw_temp": tw_temp_in.value, "tw_desinf": tw_desinf_dd.value, "tw_zapf": tw_zapf_dd.value,
+                        "tw_cb_pn": cb_pn.value, "tw_cb_zwei": cb_zwei.value, "tw_cb_sensor": cb_sensor.value, "tw_cb_knie": cb_knie.value, "tw_cb_ein": cb_ein.value, "tw_cb_ein_g": cb_ein_g.value, "tw_cb_eck": cb_eck.value, "tw_zapf_sonst": tw_zapf_sonst_dd.value,
+                        "tw_inaktiv": tw_inaktiv_dd.value, "tw_kurz1": tw_kurz1_dd.value, "tw_kurz2": tw_kurz2_dd.value, "tw_kurz3": tw_kurz3_dd.value, "tw_kurz4": tw_kurz4_dd.value,
+                        "cb_auff_ja": cb_auff_ja.value, "cb_auff_nein": cb_auff_nein.value, "cb_auff_perl": cb_auff_perl.value, "cb_auff_verkalk": cb_auff_verkalk.value, "cb_auff_verbrueh": cb_auff_verbrueh.value, "cb_auff_durchlauf": cb_auff_durchlauf.value,
+                        "cb_auff_unterbau": cb_auff_unterbau.value, "tw_unterbau_l": tw_unterbau_l_in.value, "cb_auff_eck_zu": cb_auff_eck_zu.value, "cb_auff_nichtmoeglich": cb_auff_nichtmoeglich.value, "cb_auff_dusche": cb_auff_dusche.value, "cb_auff_handbrause": cb_auff_handbrause.value, "cb_auff_sonst": cb_auff_sonst.value, "tw_auff_sonstiges": tw_auff_sonstiges_in.value,
+                        "tw_zweck": tw_zweck_dd.value, "tw_inhalt": tw_inhalt_in.value, "tw_verpackung": tw_verpackung_dd.value, "tw_entnahmeort": tw_entnahmeort_dd.value, "tw_tempkonst": tw_tempkonst_in.value, "tw_bemerkung": tw_bemerkung_dd.value
+                    }
+                    if markt_index is None: maerkte.append(d)
+                    else: maerkte[markt_index] = d
+                    speichere_maerkte(maerkte)
+
                     temp_dir, final_dir, heute_ordner = get_rewe_paths()
                     sicherer_markt = "".join([c for c in (nr_in.value or "") if c.isalnum()])
                     heute = datetime.datetime.now()
-                    final_ausg = os.path.join(final_dir, f"REWE_{sicherer_markt}_{heute.strftime('%d%m%y')}.pdf")
-                    wird_akt = os.path.exists(final_ausg)
+                    heute_str = heute.strftime("%d.%m.%Y")
+                    ddmmyy = heute.strftime("%d%m%y")
                     
-                    reader = pypdf.PdfReader(os.path.join("assets", "stammdaten.pdf"))
-                    writer = pypdf.PdfWriter(clone_from=reader)
-                    f_map = {"tf_0000_00_ZS-001870": d["adresse"], "tf_0000_00_ZS-1408": d["marktnummer"], "tf_0000_00_ZS-002000": d["auftragsnummer"], "cal_templateLaborderprobenahmeDatum": heute.strftime("%d.%m.%Y"), "dd_0000_00_ZS-002314": d["mitarbeiter_name"], "dd_0000_00_ZS-1566": d["auftraggeber"], "dd_0000_00_ZS-002315": d["typ_probenahme"], "dd_0000_00_ZS-001796": d["bemerkung"]}
+                    final_ausg_name = f"REWE_{sicherer_markt}_{ddmmyy}.pdf"
+                    final_ausg = os.path.join(final_dir, final_ausg_name)
+                    wird_aktualisiert = os.path.exists(final_ausg)
+                    
+                    writer = pypdf.PdfWriter()
+                    stammdaten_reader = pypdf.PdfReader(os.path.join("assets", "stammdaten.pdf"))
+                    writer.append(stammdaten_reader)
+
+                    hat_tw_daten = bool((tw_zeit_in.value or "").strip() or (tw_temp_in.value or "").strip() or tw_kalt_cb.value)
+                    if hat_tw_daten:
+                        tw_reader = pypdf.PdfReader(os.path.join("assets", "trinkwasser.pdf"))
+                        writer.append(tw_reader)
+                    
                     if "/AcroForm" not in writer.root_object: writer.root_object.update({NameObject("/AcroForm"): DictionaryObject()})
-                    writer.update_page_form_field_values(writer.pages[0], f_map)
+                    if "/Fields" not in writer.root_object["/AcroForm"]: writer.root_object["/AcroForm"].update({NameObject("/Fields"): ArrayObject()})
+                    
+                    def cb_val(val): return "/Yes" if val else "/Off"
+                    sonst_auff_text = tw_auff_sonstiges_in.value or ""
+                    if cb_auff_unterbau.value and (tw_unterbau_l_in.value or "").strip(): sonst_auff_text += f" (L: {tw_unterbau_l_in.value})"
+                    
+                    f_map = {
+                        "tf_0000_00_ZS-001870": adr_in.value, "tf_0000_00_ZS-1408": nr_in.value, "tf_0000_00_ZS-002000": auft_in.value, "cal_templateLaborderprobenahmeDatum": heute_str, "dd_0000_00_ZS-002314": name_in.value, "dd_0000_00_ZS-1566": ag_dd.value, "dd_0000_00_ZS-002315": typ_dd.value, "dd_0000_00_ZS-001796": bem_in.value,
+                    }
+                    if hat_tw_daten:
+                        f_map.update({
+                            "cb_0001_00": cb_val(tw_kalt_cb.value), "tf_0001_00_probenahmeUhrzeit": tw_zeit_in.value, "tf_0001_00_ZS-1441": tw_temp_in.value, "tf_0001_00_PE_ZS-1514": tw_tempkonst_in.value, "dd_0001_00_PE_ZS-002255": tw_desinf_dd.value, "dd_0001_00_PE_ZS-002318": tw_zapf_dd.value,
+                            "cb_0001_00_PE_ZS-002304_PN-Hahn": cb_val(cb_pn.value), "cb_0001_00_PE_ZS-002304_ Einhebel-Mischarmatur": cb_val(cb_ein.value), "cb_0001_00_PE_ZS-002304_ Zweigriff-Mischarmatur": cb_val(cb_zwei.value), "cb_0001_00_PE_ZS-002304_ Eingriff-Armmatur": cb_val(cb_ein_g.value), "cb_0001_00_PE_ZS-002304_ Sensor-Armatur": cb_val(cb_sensor.value), "cb_0001_00_PE_ZS-002304_ Eckventil": cb_val(cb_eck.value), "cb_0001_00_PE_ZS-002304_ Armatur mit Kniebestätigung": cb_val(cb_knie.value), "cb_0001_00_PE_ZS-002304_Sonstiges": tw_zapf_sonst_dd.value,
+                            "dd_0001_00_PE_ZS-001948": tw_inaktiv_dd.value, "dd_0001_00_PE_ZS-002305_Farbe": tw_kurz1_dd.value, "dd_0001_00_PE_ZS-002305_ Trübung": tw_kurz2_dd.value, "dd_0001_00_PE_ZS-002305_ Bodensatz": tw_kurz3_dd.value, "dd_0001_00_PE_ZS-002305_ Geruch": tw_kurz4_dd.value,
+                            "cb_0001_00_PE_ZS-1268_ja": cb_val(cb_auff_ja.value), "cb_0001_00_PE_ZS-1268_ nein": cb_val(cb_auff_nein.value), "cb_0001_00_PE_ZS-1268_ Perlator nicht entfernbar": cb_val(cb_auff_perl.value), "cb_0001_00_PE_ZS-1268_ Starke Verkalkung": cb_val(cb_auff_verkalk.value), "cb_0001_00_PE_ZS-1268_ Armatur mit Verbrühschutz": cb_val(cb_auff_verbrueh.value), "cb_0001_00_PE_ZS-1268_ Durchlauferhitzer": cb_val(cb_auff_durchlauf.value), "cb_0001_00_PE_ZS-1268_ Unterbauspeicher [L]": cb_val(cb_auff_unterbau.value), "cb_0001_00_PE_ZS-1268_ Eckventil warm/kalt geschlossen": cb_val(cb_auff_eck_zu.value), "cb_0001_00_PE_ZS-1268_ nicht möglich": cb_val(cb_auff_nichtmoeglich.value), "cb_0001_00_PE_ZS-1268_ Entnahme aus der Dusche": cb_val(cb_auff_dusche.value), "cb_0001_00_PE_ZS-1268_ Handbrause": cb_val(cb_auff_handbrause.value), "cb_0001_00_PE_ZS-1268_ Sonstiges": cb_val(bool(sonst_auff_text)), "cb_0001_00_PE_ZS-1268_Sonstiges": sonst_auff_text,
+                            "dd_0001_00_PE_ZS-002317": tw_zweck_dd.value, "tf_0001_00_ZS-1215": tw_inhalt_in.value, "dd_0001_00_ZS-001798": tw_verpackung_dd.value, "dd_0001_00_ZS-001799": tw_entnahmeort_dd.value, "dd_0001_00_ZS-001796": tw_bemerkung_dd.value
+                        })
+
+                    for p in writer.pages: writer.update_page_form_field_values(p, f_map)
                     with open(final_ausg, "wb") as f: writer.write(f)
-                    e.control.text = "✅ AKTUALISIERT!" if wird_akt else "✅ ERFOLG!"; e.control.bgcolor = "green"; page.update()
+                    
+                    e.control.text = "✅ AKTUALISIERT!" if wird_aktualisiert else "✅ ERFOLG!"
+                    e.control.bgcolor = "green"; page.update()
                 except Exception as ex: zeige_fehler(ex)
 
-            # --- UI ZUSAMMENBAU ---
-            btn_fav = ft.ElevatedButton("⭐ Als Favorit merken", on_click=fav_speichern_klick, bgcolor="orange", color="black", height=35, expand=True)
-            save_btn = ft.ElevatedButton("Speichern", on_click=save_klick, bgcolor="blue", color="white", height=35, expand=True)
-            btn_touren = ft.ElevatedButton("Zu Touren", on_click=lambda e: zeige_dashboard(), bgcolor="#004400", color="white", height=35, expand=True)
-            btn_pdf = ft.ElevatedButton("Bericht erstellen", on_click=pdf_speichern_klick, bgcolor="blue", color="white", height=35, expand=True)
+            btn_touren = ft.ElevatedButton("🔙 Zu Touren", on_click=lambda e: zeige_dashboard(), bgcolor="#004400", color="white", height=40, expand=1)
+            btn_pdf_und_save = ft.ElevatedButton("💾 Bericht erstellen & Speichern", on_click=alles_speichern_und_pdf_bauen, bgcolor="blue", color="white", height=40, expand=2, style=ft.ButtonStyle(text_style=ft.TextStyle(weight="bold")))
             
             ansicht.controls.extend([
                 ft.Row([btn_tab_stamm, btn_tab_tw], scroll=ft.ScrollMode.HIDDEN),
+                vorlagen_container,
                 ft.Divider(color="white"), ft.Text(titel, size=20, weight="bold", color="white"),
                 stammdaten_spalte, trinkwasser_spalte,
                 ft.Container(height=20),
-                fehler_text,
-                ft.Row([save_btn, btn_touren, btn_pdf], spacing=5),
-                ft.Row([btn_fav]) 
+                fehler_text, ft.Row([btn_touren, btn_pdf_und_save], spacing=10)
             ])
             page.update()
 
@@ -335,8 +490,10 @@ def main(page: ft.Page):
             ansicht.controls.clear(); ansicht.controls.append(nav_leiste())
             ansicht.controls.append(ft.Text("Postausgang", size=25, weight="bold", color="white"))
             temp_dir, final_dir, heute_ordner = get_rewe_paths()
-            ansicht.controls.append(ft.Text(spans=[ft.TextSpan("Berichte liegen in: ", ft.TextStyle(color="red")), ft.TextSpan(f"Downloads/REWE/{heute_ordner}/", ft.TextStyle(color="red", weight="bold"))]))
+            ansicht.controls.append(ft.Text(spans=[ft.TextSpan("Die Berichte für heute liegen im Ordner:\n", ft.TextStyle(color="red", size=12)), ft.TextSpan(f"Downloads / REWE / {heute_ordner} /\n\n", ft.TextStyle(color="red", size=14, weight="bold")), ft.TextSpan("TIPP: Um einen Bericht zu ändern, bearbeite einfach die Tour und klicke neu auf 'Bericht erstellen'. Der alte Bericht wird automatisch überschrieben!", ft.TextStyle(color="red", size=12))]))
+            ansicht.controls.append(ft.Container(height=10))
             p_list = [f for f in os.listdir(final_dir) if f.endswith(".pdf")] if os.path.exists(final_dir) else []
+            if not p_list: ansicht.controls.append(ft.Text("Noch keine Berichte für heute erstellt.", color="grey", size=14))
             for pdf in p_list:
                 def rm(e, d=pdf): os.remove(os.path.join(final_dir, d)); zeige_postausgang()
                 ansicht.controls.append(ft.Container(bgcolor="#002200", padding=10, border_radius=10, content=ft.Row([ft.Text(pdf, color="white", size=10, expand=True), ft.ElevatedButton("🗑️", on_click=rm, bgcolor="red")])))
