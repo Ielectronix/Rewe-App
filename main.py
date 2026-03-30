@@ -11,7 +11,8 @@ def main(page: ft.Page):
     page.padding = 20
     page.scroll = ft.ScrollMode.AUTO
 
-    ansicht = ft.Column(expand=True)
+    # Zwingt auch die Hauptelemente in die Mitte, falls das Handy zickt
+    ansicht = ft.Column(expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
     page.add(ansicht)
 
     def get_rewe_paths():
@@ -108,8 +109,8 @@ def main(page: ft.Page):
                 ft.Container(height=50), 
                 ft.Row([header], alignment=ft.MainAxisAlignment.CENTER), 
                 ft.Container(height=40), 
-                ft.Row([v_in], alignment=ft.MainAxisAlignment.CENTER), 
-                ft.Row([z_in], alignment=ft.MainAxisAlignment.CENTER), 
+                # Diese Column zwingt die Felder exakt in die Mitte
+                ft.Column([v_in, z_in], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
                 ft.Container(height=40), 
                 ft.Row([btn_start], alignment=ft.MainAxisAlignment.CENTER)
             ])
@@ -178,8 +179,7 @@ def main(page: ft.Page):
                     if not t and not m and not j: return ""
                     return f"{t}.{m}.{j}"
 
-                # Standard ausdehnbar=True zwingt alle Dropdowns auf volle Breite!
-                def erstelle_combo(label_text, wert, optionen, groesse=12, ausdehnbar=True, on_change_func=None):
+                def erstelle_combo(label_text, wert, optionen, groesse=12, ausdehnbar=1, on_change_func=None):
                     def on_txt_change(e):
                         if on_change_func: on_change_func(e)
                         
@@ -206,14 +206,13 @@ def main(page: ft.Page):
                 d_tag, d_mon, d_jahr = parse_datum(aktuelle_daten.get("datum", heute_str), heute_str.split(".")[0], heute_str.split(".")[1], heute_str.split(".")[2])
                 tag_dd = erstelle_combo("Tag", d_tag, tage_opts, ausdehnbar=1)
                 mon_dd = erstelle_combo("Mon", d_mon, mon_opts, ausdehnbar=1)
-                jahr_dd = erstelle_combo("Jahr", d_jahr, jahr_opts, ausdehnbar=2) # Jahr bekommt doppelt Platz
+                jahr_dd = erstelle_combo("Jahr", d_jahr, jahr_opts, ausdehnbar=2)
 
                 datum_row = ft.Column([
                     ft.Text("Datum der Probenahme", color="white", weight="bold"),
                     ft.Row([tag_dd, mon_dd, jahr_dd])
                 ])
 
-                # expand=True bei JEDEM Textfeld hinzugefügt, für den Dehnungs-Zwang!
                 adr_in = ft.TextField(label="Adresse Markt", value=aktuelle_daten.get("adresse"), color="yellow", text_style=stil_tf_gelb_12, label_style=stil_label_weiss, border_color="white", content_padding=10, expand=True)
                 nr_in = ft.TextField(label="Marktnummer", value=aktuelle_daten.get("marktnummer"), color="yellow", text_style=stil_tf_gelb_12, label_style=stil_label_weiss, border_color="white", content_padding=10, expand=True)
                 auft_in = ft.TextField(label="Auftragsnummer", value=aktuelle_daten.get("auftragsnummer"), color="yellow", text_style=stil_tf_gelb_12, label_style=stil_label_weiss, border_color="white", content_padding=10, expand=True)
@@ -276,10 +275,10 @@ def main(page: ft.Page):
                 tw_zapf_sonst_dd = erstelle_combo("Sonstiges Zapfstelle", aktuelle_daten.get("tw_zapf_sonst", ""), ["Schlaucharmatur", "Schlauchbrause", "Schlauch mit Brause"])
                 tw_inaktiv_dd = erstelle_combo("Inaktivierung", aktuelle_daten.get("tw_inaktiv", "Na-Thiosulfat"), ["Na-Thiosulfat"])
                 
-                tw_kurz1_dd = erstelle_combo("Farbe", aktuelle_daten.get("tw_kurz1", "1 - nicht wahrnehmbar"), ["1 - nicht wahrnehmbar", "2 - wahrnehmbar", "3 - deutlich wahrnehmbar"])
-                tw_kurz2_dd = erstelle_combo("Trübung", aktuelle_daten.get("tw_kurz2", "1 - nicht wahrnehmbar"), ["1 - nicht wahrnehmbar", "2 - wahrnehmbar", "3 - deutlich wahrnehmbar"])
-                tw_kurz3_dd = erstelle_combo("Bodensatz", aktuelle_daten.get("tw_kurz3", "1 - nicht wahrnehmbar"), ["1 - nicht wahrnehmbar", "2 - wahrnehmbar", "3 - deutlich wahrnehmbar"])
-                tw_kurz4_dd = erstelle_combo("Geruch", aktuelle_daten.get("tw_kurz4", "1 - nicht wahrnehmbar"), ["1 - nicht wahrnehmbar", "2 - wahrnehmbar", "3 - deutlich wahrnehmbar"])
+                tw_kurz1_dd = erstelle_combo("Farbe", aktuelle_daten.get("tw_kurz1", "1 - nicht wahrnehmbar"), ["1 - nicht wahrnehmbar", "2 - wahrnehmbar", "3 - deutlich wahrnehmbar"], ausdehnbar=True)
+                tw_kurz2_dd = erstelle_combo("Trübung", aktuelle_daten.get("tw_kurz2", "1 - nicht wahrnehmbar"), ["1 - nicht wahrnehmbar", "2 - wahrnehmbar", "3 - deutlich wahrnehmbar"], ausdehnbar=True)
+                tw_kurz3_dd = erstelle_combo("Bodensatz", aktuelle_daten.get("tw_kurz3", "1 - nicht wahrnehmbar"), ["1 - nicht wahrnehmbar", "2 - wahrnehmbar", "3 - deutlich wahrnehmbar"], ausdehnbar=True)
+                tw_kurz4_dd = erstelle_combo("Geruch", aktuelle_daten.get("tw_kurz4", "1 - nicht wahrnehmbar"), ["1 - nicht wahrnehmbar", "2 - wahrnehmbar", "3 - deutlich wahrnehmbar"], ausdehnbar=True)
                 
                 tw_zweck_dd = erstelle_combo("Zweck", aktuelle_daten.get("tw_zweck", "Zweck B"), ["Zweck A", "Zweck B", "Zweck C"])
                 tw_verpackung_dd = erstelle_combo("Verpackung", aktuelle_daten.get("tw_verpackung", "500ml Kunststoff-Flasche mit Natriumthiosulfat"), ["500ml Kunststoff-Flasche mit Natriumthiosulfat"])
@@ -363,6 +362,31 @@ def main(page: ft.Page):
                 hfm_hack_temp_in = ft.TextField(label="Probenahmetemperatur", value=aktuelle_daten.get("hfm_hack_temp", ""), border_color="white", color="yellow", label_style=stil_label_weiss, on_blur=format_temp_blur, content_padding=10, text_style=stil_tf_gelb_12, expand=True)
                 hfm_hack_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("hfm_hack_bemerkung", "Bitte eingeben"), ["Bitte eingeben", "Keine Besonderheiten"])
 
+                # HACKFLEISCH COLUMN DEFINITION
+                hfm_hack_col = ft.Column([
+                    hfm_hack_cb,
+                    hfm_hack_entnahmeort_dd,
+                    ft.Divider(color="white24"),
+                    ft.Text("Herstellungsdatum:", color="white", weight="bold"),
+                    ft.Row([hfm_hack_herst_tag_dd, hfm_hack_herst_mon_dd, hfm_hack_herst_jahr_dd]),
+                    hfm_hack_inhalt_in,
+                    hfm_hack_verpackung_dd,
+                    ft.Divider(color="white24"),
+                    ft.Text("Lieferant:", color="white", weight="bold"),
+                    hfm_hack_lief_schwein_in, hfm_hack_lief_rind_in,
+                    ft.Divider(color="white24"),
+                    ft.Text("MHD-Rohware (Schweinefleisch):", color="yellow", weight="bold", size=12),
+                    ft.Row([hfm_hack_mhd_s_tag_dd, hfm_hack_mhd_s_mon_dd, hfm_hack_mhd_s_jahr_dd]),
+                    ft.Text("MHD-Rohware (Rindfleisch):", color="yellow", weight="bold", size=12),
+                    ft.Row([hfm_hack_mhd_r_tag_dd, hfm_hack_mhd_r_mon_dd, hfm_hack_mhd_r_jahr_dd]),
+                    ft.Divider(color="white24"),
+                    ft.Text("Charge Rohware:", color="white", weight="bold"),
+                    hfm_hack_charge_schwein_dd, hfm_hack_charge_rind_dd,
+                    ft.Divider(color="white24"),
+                    hfm_hack_temp_in,
+                    hfm_hack_bemerkung_dd
+                ], visible=True, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
+
                 # --- 5. HFM - GEWÜRZTES SCHWEINEMETT ---
                 hfm_mett_cb = ft.Checkbox(label="Gewürztes Schweinemett", value=aktuelle_daten.get("hfm_mett_cb", False), on_change=pruefe_lims_warnung, label_style=ft.TextStyle(color="white", size=16, weight="bold"), fill_color="yellow", check_color="black")
                 hfm_mett_entnahmeort_dd = erstelle_combo("Entnahmeort", aktuelle_daten.get("hfm_mett_entnahmeort", "Kühlraum"), entnahmeort_opts)
@@ -385,6 +409,27 @@ def main(page: ft.Page):
                 
                 hfm_mett_temp_in = ft.TextField(label="Probenahmetemperatur", value=aktuelle_daten.get("hfm_mett_temp", ""), border_color="white", color="yellow", label_style=stil_label_weiss, on_blur=format_temp_blur, content_padding=10, text_style=stil_tf_gelb_12, expand=True)
                 hfm_mett_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("hfm_mett_bemerkung", "Bitte eingeben"), ["Bitte eingeben", "Keine Besonderheiten"])
+
+                # METT COLUMN DEFINITION
+                hfm_mett_col = ft.Column([
+                    hfm_mett_cb,
+                    hfm_mett_entnahmeort_dd,
+                    ft.Divider(color="white24"),
+                    ft.Text("Herstellungsdatum:", color="white", weight="bold"),
+                    ft.Row([hfm_mett_herst_tag_dd, hfm_mett_herst_mon_dd, hfm_mett_herst_jahr_dd]),
+                    hfm_mett_inhalt_in,
+                    hfm_mett_verpackung_dd,
+                    ft.Divider(color="white24"),
+                    hfm_mett_lief_in,
+                    ft.Divider(color="white24"),
+                    ft.Text("MHD-Rohware:", color="white", weight="bold"),
+                    ft.Row([hfm_mett_mhd_tag_dd, hfm_mett_mhd_mon_dd, hfm_mett_mhd_jahr_dd]),
+                    ft.Divider(color="white24"),
+                    hfm_mett_charge_dd,
+                    ft.Divider(color="white24"),
+                    hfm_mett_temp_in,
+                    hfm_mett_bemerkung_dd
+                ], visible=False, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
 
                 # --- 6. HFM - FZ SCHWEIN ---
                 hfm_fzs_cb = ft.Checkbox(label="Fleischzubereitung Schwein", value=aktuelle_daten.get("hfm_fzs_cb", False), on_change=pruefe_lims_warnung, label_style=ft.TextStyle(color="white", size=16, weight="bold"), fill_color="yellow", check_color="black")
@@ -412,6 +457,29 @@ def main(page: ft.Page):
                 hfm_fzs_temp_in = ft.TextField(label="Probenahmetemperatur", value=aktuelle_daten.get("hfm_fzs_temp", ""), border_color="white", color="yellow", label_style=stil_label_weiss, on_blur=format_temp_blur, content_padding=10, text_style=stil_tf_gelb_12, expand=True)
                 hfm_fzs_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("hfm_fzs_bemerkung", "Bitte eingeben"), ["Bitte eingeben", "Keine Besonderheiten"])
 
+                # FZ SCHWEIN COLUMN DEFINITION
+                hfm_fzs_col = ft.Column([
+                    hfm_fzs_cb,
+                    hfm_fzs_entnahmeort_dd,
+                    hfm_fzs_produkt_in, 
+                    hfm_fzs_marinade_in,
+                    ft.Divider(color="white24"),
+                    ft.Text("Herstellungsdatum:", color="white", weight="bold"),
+                    ft.Row([hfm_fzs_herst_tag_dd, hfm_fzs_herst_mon_dd, hfm_fzs_herst_jahr_dd]),
+                    hfm_fzs_inhalt_in,
+                    hfm_fzs_verpackung_dd,
+                    ft.Divider(color="white24"),
+                    hfm_fzs_lief_in,
+                    ft.Divider(color="white24"),
+                    ft.Text("MHD-Rohware:", color="white", weight="bold"),
+                    ft.Row([hfm_fzs_mhd_tag_dd, hfm_fzs_mhd_mon_dd, hfm_fzs_mhd_jahr_dd]),
+                    ft.Divider(color="white24"),
+                    hfm_fzs_charge_dd,
+                    ft.Divider(color="white24"),
+                    hfm_fzs_temp_in,
+                    hfm_fzs_bemerkung_dd
+                ], visible=False, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
+
                 # --- 7. HFM - FZ GEFLÜGEL ---
                 hfm_fzg_cb = ft.Checkbox(label="Fleischzubereitung Geflügel", value=aktuelle_daten.get("hfm_fzg_cb", False), on_change=pruefe_lims_warnung, label_style=ft.TextStyle(color="white", size=16, weight="bold"), fill_color="yellow", check_color="black")
                 hfm_fzg_entnahmeort_dd = erstelle_combo("Entnahmeort", aktuelle_daten.get("hfm_fzg_entnahmeort", "Kühlraum"), entnahmeort_opts)
@@ -437,6 +505,29 @@ def main(page: ft.Page):
                 
                 hfm_fzg_temp_in = ft.TextField(label="Probenahmetemperatur", value=aktuelle_daten.get("hfm_fzg_temp", ""), border_color="white", color="yellow", label_style=stil_label_weiss, on_blur=format_temp_blur, content_padding=10, text_style=stil_tf_gelb_12, expand=True)
                 hfm_fzg_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("hfm_fzg_bemerkung", "Bitte eingeben"), ["Bitte eingeben", "Keine Besonderheiten"])
+
+                # FZ GEFLÜGEL COLUMN DEFINITION
+                hfm_fzg_col = ft.Column([
+                    hfm_fzg_cb,
+                    hfm_fzg_entnahmeort_dd,
+                    hfm_fzg_produkt_in, 
+                    hfm_fzg_marinade_in,
+                    ft.Divider(color="white24"),
+                    ft.Text("Herstellungsdatum:", color="white", weight="bold"),
+                    ft.Row([hfm_fzg_herst_tag_dd, hfm_fzg_herst_mon_dd, hfm_fzg_herst_jahr_dd]),
+                    hfm_fzg_inhalt_in,
+                    hfm_fzg_verpackung_dd,
+                    ft.Divider(color="white24"),
+                    hfm_fzg_lief_in,
+                    ft.Divider(color="white24"),
+                    ft.Text("MHD-Rohware:", color="white", weight="bold"),
+                    ft.Row([hfm_fzg_mhd_tag_dd, hfm_fzg_mhd_mon_dd, hfm_fzg_mhd_jahr_dd]),
+                    ft.Divider(color="white24"),
+                    hfm_fzg_charge_dd,
+                    ft.Divider(color="white24"),
+                    hfm_fzg_temp_in,
+                    hfm_fzg_bemerkung_dd
+                ], visible=False, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
 
                 hfm_bio_col = ft.Column([ft.Text("Felder für: Biohackfleisch", color="yellow")], visible=False, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
 
@@ -487,7 +578,6 @@ def main(page: ft.Page):
                     btn_stamm.bgcolor = "blue"; btn_tw.bgcolor = "blue"; btn_se.bgcolor = "blue"; btn_hfm.bgcolor = "red"
                     page.update()
 
-                # Blaue Hauptreiter, rot wenn aktiv
                 btn_stamm = sicherer_button("STAMMDATEN", switch_tab_stamm, "red", "white")
                 btn_tw = sicherer_button("TRINKWASSER", switch_tab_tw, "blue", "white")
                 btn_se = sicherer_button("SCHERBENEIS", switch_tab_se, "blue", "white")
