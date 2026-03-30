@@ -183,7 +183,7 @@ def main(page: ft.Page):
                     combo = ft.TextField(
                         label=label_text, value=wert, color="yellow", 
                         text_style=ft.TextStyle(size=groesse, color="yellow"), label_style=stil_label_weiss, 
-                        border_color="white", expand=ausdehnbar, content_padding=10, 
+                        border_color="white", expand=ausdehnbar, content_padding=5, 
                         on_change=on_txt_change
                     )
                     items = []
@@ -201,8 +201,6 @@ def main(page: ft.Page):
 
                 # --- 1. STAMMDATEN FELDER ---
                 d_tag, d_mon, d_jahr = parse_datum(aktuelle_daten.get("datum", heute_str), heute_str.split(".")[0], heute_str.split(".")[1], heute_str.split(".")[2])
-                
-                # Neues prozentuales Flex-Layout: 30% Tag, 30% Monat, 40% Jahr
                 tag_dd = erstelle_combo("Tag", d_tag, tage_opts, ausdehnbar=3)
                 mon_dd = erstelle_combo("Mon", d_mon, mon_opts, ausdehnbar=3)
                 jahr_dd = erstelle_combo("Jahr", d_jahr, jahr_opts, ausdehnbar=4)
@@ -225,12 +223,15 @@ def main(page: ft.Page):
                 lims_override_cb = ft.Checkbox(label="Trotzdem speichern", visible=False, label_style=stil_cb_weiss, fill_color="red", check_color="white")
 
                 def pruefe_lims_warnung(e=None):
+                    # NEU: Der Alarm wird NUR NOCH durch Uhrzeit, Temperatur oder MHD (Emre D) ausgelöst! 
+                    # Nicht mehr durch "Produkt", "Lieferant" oder andere Vorlagen-Felder.
                     tw_hat_daten = bool((tw_zeit_in.value or "").strip() or (tw_temp_in.value or "").strip())
                     se_hat_daten = bool((se_zeit_in.value or "").strip() or (se_temp_in.value or "").strip())
+                    
                     hfm_hack_hat_daten = bool((hfm_hack_temp_in.value or "").strip() or (hfm_hack_mhd_s_tag_dd.value or "").strip() or (hfm_hack_mhd_r_tag_dd.value or "").strip())
                     hfm_mett_hat_daten = bool((hfm_mett_temp_in.value or "").strip() or (hfm_mett_mhd_tag_dd.value or "").strip())
-                    hfm_fzs_hat_daten = bool((hfm_fzs_temp_in.value or "").strip() or (hfm_fzs_mhd_tag_dd.value or "").strip() or (hfm_fzs_produkt_in.value or "").strip())
-                    hfm_fzg_hat_daten = bool((hfm_fzg_temp_in.value or "").strip() or (hfm_fzg_mhd_tag_dd.value or "").strip() or (hfm_fzg_produkt_in.value or "").strip())
+                    hfm_fzs_hat_daten = bool((hfm_fzs_temp_in.value or "").strip() or (hfm_fzs_mhd_tag_dd.value or "").strip())
+                    hfm_fzg_hat_daten = bool((hfm_fzg_temp_in.value or "").strip() or (hfm_fzg_mhd_tag_dd.value or "").strip())
                     
                     tw_braucht_warnung = tw_hat_daten and not tw_kalt_cb.value
                     se_braucht_warnung = se_hat_daten and not se_kalt_cb.value
@@ -389,7 +390,8 @@ def main(page: ft.Page):
                 hfm_fzs_cb = ft.Checkbox(label="Fleischzubereitung Schwein", value=aktuelle_daten.get("hfm_fzs_cb", False), on_change=pruefe_lims_warnung, label_style=ft.TextStyle(color="white", size=16, weight="bold"), fill_color="yellow", check_color="black")
                 hfm_fzs_entnahmeort_dd = erstelle_combo("Entnahmeort", aktuelle_daten.get("hfm_fzs_entnahmeort", "Kühlraum"), entnahmeort_opts)
                 
-                hfm_fzs_produkt_in = ft.TextField(label="Produkt", hint_text="z. B. Schweine Nacken", hint_style=ft.TextStyle(color="white", size=12), value=aktuelle_daten.get("hfm_fzs_produkt", ""), color="yellow", label_style=stil_label_weiss, border_color="white", on_change=pruefe_lims_warnung, content_padding=10, text_style=stil_tf_gelb_12, expand=True)
+                # Hier wurde on_change entfernt, damit das Produkt nicht fälschlicherweise den Alarm auslöst
+                hfm_fzs_produkt_in = ft.TextField(label="Produkt", hint_text="z. B. Schweine Nacken", hint_style=ft.TextStyle(color="white", size=12), value=aktuelle_daten.get("hfm_fzs_produkt", ""), color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True)
                 hfm_fzs_marinade_in = ft.TextField(label="Marinade", value=aktuelle_daten.get("hfm_fzs_marinade", ""), color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True)
                 
                 hfm_fzs_h_t, hfm_fzs_h_m, hfm_fzs_h_j = parse_datum(aktuelle_daten.get("hfm_fzs_herstelldatum", heute_str), heute_str.split(".")[0], heute_str.split(".")[1], heute_str.split(".")[2])
@@ -415,7 +417,8 @@ def main(page: ft.Page):
                 hfm_fzg_cb = ft.Checkbox(label="Fleischzubereitung Geflügel", value=aktuelle_daten.get("hfm_fzg_cb", False), on_change=pruefe_lims_warnung, label_style=ft.TextStyle(color="white", size=16, weight="bold"), fill_color="yellow", check_color="black")
                 hfm_fzg_entnahmeort_dd = erstelle_combo("Entnahmeort", aktuelle_daten.get("hfm_fzg_entnahmeort", "Kühlraum"), entnahmeort_opts)
                 
-                hfm_fzg_produkt_in = ft.TextField(label="Produkt", hint_text="z. B. Hähnchenbrust", hint_style=ft.TextStyle(color="white", size=12), value=aktuelle_daten.get("hfm_fzg_produkt", ""), color="yellow", label_style=stil_label_weiss, border_color="white", on_change=pruefe_lims_warnung, content_padding=10, text_style=stil_tf_gelb_12, expand=True)
+                # Hier wurde on_change entfernt, damit das Produkt nicht fälschlicherweise den Alarm auslöst
+                hfm_fzg_produkt_in = ft.TextField(label="Produkt", hint_text="z. B. Hähnchenbrust", hint_style=ft.TextStyle(color="white", size=12), value=aktuelle_daten.get("hfm_fzg_produkt", ""), color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True)
                 hfm_fzg_marinade_in = ft.TextField(label="Marinade", value=aktuelle_daten.get("hfm_fzg_marinade", ""), color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True)
                 
                 hfm_fzg_h_t, hfm_fzg_h_m, hfm_fzg_h_j = parse_datum(aktuelle_daten.get("hfm_fzg_herstelldatum", heute_str), heute_str.split(".")[0], heute_str.split(".")[1], heute_str.split(".")[2])
@@ -448,6 +451,7 @@ def main(page: ft.Page):
                     if not vl_dd.value: return
                     v = alle_vorlagen.get(vl_dd.value, {})
                     
+                    # 1. Alles leeren & Standards setzen!
                     try:
                         h_t, h_m, h_j = heute_str.split(".")
                         tag_dd.value = h_t; mon_dd.value = h_m; jahr_dd.value = h_j
@@ -480,6 +484,7 @@ def main(page: ft.Page):
                     
                     se_cb_fallprobe.value = True
 
+                    # 2. Werte füllen
                     if "name_in" in v: name_in.value = v["name_in"]
                     if "ag_dd" in v: ag_dd.value = v["ag_dd"]
                     if "typ_dd" in v: typ_dd.value = v["typ_dd"]
@@ -509,36 +514,36 @@ def main(page: ft.Page):
                     if "hfm_hack_entnahmeort" in v: hfm_hack_entnahmeort_dd.value = v["hfm_hack_entnahmeort"]
                     if "hfm_hack_inhalt" in v: hfm_hack_inhalt_in.value = v["hfm_hack_inhalt"]
                     if "hfm_hack_verpackung" in v: hfm_hack_verpackung_dd.value = v["hfm_hack_verpackung"]
+                    if "hfm_hack_lief_schwein" in v: hfm_hack_lief_schwein_in.value = v["hfm_hack_lief_schwein"]
+                    if "hfm_hack_lief_rind" in v: hfm_hack_lief_rind_in.value = v["hfm_hack_lief_rind"]
                     if "hfm_hack_charge_schwein" in v: hfm_hack_charge_schwein_dd.value = v["hfm_hack_charge_schwein"]
                     if "hfm_hack_charge_rind" in v: hfm_hack_charge_rind_dd.value = v["hfm_hack_charge_rind"]
                     if "hfm_hack_bemerkung" in v: hfm_hack_bemerkung_dd.value = v["hfm_hack_bemerkung"]
-                    if "hfm_hack_lief_schwein" in v: hfm_hack_lief_schwein_in.value = v["hfm_hack_lief_schwein"]
-                    if "hfm_hack_lief_rind" in v: hfm_hack_lief_rind_in.value = v["hfm_hack_lief_rind"]
 
                     if "hfm_mett_entnahmeort" in v: hfm_mett_entnahmeort_dd.value = v["hfm_mett_entnahmeort"]
                     if "hfm_mett_inhalt" in v: hfm_mett_inhalt_in.value = v["hfm_mett_inhalt"]
                     if "hfm_mett_verpackung" in v: hfm_mett_verpackung_dd.value = v["hfm_mett_verpackung"]
+                    if "hfm_mett_lief" in v: hfm_mett_lief_in.value = v["hfm_mett_lief"]
                     if "hfm_mett_charge" in v: hfm_mett_charge_dd.value = v["hfm_mett_charge"]
                     if "hfm_mett_bemerkung" in v: hfm_mett_bemerkung_dd.value = v["hfm_mett_bemerkung"]
-                    if "hfm_mett_lief" in v: hfm_mett_lief_in.value = v["hfm_mett_lief"]
 
                     if "hfm_fzs_entnahmeort" in v: hfm_fzs_entnahmeort_dd.value = v["hfm_fzs_entnahmeort"]
                     if "hfm_fzs_produkt" in v: hfm_fzs_produkt_in.value = v["hfm_fzs_produkt"]
                     if "hfm_fzs_marinade" in v: hfm_fzs_marinade_in.value = v["hfm_fzs_marinade"]
                     if "hfm_fzs_inhalt" in v: hfm_fzs_inhalt_in.value = v["hfm_fzs_inhalt"]
                     if "hfm_fzs_verpackung" in v: hfm_fzs_verpackung_dd.value = v["hfm_fzs_verpackung"]
+                    if "hfm_fzs_lief" in v: hfm_fzs_lief_in.value = v["hfm_fzs_lief"]
                     if "hfm_fzs_charge" in v: hfm_fzs_charge_dd.value = v["hfm_fzs_charge"]
                     if "hfm_fzs_bemerkung" in v: hfm_fzs_bemerkung_dd.value = v["hfm_fzs_bemerkung"]
-                    if "hfm_fzs_lief" in v: hfm_fzs_lief_in.value = v["hfm_fzs_lief"]
 
                     if "hfm_fzg_entnahmeort" in v: hfm_fzg_entnahmeort_dd.value = v["hfm_fzg_entnahmeort"]
                     if "hfm_fzg_produkt" in v: hfm_fzg_produkt_in.value = v["hfm_fzg_produkt"]
                     if "hfm_fzg_marinade" in v: hfm_fzg_marinade_in.value = v["hfm_fzg_marinade"]
                     if "hfm_fzg_inhalt" in v: hfm_fzg_inhalt_in.value = v["hfm_fzg_inhalt"]
                     if "hfm_fzg_verpackung" in v: hfm_fzg_verpackung_dd.value = v["hfm_fzg_verpackung"]
+                    if "hfm_fzg_lief" in v: hfm_fzg_lief_in.value = v["hfm_fzg_lief"]
                     if "hfm_fzg_charge" in v: hfm_fzg_charge_dd.value = v["hfm_fzg_charge"]
                     if "hfm_fzg_bemerkung" in v: hfm_fzg_bemerkung_dd.value = v["hfm_fzg_bemerkung"]
-                    if "hfm_fzg_lief" in v: hfm_fzg_lief_in.value = v["hfm_fzg_lief"]
                     
                     vorlagen_status.value = f"✅ '{vl_dd.value}' geladen!"
                     vorlagen_status.color = "green"
@@ -925,8 +930,8 @@ def main(page: ft.Page):
                     hat_se_daten = bool((se_zeit_in.value or "").strip() or (se_temp_in.value or "").strip())
                     hat_hfm_hack = bool((hfm_hack_temp_in.value or "").strip() or (hfm_hack_mhd_s_tag_dd.value or "").strip() or (hfm_hack_mhd_r_tag_dd.value or "").strip())
                     hat_hfm_mett = bool((hfm_mett_temp_in.value or "").strip() or (hfm_mett_mhd_tag_dd.value or "").strip())
-                    hat_hfm_fzs = bool((hfm_fzs_temp_in.value or "").strip() or (hfm_fzs_mhd_tag_dd.value or "").strip() or (hfm_fzs_produkt_in.value or "").strip())
-                    hat_hfm_fzg = bool((hfm_fzg_temp_in.value or "").strip() or (hfm_fzg_mhd_tag_dd.value or "").strip() or (hfm_fzg_produkt_in.value or "").strip())
+                    hat_hfm_fzs = bool((hfm_fzs_temp_in.value or "").strip() or (hfm_fzs_mhd_tag_dd.value or "").strip())
+                    hat_hfm_fzg = bool((hfm_fzg_temp_in.value or "").strip() or (hfm_fzg_mhd_tag_dd.value or "").strip())
                     
                     # 1. Haken vergessen Warnung (LIMS-Override)
                     if hat_tw_daten and not tw_kalt_cb.value and not lims_override_cb.value:
