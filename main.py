@@ -273,7 +273,6 @@ def main(page: ft.Page):
                 tw_zapf_sonst_dd = erstelle_combo("Sonstiges Zapfstelle", aktuelle_daten.get("tw_zapf_sonst", ""), ["Schlaucharmatur", "Schlauchbrause", "Schlauch mit Brause"])
                 tw_inaktiv_dd = erstelle_combo("Inaktivierung", aktuelle_daten.get("tw_inaktiv", "Na-Thiosulfat"), ["Na-Thiosulfat"])
                 
-                # Kurzsensorik vollflächig untereinander
                 tw_kurz1_dd = erstelle_combo("Farbe", aktuelle_daten.get("tw_kurz1", "1 - nicht wahrnehmbar"), ["1 - nicht wahrnehmbar", "2 - wahrnehmbar", "3 - deutlich wahrnehmbar"], ausdehnbar=True)
                 tw_kurz2_dd = erstelle_combo("Trübung", aktuelle_daten.get("tw_kurz2", "1 - nicht wahrnehmbar"), ["1 - nicht wahrnehmbar", "2 - wahrnehmbar", "3 - deutlich wahrnehmbar"], ausdehnbar=True)
                 tw_kurz3_dd = erstelle_combo("Bodensatz", aktuelle_daten.get("tw_kurz3", "1 - nicht wahrnehmbar"), ["1 - nicht wahrnehmbar", "2 - wahrnehmbar", "3 - deutlich wahrnehmbar"], ausdehnbar=True)
@@ -284,6 +283,7 @@ def main(page: ft.Page):
                 tw_entnahmeort_dd = erstelle_combo("Entnahmeort", aktuelle_daten.get("tw_entnahmeort", "Metzgerei"), ["Produktionsraum", "Bedientheke", "Vorbereitungsraum", "Metzgerei", "Kühlraum", "SB-Theke", "Salatbar", "Convenience Küche"])
                 tw_bemerkung_dd = erstelle_combo("TW Bemerkung", aktuelle_daten.get("tw_bemerkung", "Bitte eingeben"), ["Bitte eingeben", "Keine Besonderheiten"])
 
+                # Checkboxen entzerrt untereinander für bessere Lesbarkeit auf Handys
                 cb_pn = ft.Checkbox(label="PN-Hahn", value=aktuelle_daten.get("tw_cb_pn", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
                 cb_zwei = ft.Checkbox(label="Zweigriff", value=aktuelle_daten.get("tw_cb_zwei", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
                 cb_sensor = ft.Checkbox(label="Sensor", value=aktuelle_daten.get("tw_cb_sensor", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
@@ -292,7 +292,6 @@ def main(page: ft.Page):
                 cb_ein_g = ft.Checkbox(label="Eingriff", value=aktuelle_daten.get("tw_cb_ein_g", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
                 cb_eck = ft.Checkbox(label="Eckventil", value=aktuelle_daten.get("tw_cb_eck", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
                 
-                # Checkboxen entzerrt untereinander für Handys
                 cb_auff_ja = ft.Checkbox(label="ja", value=aktuelle_daten.get("cb_auff_ja", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
                 cb_auff_nein = ft.Checkbox(label="nein", value=aktuelle_daten.get("cb_auff_nein", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
                 cb_auff_perl = ft.Checkbox(label="Perlator nicht entfernbar", value=aktuelle_daten.get("cb_auff_perl", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
@@ -353,11 +352,11 @@ def main(page: ft.Page):
                 hfm_hack_inhalt_in = ft.TextField(label="Inhalt", value=aktuelle_daten.get("hfm_hack_inhalt", "jeweils ca. 200 g"), color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12)
                 hfm_hack_verpackung_dd = erstelle_combo("Verpackung", aktuelle_daten.get("hfm_hack_verpackung", "steriler Probenbeutel"), verpackung_opts)
                 
-                hfm_hack_lief_schwein_in = ft.TextField(label="Lieferant Schweinefleisch", value=aktuelle_daten.get("hfm_hack_lief_schwein", ""), color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12)
-                hfm_hack_lief_rind_in = ft.TextField(label="Lieferant Rindfleisch", value=aktuelle_daten.get("hfm_hack_lief_rind", ""), color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12)
+                hfm_hack_lief_schwein_in = ft.TextField(label="Lieferant (Schwein)", value=aktuelle_daten.get("hfm_hack_lief_schwein", ""), color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12)
+                hfm_hack_lief_rind_in = ft.TextField(label="Lieferant (Rind)", value=aktuelle_daten.get("hfm_hack_lief_rind", ""), color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12)
                 
-                hfm_hack_charge_schwein_dd = erstelle_combo("Charge Schweinefleisch", aktuelle_daten.get("hfm_hack_charge_schwein", "Bitte eingeben"), charge_opts_s)
-                hfm_hack_charge_rind_dd = erstelle_combo("Charge Rindfleisch", aktuelle_daten.get("hfm_hack_charge_rind", "Bitte eingeben"), charge_opts_r)
+                hfm_hack_charge_schwein_dd = erstelle_combo("Charge Schwein", aktuelle_daten.get("hfm_hack_charge_schwein", "Bitte eingeben"), charge_opts_s)
+                hfm_hack_charge_rind_dd = erstelle_combo("Charge Rind", aktuelle_daten.get("hfm_hack_charge_rind", "Bitte eingeben"), charge_opts_r)
                 
                 hfm_hack_temp_in = ft.TextField(label="Probenahmetemperatur", value=aktuelle_daten.get("hfm_hack_temp", ""), border_color="white", color="yellow", label_style=stil_label_weiss, on_blur=format_temp_blur, content_padding=10, text_style=stil_tf_gelb_12)
                 hfm_hack_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("hfm_hack_bemerkung", "Bitte eingeben"), ["Bitte eingeben", "Keine Besonderheiten"])
@@ -436,6 +435,317 @@ def main(page: ft.Page):
                 
                 hfm_fzg_temp_in = ft.TextField(label="Probenahmetemperatur", value=aktuelle_daten.get("hfm_fzg_temp", ""), border_color="white", color="yellow", label_style=stil_label_weiss, on_blur=format_temp_blur, content_padding=10, text_style=stil_tf_gelb_12)
                 hfm_fzg_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("hfm_fzg_bemerkung", "Bitte eingeben"), ["Bitte eingeben", "Keine Besonderheiten"])
+
+
+                # --- 8. VORLAGEN LOGIK (KOMPAKT MIT EMOJIS) ---
+                alle_vorlagen = lade_vorlagen()
+                vorlagen_status = ft.Text("", weight="bold") 
+                
+                vl_dd = ft.Dropdown(options=[ft.dropdown.Option(k) for k in alle_vorlagen.keys()], expand=True, dense=True, content_padding=10)
+                
+                def lade_v(e):
+                    if not vl_dd.value: return
+                    v = alle_vorlagen.get(vl_dd.value, {})
+                    
+                    # 1. Alles leeren & Standards setzen!
+                    try:
+                        h_t, h_m, h_j = heute_str.split(".")
+                        tag_dd.value = h_t; mon_dd.value = h_m; jahr_dd.value = h_j
+                        hfm_hack_herst_tag_dd.value = h_t; hfm_hack_herst_mon_dd.value = h_m; hfm_hack_herst_jahr_dd.value = h_j
+                        hfm_mett_herst_tag_dd.value = h_t; hfm_mett_herst_mon_dd.value = h_m; hfm_mett_herst_jahr_dd.value = h_j
+                        hfm_fzs_herst_tag_dd.value = h_t; hfm_fzs_herst_mon_dd.value = h_m; hfm_fzs_herst_jahr_dd.value = h_j
+                        hfm_fzg_herst_tag_dd.value = h_t; hfm_fzg_herst_mon_dd.value = h_m; hfm_fzg_herst_jahr_dd.value = h_j
+                    except: pass
+                    
+                    adr_in.value = ""; nr_in.value = ""; auft_in.value = ""
+                    tw_kalt_cb.value = False; tw_zeit_in.value = ""; tw_temp_in.value = ""; tw_tempkonst_in.value = ""
+                    se_kalt_cb.value = False; se_zeit_in.value = ""; se_temp_in.value = ""
+                    
+                    hfm_hack_cb.value = False; hfm_hack_temp_in.value = ""
+                    hfm_hack_lief_schwein_in.value = ""; hfm_hack_lief_rind_in.value = ""
+                    hfm_hack_mhd_s_tag_dd.value = ""; hfm_hack_mhd_s_mon_dd.value = ""; hfm_hack_mhd_s_jahr_dd.value = ""
+                    hfm_hack_mhd_r_tag_dd.value = ""; hfm_hack_mhd_r_mon_dd.value = ""; hfm_hack_mhd_r_jahr_dd.value = ""
+
+                    hfm_mett_cb.value = False; hfm_mett_temp_in.value = ""; hfm_mett_lief_in.value = ""
+                    hfm_mett_mhd_tag_dd.value = ""; hfm_mett_mhd_mon_dd.value = ""; hfm_mett_mhd_jahr_dd.value = ""
+
+                    hfm_fzs_cb.value = False; hfm_fzs_temp_in.value = ""; hfm_fzs_lief_in.value = ""; hfm_fzs_produkt_in.value = ""; hfm_fzs_marinade_in.value = ""
+                    hfm_fzs_mhd_tag_dd.value = ""; hfm_fzs_mhd_mon_dd.value = ""; hfm_fzs_mhd_jahr_dd.value = ""
+
+                    hfm_fzg_cb.value = False; hfm_fzg_temp_in.value = ""; hfm_fzg_lief_in.value = ""; hfm_fzg_produkt_in.value = ""; hfm_fzg_marinade_in.value = ""
+                    hfm_fzg_mhd_tag_dd.value = ""; hfm_fzg_mhd_mon_dd.value = ""; hfm_fzg_mhd_jahr_dd.value = ""
+                    
+                    for cb in [cb_pn, cb_zwei, cb_sensor, cb_knie, cb_ein, cb_ein_g, cb_eck, cb_auff_ja, cb_auff_nein, cb_auff_perl, cb_auff_verkalk, cb_auff_verbrueh, cb_auff_durchlauf, cb_auff_unterbau, cb_auff_eck_zu, cb_auff_nichtmoeglich, cb_auff_dusche, cb_auff_handbrause, cb_auff_sonst, se_cb_eiswanne, se_cb_ozon]: cb.value = False
+                    tw_unterbau_l_in.value = ""; tw_auff_sonstiges_in.value = ""; se_tech_sonst_in.value = ""; se_auff_sonst_in.value = ""
+                    
+                    se_cb_fallprobe.value = True
+
+                    # 2. Werte füllen
+                    if "datum" in v:
+                        try:
+                            t, m, j = v["datum"].split(".")
+                            tag_dd.value = t; mon_dd.value = m; jahr_dd.value = j
+                        except: pass
+                        
+                    if "name_in" in v: name_in.value = v["name_in"]
+                    if "ag_dd" in v: ag_dd.value = v["ag_dd"]
+                    if "typ_dd" in v: typ_dd.value = v["typ_dd"]
+                    if "bem_in" in v: bem_in.value = v["bem_in"]
+                    
+                    if "tw_desinf_dd" in v: tw_desinf_dd.value = v["tw_desinf_dd"]
+                    if "tw_zapf_dd" in v: tw_zapf_dd.value = v["tw_zapf_dd"]
+                    if "tw_zapf_sonst_dd" in v: tw_zapf_sonst_dd.value = v["tw_zapf_sonst_dd"]
+                    if "tw_inaktiv_dd" in v: tw_inaktiv_dd.value = v["tw_inaktiv_dd"]
+                    if "tw_kurz1_dd" in v: tw_kurz1_dd.value = v["tw_kurz1_dd"]
+                    if "tw_kurz2_dd" in v: tw_kurz2_dd.value = v["tw_kurz2_dd"]
+                    if "tw_kurz3_dd" in v: tw_kurz3_dd.value = v["tw_kurz3_dd"]
+                    if "tw_kurz4_dd" in v: tw_kurz4_dd.value = v["tw_kurz4_dd"]
+                    if "tw_zweck_dd" in v: tw_zweck_dd.value = v["tw_zweck_dd"]
+                    if "tw_inhalt_in" in v: tw_inhalt_in.value = v["tw_inhalt_in"]
+                    if "tw_verpackung_dd" in v: tw_verpackung_dd.value = v["tw_verpackung_dd"]
+                    if "tw_entnahmeort_dd" in v: tw_entnahmeort_dd.value = v["tw_entnahmeort_dd"]
+                    if "tw_bemerkung_dd" in v: tw_bemerkung_dd.value = v["tw_bemerkung_dd"]
+
+                    if "se_zapf_dd" in v: se_zapf_dd.value = v["se_zapf_dd"]
+                    if "se_desinf_dd" in v: se_desinf_dd.value = v["se_desinf_dd"]
+                    if "se_inhalt_in" in v: se_inhalt_in.value = v["se_inhalt_in"]
+                    if "se_verpackung_dd" in v: se_verpackung_dd.value = v["se_verpackung_dd"]
+                    if "se_entnahmeort_dd" in v: se_entnahmeort_dd.value = v["se_entnahmeort_dd"]
+                    if "se_bemerkung_dd" in v: se_bemerkung_dd.value = v["se_bemerkung_dd"]
+
+                    if "hfm_hack_entnahmeort" in v: hfm_hack_entnahmeort_dd.value = v["hfm_hack_entnahmeort"]
+                    if "hfm_hack_inhalt" in v: hfm_hack_inhalt_in.value = v["hfm_hack_inhalt"]
+                    if "hfm_hack_verpackung" in v: hfm_hack_verpackung_dd.value = v["hfm_hack_verpackung"]
+                    if "hfm_hack_charge_schwein" in v: hfm_hack_charge_schwein_dd.value = v["hfm_hack_charge_schwein"]
+                    if "hfm_hack_charge_rind" in v: hfm_hack_charge_rind_dd.value = v["hfm_hack_charge_rind"]
+                    if "hfm_hack_bemerkung" in v: hfm_hack_bemerkung_dd.value = v["hfm_hack_bemerkung"]
+
+                    if "hfm_mett_entnahmeort" in v: hfm_mett_entnahmeort_dd.value = v["hfm_mett_entnahmeort"]
+                    if "hfm_mett_inhalt" in v: hfm_mett_inhalt_in.value = v["hfm_mett_inhalt"]
+                    if "hfm_mett_verpackung" in v: hfm_mett_verpackung_dd.value = v["hfm_mett_verpackung"]
+                    if "hfm_mett_lief" in v: hfm_mett_lief_in.value = v["hfm_mett_lief"]
+                    if "hfm_mett_charge" in v: hfm_mett_charge_dd.value = v["hfm_mett_charge"]
+                    if "hfm_mett_bemerkung" in v: hfm_mett_bemerkung_dd.value = v["hfm_mett_bemerkung"]
+
+                    if "hfm_fzs_entnahmeort" in v: hfm_fzs_entnahmeort_dd.value = v["hfm_fzs_entnahmeort"]
+                    if "hfm_fzs_produkt" in v: hfm_fzs_produkt_in.value = v["hfm_fzs_produkt"]
+                    if "hfm_fzs_marinade" in v: hfm_fzs_marinade_in.value = v["hfm_fzs_marinade"]
+                    if "hfm_fzs_inhalt" in v: hfm_fzs_inhalt_in.value = v["hfm_fzs_inhalt"]
+                    if "hfm_fzs_verpackung" in v: hfm_fzs_verpackung_dd.value = v["hfm_fzs_verpackung"]
+                    if "hfm_fzs_lief" in v: hfm_fzs_lief_in.value = v["hfm_fzs_lief"]
+                    if "hfm_fzs_charge" in v: hfm_fzs_charge_dd.value = v["hfm_fzs_charge"]
+                    if "hfm_fzs_bemerkung" in v: hfm_fzs_bemerkung_dd.value = v["hfm_fzs_bemerkung"]
+
+                    if "hfm_fzg_entnahmeort" in v: hfm_fzg_entnahmeort_dd.value = v["hfm_fzg_entnahmeort"]
+                    if "hfm_fzg_produkt" in v: hfm_fzg_produkt_in.value = v["hfm_fzg_produkt"]
+                    if "hfm_fzg_marinade" in v: hfm_fzg_marinade_in.value = v["hfm_fzg_marinade"]
+                    if "hfm_fzg_inhalt" in v: hfm_fzg_inhalt_in.value = v["hfm_fzg_inhalt"]
+                    if "hfm_fzg_verpackung" in v: hfm_fzg_verpackung_dd.value = v["hfm_fzg_verpackung"]
+                    if "hfm_fzg_lief" in v: hfm_fzg_lief_in.value = v["hfm_fzg_lief"]
+                    if "hfm_fzg_charge" in v: hfm_fzg_charge_dd.value = v["hfm_fzg_charge"]
+                    if "hfm_fzg_bemerkung" in v: hfm_fzg_bemerkung_dd.value = v["hfm_fzg_bemerkung"]
+                    
+                    vorlagen_status.value = f"✅ '{vl_dd.value}' geladen!"
+                    vorlagen_status.color = "green"
+                    pruefe_lims_warnung()
+                    page.update()
+
+                # EMOJIS STATT ICONS - Kugelsicher auf jeder Flet-Version
+                vl_load_btn = sicherer_button("📥", lade_v, "blue", "white", width=60, height=40)
+                vl_name_in = ft.TextField(label="Name für neue Vorlage", expand=True, color="yellow", text_style=ft.TextStyle(size=12, color="yellow"), label_style=stil_label_weiss, border_color="white", dense=True, content_padding=10)
+                
+                def del_v(e):
+                    if vl_dd.value in alle_vorlagen:
+                        del alle_vorlagen[vl_dd.value]
+                        speichere_vorlagen(alle_vorlagen)
+                        vl_dd.options = [ft.dropdown.Option(k) for k in alle_vorlagen.keys()]
+                        vorlagen_status.value = f"🗑️ Gelöscht!"
+                        vorlagen_status.color = "red"
+                        vl_dd.value = None
+                        page.update()
+
+                vl_del_btn = sicherer_button("🗑️", del_v, "red", "white", width=60, height=40)
+                
+                def save_v(e):
+                    if not vl_name_in.value: return
+                    
+                    d_v = {
+                        "datum": f"{tag_dd.value}.{mon_dd.value}.{jahr_dd.value}", "name_in": name_in.value, "ag_dd": ag_dd.value, "typ_dd": typ_dd.value, "bem_in": bem_in.value,
+                        "tw_desinf_dd": tw_desinf_dd.value, "tw_zapf_dd": tw_zapf_dd.value, "tw_zapf_sonst_dd": tw_zapf_sonst_dd.value,
+                        "tw_inaktiv_dd": tw_inaktiv_dd.value, "tw_kurz1_dd": tw_kurz1_dd.value, "tw_kurz2_dd": tw_kurz2_dd.value,
+                        "tw_kurz3_dd": tw_kurz3_dd.value, "tw_kurz4_dd": tw_kurz4_dd.value, "tw_zweck_dd": tw_zweck_dd.value, 
+                        "tw_inhalt_in": tw_inhalt_in.value, "tw_verpackung_dd": tw_verpackung_dd.value, 
+                        "tw_entnahmeort_dd": tw_entnahmeort_dd.value, "tw_bemerkung_dd": tw_bemerkung_dd.value,
+                        "se_zapf_dd": se_zapf_dd.value, "se_desinf_dd": se_desinf_dd.value, "se_inhalt_in": se_inhalt_in.value,
+                        "se_verpackung_dd": se_verpackung_dd.value, "se_entnahmeort_dd": se_entnahmeort_dd.value, "se_bemerkung_dd": se_bemerkung_dd.value,
+                        
+                        "hfm_hack_entnahmeort": hfm_hack_entnahmeort_dd.value, "hfm_hack_inhalt": hfm_hack_inhalt_in.value,
+                        "hfm_hack_verpackung": hfm_hack_verpackung_dd.value, "hfm_hack_charge_schwein": hfm_hack_charge_schwein_dd.value,
+                        "hfm_hack_charge_rind": hfm_hack_charge_rind_dd.value, "hfm_hack_bemerkung": hfm_hack_bemerkung_dd.value,
+                        
+                        "hfm_mett_entnahmeort": hfm_mett_entnahmeort_dd.value, "hfm_mett_inhalt": hfm_mett_inhalt_in.value,
+                        "hfm_mett_verpackung": hfm_mett_verpackung_dd.value, "hfm_mett_lief": hfm_mett_lief_in.value,
+                        "hfm_mett_charge": hfm_mett_charge_dd.value, "hfm_mett_bemerkung": hfm_mett_bemerkung_dd.value,
+                        
+                        "hfm_fzs_entnahmeort": hfm_fzs_entnahmeort_dd.value, "hfm_fzs_produkt": hfm_fzs_produkt_in.value,
+                        "hfm_fzs_marinade": hfm_fzs_marinade_in.value, "hfm_fzs_inhalt": hfm_fzs_inhalt_in.value,
+                        "hfm_fzs_verpackung": hfm_fzs_verpackung_dd.value, "hfm_fzs_lief": hfm_fzs_lief_in.value,
+                        "hfm_fzs_charge": hfm_fzs_charge_dd.value, "hfm_fzs_bemerkung": hfm_fzs_bemerkung_dd.value,
+
+                        "hfm_fzg_entnahmeort": hfm_fzg_entnahmeort_dd.value, "hfm_fzg_produkt": hfm_fzg_produkt_in.value,
+                        "hfm_fzg_marinade": hfm_fzg_marinade_in.value, "hfm_fzg_inhalt": hfm_fzg_inhalt_in.value,
+                        "hfm_fzg_verpackung": hfm_fzg_verpackung_dd.value, "hfm_fzg_lief": hfm_fzg_lief_in.value,
+                        "hfm_fzg_charge": hfm_fzg_charge_dd.value, "hfm_fzg_bemerkung": hfm_fzg_bemerkung_dd.value
+                    }
+                    alle_vorlagen[vl_name_in.value] = d_v
+                    speichere_vorlagen(alle_vorlagen)
+                    vl_dd.options = [ft.dropdown.Option(k) for k in alle_vorlagen.keys()]
+                    vorlagen_status.value = f"✅ Gespeichert!"
+                    vorlagen_status.color = "orange"
+                    vl_name_in.value = ""
+                    page.update()
+
+                vl_save_btn = sicherer_button("💾", save_v, "orange", "black", width=60, height=40)
+                
+                # KOMPAKTE VORLAGEN BOX
+                vorlagen_container = ft.Container(
+                    bgcolor="#002200", padding=10, border_radius=10,
+                    content=ft.Column([
+                        ft.Row([ft.Text("📋 Vorlagen", color="white", weight="bold", size=14), vorlagen_status]),
+                        ft.Row([vl_dd, vl_load_btn, vl_del_btn]),
+                        ft.Row([vl_name_in, vl_save_btn])
+                    ], spacing=5)
+                )
+
+                # --- ZUSAMMENBAU DES LAYOUTS ---
+                def cb_row(links, rechts):
+                    return ft.Row([ft.Container(links, expand=1), ft.Container(rechts, expand=1)], vertical_alignment=ft.CrossAxisAlignment.CENTER)
+
+                stamm_col = ft.Column([datum_row, adr_in, nr_in, auft_in, ag_dd, name_in, typ_dd, bem_in], visible=True, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
+                
+                tw_col = ft.Column([
+                    tw_kalt_cb,
+                    tw_zeit_in, tw_temp_in, tw_tempkonst_in, tw_desinf_dd, tw_zapf_dd, tw_zapf_sonst_dd,
+                    ft.Divider(color="white24"),
+                    ft.Text("Probenahmetechnik / Art der Zapfstelle:", color="white", weight="bold"),
+                    cb_row(cb_pn, cb_ein), cb_row(cb_zwei, cb_ein_g), cb_row(cb_sensor, cb_eck), cb_knie,
+                    ft.Divider(color="white24"),
+                    ft.Text("Sensorik & Auffälligkeiten", color="white", size=16, weight="bold"),
+                    tw_inaktiv_dd,
+                    ft.Text("Kurzsensorik:", color="white", weight="bold"),
+                    tw_kurz1_dd, tw_kurz2_dd, tw_kurz3_dd, tw_kurz4_dd,
+                    ft.Text("Auffälligkeiten:", color="white", weight="bold"),
+                    cb_row(cb_auff_ja, cb_auff_nein),
+                    cb_auff_perl, cb_auff_verkalk, cb_auff_verbrueh, cb_auff_durchlauf,
+                    cb_row(ft.Row([cb_auff_unterbau, tw_unterbau_l_in], spacing=0), cb_auff_eck_zu),
+                    cb_auff_nichtmoeglich, cb_auff_dusche, cb_auff_handbrause, cb_auff_sonst,
+                    tw_auff_sonstiges_in,
+                    ft.Divider(color="white24"),
+                    ft.Text("Probenahmedetails", color="white", size=16, weight="bold"),
+                    tw_zweck_dd, tw_inhalt_in, tw_verpackung_dd, tw_entnahmeort_dd, tw_bemerkung_dd
+                ], visible=False, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
+
+                se_col = ft.Column([
+                    se_kalt_cb,
+                    se_zeit_in, se_zapf_dd,
+                    ft.Divider(color="white24"),
+                    ft.Text("Probenahmetechnik / Art der Zapfstelle:", color="white", weight="bold"),
+                    cb_row(se_cb_eiswanne, se_cb_fallprobe),
+                    se_tech_sonst_in,
+                    ft.Divider(color="white24"),
+                    se_desinf_dd,
+                    ft.Text("Auffälligkeiten:", color="white", weight="bold"),
+                    se_cb_ozon, se_auff_sonst_in,
+                    ft.Divider(color="white24"),
+                    se_inhalt_in, se_verpackung_dd, se_entnahmeort_dd, se_temp_in, se_bemerkung_dd
+                ], visible=False, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
+
+                # --- HFM UNTERMENÜ ---
+                hfm_hack_col = ft.Column([
+                    hfm_hack_cb,
+                    hfm_hack_entnahmeort_dd,
+                    ft.Divider(color="white24"),
+                    ft.Text("Herstellungsdatum:", color="white", weight="bold"),
+                    ft.Row([hfm_hack_herst_tag_dd, hfm_hack_herst_mon_dd, hfm_hack_herst_jahr_dd]),
+                    hfm_hack_inhalt_in,
+                    hfm_hack_verpackung_dd,
+                    ft.Divider(color="white24"),
+                    ft.Text("Lieferant:", color="white", weight="bold"),
+                    hfm_hack_lief_schwein_in, hfm_hack_lief_rind_in,
+                    ft.Divider(color="white24"),
+                    ft.Text("MHD-Rohware (Schweinefleisch):", color="white", weight="bold"),
+                    ft.Row([hfm_hack_mhd_s_tag_dd, hfm_hack_mhd_s_mon_dd, hfm_hack_mhd_s_jahr_dd]),
+                    ft.Text("MHD-Rohware (Rindfleisch):", color="white", weight="bold"),
+                    ft.Row([hfm_hack_mhd_r_tag_dd, hfm_hack_mhd_r_mon_dd, hfm_hack_mhd_r_jahr_dd]),
+                    ft.Divider(color="white24"),
+                    ft.Text("Charge Rohware:", color="white", weight="bold"),
+                    hfm_hack_charge_schwein_dd, hfm_hack_charge_rind_dd,
+                    ft.Divider(color="white24"),
+                    hfm_hack_temp_in,
+                    hfm_hack_bemerkung_dd
+                ], visible=True, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
+
+                hfm_mett_col = ft.Column([
+                    hfm_mett_cb,
+                    hfm_mett_entnahmeort_dd,
+                    ft.Divider(color="white24"),
+                    ft.Text("Herstellungsdatum:", color="white", weight="bold"),
+                    ft.Row([hfm_mett_herst_tag_dd, hfm_mett_herst_mon_dd, hfm_mett_herst_jahr_dd]),
+                    hfm_mett_inhalt_in,
+                    hfm_mett_verpackung_dd,
+                    ft.Divider(color="white24"),
+                    hfm_mett_lief_in,
+                    ft.Divider(color="white24"),
+                    ft.Text("MHD-Rohware:", color="white", weight="bold"),
+                    ft.Row([hfm_mett_mhd_tag_dd, hfm_mett_mhd_mon_dd, hfm_mett_mhd_jahr_dd]),
+                    ft.Divider(color="white24"),
+                    hfm_mett_charge_dd,
+                    ft.Divider(color="white24"),
+                    hfm_mett_temp_in,
+                    hfm_mett_bemerkung_dd
+                ], visible=False, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
+
+                hfm_fzs_col = ft.Column([
+                    hfm_fzs_cb,
+                    hfm_fzs_entnahmeort_dd,
+                    hfm_fzs_produkt_in, hfm_fzs_marinade_in,
+                    ft.Divider(color="white24"),
+                    ft.Text("Herstellungsdatum:", color="white", weight="bold"),
+                    ft.Row([hfm_fzs_herst_tag_dd, hfm_fzs_herst_mon_dd, hfm_fzs_herst_jahr_dd]),
+                    hfm_fzs_inhalt_in,
+                    hfm_fzs_verpackung_dd,
+                    ft.Divider(color="white24"),
+                    hfm_fzs_lief_in,
+                    ft.Divider(color="white24"),
+                    ft.Text("MHD-Rohware:", color="white", weight="bold"),
+                    ft.Row([hfm_fzs_mhd_tag_dd, hfm_fzs_mhd_mon_dd, hfm_fzs_mhd_jahr_dd]),
+                    ft.Divider(color="white24"),
+                    hfm_fzs_charge_dd,
+                    ft.Divider(color="white24"),
+                    hfm_fzs_temp_in,
+                    hfm_fzs_bemerkung_dd
+                ], visible=False, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
+
+                hfm_fzg_col = ft.Column([
+                    hfm_fzg_cb,
+                    hfm_fzg_entnahmeort_dd,
+                    hfm_fzg_produkt_in, hfm_fzg_marinade_in,
+                    ft.Divider(color="white24"),
+                    ft.Text("Herstellungsdatum:", color="white", weight="bold"),
+                    ft.Row([hfm_fzg_herst_tag_dd, hfm_fzg_herst_mon_dd, hfm_fzg_herst_jahr_dd]),
+                    hfm_fzg_inhalt_in,
+                    hfm_fzg_verpackung_dd,
+                    ft.Divider(color="white24"),
+                    hfm_fzg_lief_in,
+                    ft.Divider(color="white24"),
+                    ft.Text("MHD-Rohware:", color="white", weight="bold"),
+                    ft.Row([hfm_fzg_mhd_tag_dd, hfm_fzg_mhd_mon_dd, hfm_fzg_mhd_jahr_dd]),
+                    ft.Divider(color="white24"),
+                    hfm_fzg_charge_dd,
+                    ft.Divider(color="white24"),
+                    hfm_fzg_temp_in,
+                    hfm_fzg_bemerkung_dd
+                ], visible=False, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
 
                 hfm_bio_col = ft.Column([ft.Text("Felder für: Biohackfleisch", color="yellow")], visible=False, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
 
