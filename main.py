@@ -4,6 +4,7 @@ import json
 import os
 import datetime
 import shutil
+import urllib.parse
 
 def main(page: ft.Page):
     page.title = "Rewe Monitoring System"
@@ -19,15 +20,52 @@ def main(page: ft.Page):
     ansicht = ft.Column(expand=True, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
     page.add(ansicht)
 
-    # PFADE
-    def get_rewe_paths():
+    # ZENTRALE PFAD-VERWALTUNG MIT GEHEIMTRICK (FALLBACK ZU ANDROID/MEDIA)
+    def get_base_rewe_dir():
         base_dl = "/storage/emulated/0/Download" if os.path.exists("/storage/emulated/0/Download") else os.path.join(os.path.expanduser("~"), "Downloads")
+        fallback_dl_media = "/storage/emulated/0/Android/media/com.rewe.app.rewe_app"
+        fallback_dl_data = "/storage/emulated/0/Android/data/com.rewe.app.rewe_app/files"
+        
+        # 1. Versuch: Standard Download Ordner
         rewe_dir = os.path.join(base_dl, "REWE")
+        try:
+            os.makedirs(rewe_dir, exist_ok=True)
+            test_path = os.path.join(rewe_dir, ".test")
+            with open(test_path, "w") as f: f.write("ok")
+            os.remove(test_path)
+            return rewe_dir
+        except Exception:
+            pass
+
+        # 2. Versuch: Fallback Android/media (Der Geheimtrick)
+        rewe_dir_media = os.path.join(fallback_dl_media, "REWE")
+        try:
+            os.makedirs(rewe_dir_media, exist_ok=True)
+            test_path = os.path.join(rewe_dir_media, ".test")
+            with open(test_path, "w") as f: f.write("ok")
+            os.remove(test_path)
+            return rewe_dir_media
+        except Exception:
+            pass
+
+        # 3. Versuch: Letzter Rettungsanker Android/data
+        rewe_dir_data = os.path.join(fallback_dl_data, "REWE")
+        try:
+            os.makedirs(rewe_dir_data, exist_ok=True)
+            return rewe_dir_data
+        except Exception:
+            return rewe_dir # Wenn alles fehlschlägt, gibt er den Standard-Ordner zurück (dann greift die Fehleranzeige in der Maske)
+
+    def get_rewe_paths():
+        rewe_dir = get_base_rewe_dir()
         temp_dir = os.path.join(rewe_dir, "temp")
         heute_ordner = datetime.datetime.now().strftime('%Y-%m-%d')
         final_dir = os.path.join(rewe_dir, heute_ordner)
-        os.makedirs(temp_dir, exist_ok=True)
-        os.makedirs(final_dir, exist_ok=True)
+        try:
+            os.makedirs(temp_dir, exist_ok=True)
+            os.makedirs(final_dir, exist_ok=True)
+        except Exception: 
+            pass 
         return temp_dir, final_dir, heute_ordner
 
     def zeige_fehler(e):
@@ -42,7 +80,7 @@ def main(page: ft.Page):
 
     try:
         import pypdf
-        from pypdf.generic import DictionaryObject, NameObject, ArrayObject
+        from pypdf.generic import DictionaryObject, NameObject, ArrayObject, BooleanObject
 
         SPEICHER_DATEI = "meine_monitoring_daten.json"
         BENUTZER_DATEI = "benutzer_daten.json"
@@ -96,7 +134,7 @@ def main(page: ft.Page):
             v, z = lade_benutzer()
             
             stil_label_weiss = ft.TextStyle(color="white")
-            stil_hint_weiss = ft.TextStyle(color="white", size=12)
+            stil_hint_weiss = ft.TextStyle(color="white54", size=12)
             
             v_in = ft.TextField(label="Vorname", hint_text="Dein Vorname", hint_style=stil_hint_weiss, value=v, color="yellow", border_color="white", text_align=ft.TextAlign.CENTER, label_style=stil_label_weiss, width=300)
             z_in = ft.TextField(label="Nachname", hint_text="Dein Nachname", hint_style=stil_hint_weiss, value=z, color="yellow", border_color="white", text_align=ft.TextAlign.CENTER, label_style=stil_label_weiss, width=300)
@@ -186,14 +224,14 @@ def main(page: ft.Page):
                     if not t and not m and not j: return ""
                     return f"{t}.{m}.{j}"
 
-                def erstelle_combo(label_text, wert, optionen, groesse=12, ausdehnbar=1, on_change_func=None):
+                def erstelle_combo(label_text, wert, optionen, groesse=12, ausdehnbar=1, breite=None, on_change_func=None):
                     def on_txt_change(e):
                         if on_change_func: on_change_func(e)
                         
                     combo = ft.TextField(
                         label=label_text, value=wert, color="yellow", 
                         text_style=ft.TextStyle(size=groesse, color="yellow"), label_style=stil_label_weiss, 
-                        border_color="white", expand=ausdehnbar, content_padding=5, 
+                        border_color="white", expand=ausdehnbar if breite is None else False, width=breite, content_padding=5, 
                         on_change=on_txt_change
                     )
                     items = []
@@ -333,8 +371,7 @@ def main(page: ft.Page):
                 cb_auff_verbrueh = ft.Checkbox(label="Armatur mit Verbrühschutz", value=aktuelle_daten.get("cb_auff_verbrueh", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
                 cb_auff_durchlauf = ft.Checkbox(label="Durchlauferhitzer", value=aktuelle_daten.get("cb_auff_durchlauf", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
                 
-                cb_auff_unterbau = ft.Checkbox(label="Unterbauspeicher [L]", value=aktuelle_daten.get("cb_auff_unterbau", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
-                tw_unterbau_l_in = ft.TextField(value=aktuelle_daten.get("tw_unterbau_l"), hint_text="Literangabe", hint_style=ft.TextStyle(color="white", size=12), expand=True, height=45, content_padding=10, text_style=stil_tf_gelb_12, color="yellow", border_color="white")
+                cb_auff_unterbau = ft.Checkbox(label="Unterbauspeicher", value=aktuelle_daten.get("cb_auff_unterbau", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
                 
                 cb_auff_eck_zu = ft.Checkbox(label="Eckventil warm/kalt geschlossen", value=aktuelle_daten.get("cb_auff_eck_zu", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
                 cb_auff_nichtmoeglich = ft.Checkbox(label="nicht möglich", value=aktuelle_daten.get("cb_auff_nichtmoeglich", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
@@ -738,9 +775,10 @@ def main(page: ft.Page):
                     og_cb.value = False
                     for i in range(1, 6):
                         ctrls = og_controls[i]
+                        ctrls["name"].value = ""; ctrls["ort"].value = ""
                         ctrls["h_t"].value = ""; ctrls["h_m"].value = ""; ctrls["h_j"].value = ""
                         ctrls["v_t"].value = ""; ctrls["v_m"].value = ""; ctrls["v_j"].value = ""
-                        ctrls["temp"].value = ""
+                        ctrls["inhalt"].value = ""; ctrls["verpackung"].value = ""; ctrls["temp"].value = ""
 
                     og_okz_cb.value = False; og_okz_bemerkung_dd.value = "Bitte eingeben"; og_okz_anmerkung_in.value = ""
                     for idx_str, ctrls in og_okz_controls.items():
@@ -752,7 +790,7 @@ def main(page: ft.Page):
                         ctrls["tupfer"].value = og_okz_defaults[i]["tup"]
                     
                     for cb in [cb_pn, cb_zwei, cb_sensor, cb_knie, cb_ein, cb_ein_g, cb_eck, cb_auff_ja, cb_auff_nein, cb_auff_perl, cb_auff_verkalk, cb_auff_verbrueh, cb_auff_durchlauf, cb_auff_unterbau, cb_auff_eck_zu, cb_auff_nichtmoeglich, cb_auff_dusche, cb_auff_handbrause, cb_auff_sonst, se_cb_eiswanne, se_cb_ozon]: cb.value = False
-                    tw_unterbau_l_in.value = ""; tw_auff_sonstiges_in.value = ""; se_tech_sonst_in.value = ""; se_auff_sonst_in.value = ""
+                    tw_auff_sonstiges_in.value = ""; se_tech_sonst_in.value = ""; se_auff_sonst_in.value = ""
                     
                     se_cb_fallprobe.value = True
 
@@ -845,10 +883,11 @@ def main(page: ft.Page):
                         
                     for i in range(1, 6):
                         ctrls = og_controls[i]
-                        if f"og_name_{i:02d}" in v: ctrls["name"].value = v[f"og_name_{i:02d}"]
-                        if f"og_ort_{i:02d}" in v: ctrls["ort"].value = v[f"og_ort_{i:02d}"]
-                        if f"og_inhalt_{i:02d}" in v: ctrls["inhalt"].value = v[f"og_inhalt_{i:02d}"]
-                        if f"og_verp_{i:02d}" in v: ctrls["verpackung"].value = v[f"og_verp_{i:02d}"]
+                        idx = f"{i:02d}"
+                        if f"og_name_{idx}" in v: ctrls["name"].value = v[f"og_name_{idx}"]
+                        if f"og_ort_{idx}" in v: ctrls["ort"].value = v[f"og_ort_{idx}"]
+                        if f"og_inhalt_{idx}" in v: ctrls["inhalt"].value = v[f"og_inhalt_{idx}"]
+                        if f"og_verp_{idx}" in v: ctrls["verpackung"].value = v[f"og_verp_{idx}"]
 
                     if "og_okz_bemerkung" in v: og_okz_bemerkung_dd.value = v["og_okz_bemerkung"]
                     if "og_okz_anmerkung" in v: og_okz_anmerkung_in.value = v["og_okz_anmerkung"]
@@ -880,7 +919,7 @@ def main(page: ft.Page):
                 vl_del_btn = sicherer_button("Löschen 🗑️", del_v, "red", "white", width=100, height=40)
                 
                 def save_v(e):
-                    if not vl_name_in.value: return
+                    if not (vl_name_in.value or "").strip(): return
                     
                     d_v = {
                         "name_in": name_in.value, "ag_dd": ag_dd.value, "typ_dd": typ_dd.value, "bem_in": bem_in.value,
@@ -1007,6 +1046,7 @@ def main(page: ft.Page):
 
                     for i in range(1, 6):
                         ctrls = og_controls[i]
+                        ctrls["name"].value = ""; ctrls["ort"].value = ""
                         ctrls["h_t"].value = ""; ctrls["h_m"].value = ""; ctrls["h_j"].value = ""
                         ctrls["v_t"].value = ""; ctrls["v_m"].value = ""; ctrls["v_j"].value = ""
                         ctrls["temp"].value = ""
@@ -1052,7 +1092,7 @@ def main(page: ft.Page):
                     cb_auff_perl, cb_auff_verkalk, cb_auff_verbrueh, cb_auff_durchlauf,
                     cb_auff_eck_zu, cb_auff_nichtmoeglich, cb_auff_dusche, cb_auff_handbrause,
                     cb_auff_sonst,
-                    ft.Row([cb_auff_unterbau, tw_unterbau_l_in]),
+                    cb_auff_unterbau,
                     tw_auff_sonstiges_in,
                     ft.Divider(color="white24"),
                     ft.Text("Probenahmedetails", color="white", size=16, weight="bold"),
@@ -1304,7 +1344,7 @@ def main(page: ft.Page):
                 def hole_aktuelle_daten():
                     d = {
                         "datum": f"{tag_dd.value}.{mon_dd.value}.{jahr_dd.value}", "adresse": adr_in.value, "marktnummer": nr_in.value, "auftragsnummer": auft_in.value, 
-                        "mitarbeiter_name": og_name_in.value, "auftraggeber": ag_dd.value, "typ_probenahme": typ_dd.value, "bemerkung": bem_in.value,
+                        "mitarbeiter_name": name_in.value, "auftraggeber": ag_dd.value, "typ_probenahme": typ_dd.value, "bemerkung": bem_in.value,
                         
                         "tw_kalt": tw_kalt_cb.value, "tw_lims_override": lims_override_cb.value, "tw_zeit": tw_zeit_in.value, 
                         "tw_temp": tw_temp_in.value, "tw_desinf": tw_desinf_dd.value, "tw_zapf": tw_zapf_dd.value,
@@ -1314,7 +1354,7 @@ def main(page: ft.Page):
                         "tw_kurz3": tw_kurz3_dd.value, "tw_kurz4": tw_kurz4_dd.value, "cb_auff_ja": cb_auff_ja.value, 
                         "cb_auff_nein": cb_auff_nein.value, "cb_auff_perl": cb_auff_perl.value, "cb_auff_verkalk": cb_auff_verkalk.value, 
                         "cb_auff_verbrueh": cb_auff_verbrueh.value, "cb_auff_durchlauf": cb_auff_durchlauf.value,
-                        "cb_auff_unterbau": cb_auff_unterbau.value, "tw_unterbau_l": tw_unterbau_l_in.value, "cb_auff_eck_zu": cb_auff_eck_zu.value, 
+                        "cb_auff_unterbau": cb_auff_unterbau.value, "cb_auff_eck_zu": cb_auff_eck_zu.value, 
                         "cb_auff_nichtmoeglich": cb_auff_nichtmoeglich.value, "cb_auff_dusche": cb_auff_dusche.value, 
                         "cb_auff_handbrause": cb_auff_handbrause.value, "cb_auff_sonst": cb_auff_sonst.value, "tw_auff_sonstiges": tw_auff_sonstiges_in.value,
                         "tw_zweck": tw_zweck_dd.value, "tw_inhalt": tw_inhalt_in.value, "tw_verpackung": tw_verpackung_dd.value, 
@@ -1581,11 +1621,9 @@ def main(page: ft.Page):
                         for pdf_datei in pdf_dateien:
                             writer.append(pypdf.PdfReader(os.path.join("assets", pdf_datei)))
                         
-                        def cb_val(val): return "/Yes" if val else "/Off"
+                        def cb_val(val): return BooleanObject(True) if val else BooleanObject(False)
                             
                         tw_sonst_text = tw_auff_sonstiges_in.value or ""
-                        if cb_auff_unterbau.value and (tw_unterbau_l_in.value or "").strip(): 
-                            tw_sonst_text += f" (L: {tw_unterbau_l_in.value})"
                         
                         f_map = {
                             "tf_0000_00_ZS-001870": adr_in.value, "tf_0000_00_ZS-1408": nr_in.value, "tf_0000_00_ZS-002000": auft_in.value, 
@@ -1770,7 +1808,12 @@ def main(page: ft.Page):
                         status_text.value = "✅ PDF erfolgreich erstellt!"
                         status_text.color = "green"
                         page.update()
-                        
+
+                    except PermissionError:
+                        status_text.value = ""
+                        fehler_text.value = "⚠️ SPEICHER-FEHLER: Dein Handy blockiert das Speichern! Gehe in die Android-Einstellungen -> Apps -> Deine App -> Berechtigungen und erlaube den Zugriff auf 'Dateien und Medien' (bzw. Speicher)."
+                        fehler_text.visible = True
+                        page.update()
                     except Exception as ex: 
                         status_text.value = "❌ Fehler"
                         status_text.color = "red"
@@ -1805,15 +1848,17 @@ def main(page: ft.Page):
             if not os.path.exists(rewe_dir): return
             
             heute = datetime.datetime.now()
-            for ordner in os.listdir(rewe_dir):
-                ordner_pfad = os.path.join(rewe_dir, ordner)
-                if os.path.isdir(ordner_pfad) and ordner != "temp":
-                    try:
-                        ordner_datum = datetime.datetime.strptime(ordner, '%Y-%m-%d')
-                        alter = (heute - ordner_datum).days
-                        if alter > 7:
-                            shutil.rmtree(ordner_pfad)
-                    except: pass
+            try:
+                for ordner in os.listdir(rewe_dir):
+                    ordner_pfad = os.path.join(rewe_dir, ordner)
+                    if os.path.isdir(ordner_pfad) and ordner != "temp":
+                        try:
+                            ordner_datum = datetime.datetime.strptime(ordner, '%Y-%m-%d')
+                            alter = (heute - ordner_datum).days
+                            if alter > 7:
+                                shutil.rmtree(ordner_pfad)
+                        except: pass
+            except PermissionError: pass
 
         def zeige_archiv():
             ansicht.controls.clear()
@@ -1822,33 +1867,50 @@ def main(page: ft.Page):
             
             bereinige_archiv()
             
-            base_dl = "/storage/emulated/0/Download" if os.path.exists("/storage/emulated/0/Download") else os.path.join(os.path.expanduser("~"), "Downloads")
-            rewe_dir = os.path.join(base_dl, "REWE")
+            rewe_dir = get_base_rewe_dir()
+            
+            ansicht.controls.append(ft.Container(
+                bgcolor="#330000", padding=10, border_radius=10,
+                content=ft.Column([
+                    ft.Text("📱 WICHTIGE INFO ZUM VERSENDEN:", color="orange", weight="bold"),
+                    ft.Text("Da Handys das direkte Anhängen von Dateien oft blockieren, gehe bitte so vor:", color="white", size=12),
+                    ft.Text("1. Klicke auf 'Mail versenden' (die E-Mail öffnet sich).", color="white", size=12),
+                    ft.Text("2. Klicke in der E-Mail auf die Büroklammer (Anhang).", color="white", size=12),
+                    ft.Text("3. Wähle die PDF aus dem REWE-Ordner deines Handys (Downloads oder Android/media).", color="yellow", size=12, weight="bold"),
+                    ft.Text("Tipp: Du kannst die Dateien über 'Eigene Dateien' auch manuell auf OneDrive hochladen.", color="white54", size=11, italic=True)
+                ])
+            ))
             
             pdfs_gefunden = False
             if os.path.exists(rewe_dir):
-                ordner_liste = sorted([o for o in os.listdir(rewe_dir) if os.path.isdir(os.path.join(rewe_dir, o)) and o != "temp"], reverse=True)
-                for ordner in ordner_liste:
-                    ordner_pfad = os.path.join(rewe_dir, ordner)
-                    p_list = [f for f in os.listdir(ordner_pfad) if f.endswith(".pdf")]
-                    
-                    if p_list:
-                        ansicht.controls.append(ft.Text(ordner, color="yellow", weight="bold", size=16))
-                        for pdf in p_list:
-                            pdfs_gefunden = True
-                            
-                            def mail_senden(e, d=pdf):
-                                page.launch_url(f"mailto:registration-mibi.ber@tentamus.com?subject=REWE Monitoring Bericht: {d}&body=Bitte den Bericht im Anhang manuell anfuegen.")
+                try:
+                    ordner_liste = sorted([o for o in os.listdir(rewe_dir) if os.path.isdir(os.path.join(rewe_dir, o)) and o != "temp"], reverse=True)
+                    for ordner in ordner_liste:
+                        ordner_pfad = os.path.join(rewe_dir, ordner)
+                        p_list = [f for f in os.listdir(ordner_pfad) if f.endswith(".pdf")]
+                        
+                        if p_list:
+                            ansicht.controls.append(ft.Text(ordner, color="yellow", weight="bold", size=16))
+                            for pdf in p_list:
+                                pdfs_gefunden = True
                                 
-                            ansicht.controls.append(
-                                ft.Container(bgcolor="#002200", padding=10, border_radius=10, 
-                                    content=ft.Row([
-                                        ft.Text(pdf, color="white", size=12, expand=True), 
-                                        sicherer_button("📧 Mail versenden", mail_senden, "blue", "white")
-                                    ])
+                                def mail_senden(e, d=pdf):
+                                    betreff = urllib.parse.quote(f"REWE Monitoring Bericht: {d}")
+                                    body = urllib.parse.quote("Hallo,\n\nbitte den Bericht im Anhang manuell aus dem REWE-Ordner anfügen.\n\nViele Grüße")
+                                    page.launch_url(f"mailto:registration-mibi.ber@tentamus.com?subject={betreff}&body={body}")
+                                    
+                                ansicht.controls.append(
+                                    ft.Container(bgcolor="#002200", padding=10, border_radius=10, 
+                                        content=ft.Row([
+                                            ft.Text(pdf, color="white", size=12, expand=True), 
+                                            sicherer_button("📧 Mail versenden", mail_senden, "blue", "white")
+                                        ])
+                                    )
                                 )
-                            )
-                        ansicht.controls.append(ft.Divider(color="white24"))
+                            ansicht.controls.append(ft.Divider(color="white24"))
+                except PermissionError:
+                    ansicht.controls.append(ft.Text("⚠️ BERECHTIGUNG FEHLT! Bitte in den Android-Einstellungen den Speicherzugriff erlauben.", color="red", weight="bold"))
+                    pdfs_gefunden = True
                         
             if not pdfs_gefunden:
                 ansicht.controls.append(ft.Text("Keine Berichte im Archiv.", color="grey", size=14))
@@ -1865,32 +1927,40 @@ def main(page: ft.Page):
                 except: pass
                 
             ansicht.controls.append(
-                ft.Row([
-                    ft.Text("Die Berichte für heute liegen im Ordner:", color="red", size=12, expand=True),
-                    sicherer_button("📂 Ordner öffnen", oeffne_ordner, "blue", "white")
-                ])
+                ft.Container(
+                    bgcolor="#330000", padding=10, border_radius=10,
+                    content=ft.Column([
+                        ft.Text("Die Berichte für heute liegen im Ordner:", color="red", size=12),
+                        ft.Text(f"{final_dir}\n", color="red", size=14, weight="bold"),
+                        sicherer_button("📂 Ordner öffnen", oeffne_ordner, "blue", "white"),
+                        ft.Text("Versuche Datei/Ordner zu öffnen... Falls nichts passiert, blockiert dein Handy den Direktzugriff. Nutze dann die App 'Eigene Dateien'.", color="orange", size=10, italic=True)
+                    ])
+                )
             )
-            ansicht.controls.append(ft.Text(f"Downloads / REWE / {heute_ordner} /\n", color="red", size=14, weight="bold"))
-            ansicht.controls.append(ft.Text("TIPP: Gehe ins Archiv, um Berichte per Mail zu versenden!", color="red", size=12))
+            
             ansicht.controls.append(ft.Container(height=10))
             
-            p_list = [f for f in os.listdir(final_dir) if f.endswith(".pdf")] if os.path.exists(final_dir) else []
-            if not p_list: ansicht.controls.append(ft.Text("Noch keine Berichte für heute erstellt.", color="grey", size=14))
-            for pdf in p_list:
-                def rm(e, d=pdf): os.remove(os.path.join(final_dir, d)); zeige_postausgang()
-                def oeffne(e, d=pdf): 
-                    try: page.launch_url(f"file://{os.path.join(final_dir, d)}")
-                    except: pass
-                    
-                ansicht.controls.append(
-                    ft.Container(bgcolor="#002200", padding=10, border_radius=10, 
-                        content=ft.Row([
-                            ft.Text(pdf, color="white", size=10, expand=True),
-                            sicherer_button("📄 Öffnen", oeffne, "blue", "white"),
-                            sicherer_button("🗑️", rm, "red", "white")
-                        ])
+            try:
+                p_list = [f for f in os.listdir(final_dir) if f.endswith(".pdf")] if os.path.exists(final_dir) else []
+                if not p_list: ansicht.controls.append(ft.Text("Noch keine Berichte für heute erstellt.", color="grey", size=14))
+                for pdf in p_list:
+                    def rm(e, d=pdf): os.remove(os.path.join(final_dir, d)); zeige_postausgang()
+                    def oeffne(e, d=pdf): 
+                        try: page.launch_url(f"file://{os.path.join(final_dir, d)}")
+                        except: pass
+                        
+                    ansicht.controls.append(
+                        ft.Container(bgcolor="#002200", padding=10, border_radius=10, 
+                            content=ft.Row([
+                                ft.Text(pdf, color="white", size=10, expand=True),
+                                sicherer_button("📄 Öffnen", oeffne, "blue", "white"),
+                                sicherer_button("🗑️", rm, "red", "white")
+                            ])
+                        )
                     )
-                )
+            except PermissionError:
+                ansicht.controls.append(ft.Text("⚠️ BERECHTIGUNG FEHLT! Bitte in den Android-Einstellungen den Speicherzugriff erlauben.", color="red", weight="bold"))
+
             page.update()
 
         zeige_startbildschirm()
