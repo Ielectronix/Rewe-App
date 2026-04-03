@@ -4,6 +4,7 @@ import json
 import os
 import datetime
 import shutil
+import urllib.parse
 
 def main(page: ft.Page):
     page.title = "Rewe Monitoring System"
@@ -11,6 +12,7 @@ def main(page: ft.Page):
     page.padding = 10
     page.scroll = ft.ScrollMode.AUTO
     
+    # Setzt das Icon für die App-Fenster
     try:
         page.window.icon = "icon.png"
     except: pass
@@ -18,6 +20,7 @@ def main(page: ft.Page):
     ansicht = ft.Column(expand=True, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
     page.add(ansicht)
 
+    # PFADE
     def get_rewe_paths():
         base_dl = "/storage/emulated/0/Download" if os.path.exists("/storage/emulated/0/Download") else os.path.join(os.path.expanduser("~"), "Downloads")
         rewe_dir = os.path.join(base_dl, "REWE")
@@ -33,7 +36,8 @@ def main(page: ft.Page):
         page.bgcolor = "black"
         ansicht.controls.append(ft.Text("SYSTEM-FEHLER:", color="red", size=30, weight="bold"))
         ansicht.controls.append(ft.Text(str(e), color="yellow", size=20))
-        try: ansicht.controls.append(ft.Text(traceback.format_exc(), color="white", size=12))
+        try:
+            ansicht.controls.append(ft.Text(traceback.format_exc(), color="white", size=12))
         except: pass
         page.update()
 
@@ -91,12 +95,17 @@ def main(page: ft.Page):
         def zeige_startbildschirm():
             ansicht.controls.clear()
             v, z = lade_benutzer()
+            
+            stil_label_weiss = ft.TextStyle(color="white")
             stil_hint_weiss = ft.TextStyle(color="white54", size=12)
             
-            v_in = ft.TextField(label="Vorname", hint_text="Dein Vorname", hint_style=stil_hint_weiss, value=v, color="yellow", border_color="white", text_align=ft.TextAlign.CENTER, width=300)
-            z_in = ft.TextField(label="Nachname", hint_text="Dein Nachname", hint_style=stil_hint_weiss, value=z, color="yellow", border_color="white", text_align=ft.TextAlign.CENTER, width=300)
+            v_in = ft.TextField(label="Vorname", hint_text="Dein Vorname", hint_style=stil_hint_weiss, value=v, color="yellow", border_color="white", text_align=ft.TextAlign.CENTER, label_style=stil_label_weiss, width=300)
+            z_in = ft.TextField(label="Nachname", hint_text="Dein Nachname", hint_style=stil_hint_weiss, value=z, color="yellow", border_color="white", text_align=ft.TextAlign.CENTER, label_style=stil_label_weiss, width=300)
             
-            btn_start = sicherer_button("Neuen Tag starten", lambda e: (speichere_benutzer(v_in.value, z_in.value), zeige_dashboard()), "red", "white", height=60, width=250)
+            def start_klick(e):
+                speichere_benutzer(v_in.value, z_in.value); zeige_dashboard()
+                
+            btn_start = sicherer_button("Neuen Tag starten", start_klick, "red", "white", height=60, width=250)
             
             header = ft.Text(spans=[
                 ft.TextSpan("REWE ", ft.TextStyle(color="red", weight="bold", size=32)),
@@ -104,9 +113,12 @@ def main(page: ft.Page):
             ], text_align=ft.TextAlign.CENTER)
 
             ansicht.controls.extend([
-                ft.Container(height=50), ft.Row([header], alignment=ft.MainAxisAlignment.CENTER), 
-                ft.Container(height=40), ft.Column([v_in, z_in], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-                ft.Container(height=40), ft.Row([btn_start], alignment=ft.MainAxisAlignment.CENTER)
+                ft.Container(height=50), 
+                ft.Row([header], alignment=ft.MainAxisAlignment.CENTER), 
+                ft.Container(height=40), 
+                ft.Column([v_in, z_in], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                ft.Container(height=40), 
+                ft.Row([btn_start], alignment=ft.MainAxisAlignment.CENTER)
             ])
             page.update()
 
@@ -169,13 +181,16 @@ def main(page: ft.Page):
                     return def_t, def_m, def_j
 
                 def get_date_str(t, m, j):
-                    t = (t or "").strip(); m = (m or "").strip(); j = (j or "").strip()
+                    t = (t or "").strip()
+                    m = (m or "").strip()
+                    j = (j or "").strip()
                     if not t and not m and not j: return ""
                     return f"{t}.{m}.{j}"
 
                 def erstelle_combo(label_text, wert, optionen, groesse=12, ausdehnbar=1, breite=None, on_change_func=None):
                     def on_txt_change(e):
                         if on_change_func: on_change_func(e)
+                        
                     combo = ft.TextField(
                         label=label_text, value=wert, color="yellow", 
                         text_style=ft.TextStyle(size=groesse, color="yellow"), label_style=stil_label_weiss, 
@@ -186,7 +201,8 @@ def main(page: ft.Page):
                     for opt in optionen:
                         def erstelle_klick(txt):
                             def klick(e):
-                                combo.value = txt; combo.update()
+                                combo.value = txt
+                                combo.update()
                                 if on_change_func: on_change_func(e)
                             return klick
                         items.append(ft.PopupMenuItem(content=ft.Text(opt), on_click=erstelle_klick(opt)))
@@ -202,9 +218,9 @@ def main(page: ft.Page):
 
                 # --- 1. STAMMDATEN FELDER ---
                 d_tag, d_mon, d_jahr = parse_datum(aktuelle_daten.get("datum", heute_str), heute_str.split(".")[0], heute_str.split(".")[1], heute_str.split(".")[2])
-                tag_dd = erstelle_combo("Tag", d_tag, tage_opts, breite=95)
-                mon_dd = erstelle_combo("Mon", d_mon, mon_opts, breite=95)
-                jahr_dd = erstelle_combo("Jahr", d_jahr, jahr_opts, ausdehnbar=True)
+                tag_dd = erstelle_combo("Tag", d_tag, tage_opts, ausdehnbar=3)
+                mon_dd = erstelle_combo("Mon", d_mon, mon_opts, ausdehnbar=3)
+                jahr_dd = erstelle_combo("Jahr", d_jahr, jahr_opts, ausdehnbar=4)
 
                 datum_row = ft.Column([
                     ft.Text("Datum der Probenahme", color="white", weight="bold"),
@@ -256,7 +272,9 @@ def main(page: ft.Page):
                     
                     lims_warnung.visible = braucht_warnung
                     lims_override_cb.visible = braucht_warnung
-                    if not braucht_warnung: lims_override_cb.value = False
+                    
+                    if not braucht_warnung:
+                        lims_override_cb.value = False
                     page.update()
 
                 def format_zeit(e):
@@ -315,7 +333,9 @@ def main(page: ft.Page):
                 cb_auff_verkalk = ft.Checkbox(label="Starke Verkalkung", value=aktuelle_daten.get("cb_auff_verkalk", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
                 cb_auff_verbrueh = ft.Checkbox(label="Armatur mit Verbrühschutz", value=aktuelle_daten.get("cb_auff_verbrueh", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
                 cb_auff_durchlauf = ft.Checkbox(label="Durchlauferhitzer", value=aktuelle_daten.get("cb_auff_durchlauf", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
+                
                 cb_auff_unterbau = ft.Checkbox(label="Unterbauspeicher", value=aktuelle_daten.get("cb_auff_unterbau", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
+                
                 cb_auff_eck_zu = ft.Checkbox(label="Eckventil warm/kalt geschlossen", value=aktuelle_daten.get("cb_auff_eck_zu", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
                 cb_auff_nichtmoeglich = ft.Checkbox(label="nicht möglich", value=aktuelle_daten.get("cb_auff_nichtmoeglich", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
                 cb_auff_dusche = ft.Checkbox(label="Entnahme aus der Dusche", value=aktuelle_daten.get("cb_auff_dusche", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
@@ -366,10 +386,12 @@ def main(page: ft.Page):
                     s_dd = erstelle_combo("Status", aktuelle_daten.get(f"se_okz_status_{idx}", "R+D"), se_okz_status_opts)
                     obj_dd = erstelle_combo("Objekt", aktuelle_daten.get(f"se_okz_objekt_{idx}", se_okz_defaults[i]["obj"]), se_okz_objekt_opts)
                     ort_dd = erstelle_combo("Probenahmeort", aktuelle_daten.get(f"se_okz_ort_{idx}", ""), se_okz_ort_opts, on_change_func=pruefe_lims_warnung)
+                    
                     abk_cb = ft.Checkbox(label="Abklatsch", value=aktuelle_daten.get(f"se_okz_abklatsch_{idx}", se_okz_defaults[i]["abk"]), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
                     tup_cb = ft.Checkbox(label="Tupfer", value=aktuelle_daten.get(f"se_okz_tupfer_{idx}", se_okz_defaults[i]["tup"]), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
                     
                     se_okz_controls[i] = {"status": s_dd, "objekt": obj_dd, "ort": ort_dd, "abklatsch": abk_cb, "tupfer": tup_cb}
+                    
                     se_okz_felder.append(ft.Text(f"Probe {i}", color="yellow", weight="bold", size=14))
                     se_okz_felder.append(ft.Row([s_dd, obj_dd]))
                     se_okz_felder.append(ft.Row([ort_dd]))
@@ -542,9 +564,12 @@ def main(page: ft.Page):
                     s_dd = erstelle_combo("Status", aktuelle_daten.get(f"okz_status_{idx}", "R+D"), okz_status_opts)
                     obj_dd = erstelle_combo("Objekt", aktuelle_daten.get(f"okz_objekt_{idx}", okz_defaults[i]["obj"]), okz_objekt_opts)
                     ort_dd = erstelle_combo("Probenahmeort", aktuelle_daten.get(f"okz_ort_{idx}", ""), okz_ort_opts)
+                    
                     abk_cb = ft.Checkbox(label="Abklatsch", value=aktuelle_daten.get(f"okz_abklatsch_{idx}", okz_defaults[i]["abk"]), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
                     tup_cb = ft.Checkbox(label="Tupfer", value=aktuelle_daten.get(f"okz_tupfer_{idx}", okz_defaults[i]["tup"]), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
+                    
                     okz_controls[idx] = {"status": s_dd, "objekt": obj_dd, "ort": ort_dd, "abklatsch": abk_cb, "tupfer": tup_cb}
+                    
                     okz_felder.append(ft.Text(f"Probe {i}", color="yellow", weight="bold", size=14))
                     okz_felder.append(ft.Row([s_dd, obj_dd]))
                     okz_felder.append(ft.Row([ort_dd]))
@@ -564,18 +589,28 @@ def main(page: ft.Page):
                     idx = f"{i:02d}"
                     og_name_in = ft.TextField(label=f"Name Teilprobe {i}", value=aktuelle_daten.get(f"og_name_{idx}", ""), color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True, on_change=pruefe_lims_warnung)
                     ort_dd = erstelle_combo("Entnahmeort", aktuelle_daten.get(f"og_ort_{idx}", ""), og_ort_opts)
+                    
                     h_t_val, h_m_val, h_j_val = parse_datum(aktuelle_daten.get(f"og_herst_{idx}", ""), "", "", "")
                     h_t = erstelle_combo("Tag", h_t_val, tage_opts, ausdehnbar=3)
                     h_m = erstelle_combo("Mon", h_m_val, mon_opts, ausdehnbar=3)
                     h_j = erstelle_combo("Jahr", h_j_val, jahr_opts, ausdehnbar=4)
+
                     v_t_val, v_m_val, v_j_val = parse_datum(aktuelle_daten.get(f"og_verb_{idx}", ""), "", "", "")
                     v_t = erstelle_combo("Tag", v_t_val, tage_opts, ausdehnbar=3, on_change_func=pruefe_lims_warnung)
                     v_m = erstelle_combo("Mon", v_m_val, mon_opts, ausdehnbar=3)
                     v_j = erstelle_combo("Jahr", v_j_val, jahr_opts, ausdehnbar=4)
+                    
                     inhalt_in = ft.TextField(label="Inhalt", value=aktuelle_daten.get(f"og_inhalt_{idx}", ""), hint_text="bitte Grammzahl angeben", hint_style=stil_hint_weiss, color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True, on_blur=format_gramm_blur)
                     verp_dd = erstelle_combo("Verpackung", aktuelle_daten.get(f"og_verp_{idx}", ""), og_verpackung_opts)
                     temp_in = ft.TextField(label="Probenahmetemperatur", value=aktuelle_daten.get(f"og_temp_{idx}", ""), border_color="white", color="yellow", label_style=stil_label_weiss, on_blur=format_temp_blur, content_padding=10, text_style=stil_tf_gelb_12, expand=True)
-                    og_controls[i] = {"name": og_name_in, "ort": ort_dd, "h_t": h_t, "h_m": h_m, "h_j": h_j, "v_t": v_t, "v_m": v_m, "v_j": v_j, "inhalt": inhalt_in, "verpackung": verp_dd, "temp": temp_in}
+                    
+                    og_controls[i] = {
+                        "name": og_name_in, "ort": ort_dd,
+                        "h_t": h_t, "h_m": h_m, "h_j": h_j,
+                        "v_t": v_t, "v_m": v_m, "v_j": v_j,
+                        "inhalt": inhalt_in, "verpackung": verp_dd, "temp": temp_in
+                    }
+                    
                     og_felder.append(ft.Text(f"Teilprobe {i}", color="yellow", weight="bold", size=14))
                     og_felder.append(og_name_in)
                     og_felder.append(ort_dd)
@@ -610,13 +645,22 @@ def main(page: ft.Page):
                 
                 for i in range(1, 6):
                     idx = f"{i:02d}"
-                    if i == 2: og_okz_felder.append(ft.Text("💡 Info: Bei Saftpresse bitte hier auswählen.", color="white54", italic=True, size=12))
+                    def_obj = og_okz_defaults[i]["obj"]
+                    def_abk = og_okz_defaults[i]["abk"]
+                    def_tup = og_okz_defaults[i]["tup"]
+                    
+                    if i == 2:
+                        og_okz_felder.append(ft.Text("💡 Info: Bei Saftpresse bitte hier auswählen.", color="white54", italic=True, size=12))
+
                     s_dd = erstelle_combo("Status", aktuelle_daten.get(f"og_okz_status_{idx}", "R+D"), og_okz_status_opts)
-                    obj_dd = erstelle_combo("Objekt", aktuelle_daten.get(f"og_okz_objekt_{idx}", og_okz_defaults[i]["obj"]), og_okz_objekt_opts)
+                    obj_dd = erstelle_combo("Objekt", aktuelle_daten.get(f"og_okz_objekt_{idx}", def_obj), og_okz_objekt_opts)
                     ort_dd = erstelle_combo("Probenahmeort", aktuelle_daten.get(f"og_okz_ort_{idx}", ""), og_okz_ort_opts)
-                    abk_cb = ft.Checkbox(label="Abklatsch", value=aktuelle_daten.get(f"og_okz_abklatsch_{idx}", og_okz_defaults[i]["abk"]), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
-                    tup_cb = ft.Checkbox(label="Tupfer", value=aktuelle_daten.get(f"og_okz_tupfer_{idx}", og_okz_defaults[i]["tup"]), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
+                    
+                    abk_cb = ft.Checkbox(label="Abklatsch", value=aktuelle_daten.get(f"og_okz_abklatsch_{idx}", def_abk), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
+                    tup_cb = ft.Checkbox(label="Tupfer", value=aktuelle_daten.get(f"og_okz_tupfer_{idx}", def_tup), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
+                    
                     og_okz_controls[idx] = {"status": s_dd, "objekt": obj_dd, "ort": ort_dd, "abklatsch": abk_cb, "tupfer": tup_cb}
+                    
                     og_okz_felder.append(ft.Text(f"Probe {i}", color="yellow", weight="bold", size=14))
                     og_okz_felder.append(ft.Row([s_dd, obj_dd]))
                     og_okz_felder.append(ft.Row([ort_dd]))
@@ -960,9 +1004,8 @@ def main(page: ft.Page):
                         ctrls["name"].value = ""; ctrls["ort"].value = ""
                         ctrls["h_t"].value = ""; ctrls["h_m"].value = ""; ctrls["h_j"].value = ""
                         ctrls["v_t"].value = ""; ctrls["v_m"].value = ""; ctrls["v_j"].value = ""
-                        ctrls["inhalt"].value = ""; ctrls["verpackung"].value = ""; ctrls["temp"].value = ""
+                        ctrls["temp"].value = ""
 
-                    og_okz_cb.value = False; og_okz_bemerkung_dd.value = "Bitte eingeben"; og_okz_anmerkung_in.value = ""
                     for idx_str, ctrls in og_okz_controls.items():
                         i = int(idx_str)
                         ctrls["status"].value = "R+D"
@@ -1775,6 +1818,18 @@ def main(page: ft.Page):
             base_dl = "/storage/emulated/0/Download" if os.path.exists("/storage/emulated/0/Download") else os.path.join(os.path.expanduser("~"), "Downloads")
             rewe_dir = os.path.join(base_dl, "REWE")
             
+            ansicht.controls.append(ft.Container(
+                bgcolor="#330000", padding=10, border_radius=10,
+                content=ft.Column([
+                    ft.Text("📱 WICHTIGE INFO ZUM VERSENDEN:", color="orange", weight="bold"),
+                    ft.Text("Da Handys das direkte Anhängen von Dateien oft blockieren, gehe bitte so vor:", color="white", size=12),
+                    ft.Text("1. Klicke auf 'Mail versenden' (die E-Mail öffnet sich).", color="white", size=12),
+                    ft.Text("2. Klicke in der E-Mail auf die Büroklammer (Anhang).", color="white", size=12),
+                    ft.Text("3. Wähle die PDF aus dem Ordner: Downloads -> REWE -> [Datum]", color="yellow", size=12, weight="bold"),
+                    ft.Text("Tipp: Du kannst die Dateien über 'Eigene Dateien' auch manuell auf OneDrive hochladen.", color="white54", size=11, italic=True)
+                ])
+            ))
+            
             pdfs_gefunden = False
             if os.path.exists(rewe_dir):
                 ordner_liste = sorted([o for o in os.listdir(rewe_dir) if os.path.isdir(os.path.join(rewe_dir, o)) and o != "temp"], reverse=True)
@@ -1788,7 +1843,9 @@ def main(page: ft.Page):
                             pdfs_gefunden = True
                             
                             def mail_senden(e, d=pdf):
-                                page.launch_url(f"mailto:registration-mibi.ber@tentamus.com?subject=REWE Monitoring Bericht: {d}&body=Bitte den Bericht im Anhang manuell anfuegen.")
+                                betreff = urllib.parse.quote(f"REWE Monitoring Bericht: {d}")
+                                body = urllib.parse.quote("Hallo,\n\nbitte den Bericht im Anhang manuell aus dem Ordner 'Downloads -> REWE' anfügen.\n\nViele Grüße")
+                                page.launch_url(f"mailto:registration-mibi.ber@tentamus.com?subject={betreff}&body={body}")
                                 
                             ansicht.controls.append(
                                 ft.Container(bgcolor="#002200", padding=10, border_radius=10, 
@@ -1815,13 +1872,17 @@ def main(page: ft.Page):
                 except: pass
                 
             ansicht.controls.append(
-                ft.Row([
-                    ft.Text("Die Berichte für heute liegen im Ordner:", color="red", size=12, expand=True),
-                    sicherer_button("📂 Ordner öffnen", oeffne_ordner, "blue", "white")
-                ])
+                ft.Container(
+                    bgcolor="#330000", padding=10, border_radius=10,
+                    content=ft.Column([
+                        ft.Text("Die Berichte für heute liegen im Ordner:", color="red", size=12),
+                        ft.Text(f"Downloads / REWE / {heute_ordner} /\n", color="red", size=14, weight="bold"),
+                        sicherer_button("📂 Ordner öffnen", oeffne_ordner, "blue", "white"),
+                        ft.Text("Versuche Datei/Ordner zu öffnen... Falls nichts passiert, blockiert dein Handy den Direktzugriff. Nutze dann die App 'Eigene Dateien'.", color="orange", size=10, italic=True)
+                    ])
+                )
             )
-            ansicht.controls.append(ft.Text(f"Downloads / REWE / {heute_ordner} /\n", color="red", size=14, weight="bold"))
-            ansicht.controls.append(ft.Text("TIPP: Gehe ins Archiv, um Berichte per Mail zu versenden!", color="red", size=12))
+            
             ansicht.controls.append(ft.Container(height=10))
             
             p_list = [f for f in os.listdir(final_dir) if f.endswith(".pdf")] if os.path.exists(final_dir) else []
