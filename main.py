@@ -4,8 +4,7 @@ import json
 import os
 import datetime
 import shutil
-import urllib.parse
-
+ 
 def main(page: ft.Page):
     page.title = "Rewe Monitoring System"
     page.bgcolor = "#003300" 
@@ -16,58 +15,47 @@ def main(page: ft.Page):
     try:
         page.window.icon = "icon.png"
     except: pass
-
+ 
     ansicht = ft.Column(expand=True, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
     page.add(ansicht)
-
-    # ZENTRALE PFAD-VERWALTUNG MIT GEHEIMTRICK (FALLBACK ZU ANDROID/MEDIA)
-    def get_base_rewe_dir():
-        base_dl = "/storage/emulated/0/Download" if os.path.exists("/storage/emulated/0/Download") else os.path.join(os.path.expanduser("~"), "Downloads")
-        fallback_dl_media = "/storage/emulated/0/Android/media/com.rewe.app.rewe_app"
-        fallback_dl_data = "/storage/emulated/0/Android/data/com.rewe.app.rewe_app/files"
-        
-        # 1. Versuch: Standard Download Ordner
-        rewe_dir = os.path.join(base_dl, "REWE")
-        try:
-            os.makedirs(rewe_dir, exist_ok=True)
-            test_path = os.path.join(rewe_dir, ".test")
-            with open(test_path, "w") as f: f.write("ok")
-            os.remove(test_path)
-            return rewe_dir
-        except Exception:
-            pass
-
-        # 2. Versuch: Fallback Android/media (Der Geheimtrick)
-        rewe_dir_media = os.path.join(fallback_dl_media, "REWE")
-        try:
-            os.makedirs(rewe_dir_media, exist_ok=True)
-            test_path = os.path.join(rewe_dir_media, ".test")
-            with open(test_path, "w") as f: f.write("ok")
-            os.remove(test_path)
-            return rewe_dir_media
-        except Exception:
-            pass
-
-        # 3. Versuch: Letzter Rettungsanker Android/data
-        rewe_dir_data = os.path.join(fallback_dl_data, "REWE")
-        try:
-            os.makedirs(rewe_dir_data, exist_ok=True)
-            return rewe_dir_data
-        except Exception:
-            return rewe_dir # Wenn alles fehlschlägt, gibt er den Standard-Ordner zurück (dann greift die Fehleranzeige in der Maske)
-
+ 
+    # PFADE
     def get_rewe_paths():
-        rewe_dir = get_base_rewe_dir()
-        temp_dir = os.path.join(rewe_dir, "temp")
         heute_ordner = datetime.datetime.now().strftime('%Y-%m-%d')
-        final_dir = os.path.join(rewe_dir, heute_ordner)
-        try:
-            os.makedirs(temp_dir, exist_ok=True)
-            os.makedirs(final_dir, exist_ok=True)
-        except Exception: 
-            pass 
-        return temp_dir, final_dir, heute_ordner
+        primary_base = "/storage/emulated/0/Download"
+        fallback_base = "/storage/emulated/0/Android/media"
+        desktop_base = os.path.join(os.path.expanduser("~"), "Downloads")
 
+        # Prüfen, wo gespeichert werden kann
+        if os.path.exists(primary_base):
+            rewe_dir = os.path.join(primary_base, "REWE")
+            try:
+                os.makedirs(rewe_dir, exist_ok=True)
+                # Testen, ob wir Schreibrechte haben
+                test_file = os.path.join(rewe_dir, ".test_write")
+                with open(test_file, "w") as f: f.write("ok")
+                os.remove(test_file)
+                display_pfad = "Downloads / REWE"
+            except (PermissionError, OSError):
+                # GEHEIMTRICK: Ausweichen auf Android/media bei fehlenden Rechten
+                rewe_dir = os.path.join(fallback_base, "REWE")
+                os.makedirs(rewe_dir, exist_ok=True)
+                display_pfad = "Android / media / REWE"
+        elif os.path.exists(fallback_base):
+            rewe_dir = os.path.join(fallback_base, "REWE")
+            os.makedirs(rewe_dir, exist_ok=True)
+            display_pfad = "Android / media / REWE"
+        else:
+            rewe_dir = os.path.join(desktop_base, "REWE")
+            display_pfad = "Downloads / REWE"
+
+        temp_dir = os.path.join(rewe_dir, "temp")
+        final_dir = os.path.join(rewe_dir, heute_ordner)
+        os.makedirs(temp_dir, exist_ok=True)
+        os.makedirs(final_dir, exist_ok=True)
+
+        return temp_dir, final_dir, heute_ordner, display_pfad
+ 
     def zeige_fehler(e):
         ansicht.controls.clear()
         page.bgcolor = "black"
@@ -77,15 +65,15 @@ def main(page: ft.Page):
             ansicht.controls.append(ft.Text(traceback.format_exc(), color="white", size=12))
         except: pass
         page.update()
-
+ 
     try:
         import pypdf
-        from pypdf.generic import DictionaryObject, NameObject, ArrayObject, BooleanObject
-
+        from pypdf.generic import DictionaryObject, NameObject, ArrayObject
+ 
         SPEICHER_DATEI = "meine_monitoring_daten.json"
         BENUTZER_DATEI = "benutzer_daten.json"
         VORLAGEN_DATEI = "tour_vorlagen.json"
-
+ 
         def sicherer_button(text, on_click, bgcolor="blue", color="white", expand=False, height=None, width=None):
             return ft.ElevatedButton(
                 content=ft.Text(text, weight="bold", size=12),
@@ -93,32 +81,32 @@ def main(page: ft.Page):
                 expand=expand, height=height, width=width,
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=5)
             )
-
+ 
         def lade_maerkte():
             if os.path.exists(SPEICHER_DATEI):
                 with open(SPEICHER_DATEI, "r", encoding="utf-8") as d: return json.load(d)
             return []
-
+ 
         def speichere_maerkte(liste):
             with open(SPEICHER_DATEI, "w", encoding="utf-8") as d: json.dump(liste, d)
-
+ 
         def lade_benutzer():
             if os.path.exists(BENUTZER_DATEI):
                 with open(BENUTZER_DATEI, "r", encoding="utf-8") as d:
                     daten = json.load(d); return daten.get("vorname", ""), daten.get("zuname", "")
             return "", ""
-
+ 
         def speichere_benutzer(v, z):
             with open(BENUTZER_DATEI, "w", encoding="utf-8") as d: json.dump({"vorname": v, "zuname": z}, d)
-
+ 
         def lade_vorlagen():
             if os.path.exists(VORLAGEN_DATEI):
                 with open(VORLAGEN_DATEI, "r", encoding="utf-8") as d: return json.load(d)
             return {}
-
+ 
         def speichere_vorlagen(daten):
             with open(VORLAGEN_DATEI, "w", encoding="utf-8") as d: json.dump(daten, d)
-
+ 
         def nav_leiste():
             return ft.Container(
                 bgcolor="#001100", padding=10, border_radius=10, 
@@ -128,13 +116,13 @@ def main(page: ft.Page):
                     sicherer_button("Archiv", lambda e: zeige_archiv(), "#004400", "white")
                 ])
             )
-
+ 
         def zeige_startbildschirm():
             ansicht.controls.clear()
             v, z = lade_benutzer()
             
             stil_label_weiss = ft.TextStyle(color="white")
-            stil_hint_weiss = ft.TextStyle(color="white54", size=12)
+            stil_hint_weiss = ft.TextStyle(color="white", size=12)
             
             v_in = ft.TextField(label="Vorname", hint_text="Dein Vorname", hint_style=stil_hint_weiss, value=v, color="yellow", border_color="white", text_align=ft.TextAlign.CENTER, label_style=stil_label_weiss, width=300)
             z_in = ft.TextField(label="Nachname", hint_text="Dein Nachname", hint_style=stil_hint_weiss, value=z, color="yellow", border_color="white", text_align=ft.TextAlign.CENTER, label_style=stil_label_weiss, width=300)
@@ -148,7 +136,7 @@ def main(page: ft.Page):
                 ft.TextSpan("REWE ", ft.TextStyle(color="red", weight="bold", size=32)),
                 ft.TextSpan("Monitoring", ft.TextStyle(color="white", weight="bold", size=32))
             ], text_align=ft.TextAlign.CENTER)
-
+ 
             ansicht.controls.extend([
                 ft.Container(height=50), 
                 ft.Row([header], alignment=ft.MainAxisAlignment.CENTER), 
@@ -158,7 +146,7 @@ def main(page: ft.Page):
                 ft.Row([btn_start], alignment=ft.MainAxisAlignment.CENTER)
             ])
             page.update()
-
+ 
         def zeige_dashboard():
             ansicht.controls.clear()
             maerkte = lade_maerkte()
@@ -181,7 +169,7 @@ def main(page: ft.Page):
             btn_neu = sicherer_button("Tour voranlegen", lambda e: zeige_maske(None), "red", "white", height=50)
             ansicht.controls.append(ft.Row([btn_neu], alignment=ft.MainAxisAlignment.CENTER))
             page.update()
-
+ 
         def zeige_maske(markt_index):
             try:
                 ansicht.controls.clear()
@@ -195,12 +183,12 @@ def main(page: ft.Page):
                 else:
                     aktuelle_daten = maerkte[markt_index]
                     titel = "Tour bearbeiten"
-
+ 
                 stil_tf_gelb_12 = ft.TextStyle(color="yellow", size=12)
                 stil_label_weiss = ft.TextStyle(color="white")
                 stil_cb_weiss = ft.TextStyle(color="white", size=12)
                 stil_hint_weiss = ft.TextStyle(color="white54", size=12)
-
+ 
                 tage_opts = [""] + [f"{i:02d}" for i in range(1, 32)]
                 mon_opts = [""] + [f"{i:02d}" for i in range(1, 13)]
                 jahr_opts = [""] + [str(i) for i in range(2024, 2035)]
@@ -210,28 +198,28 @@ def main(page: ft.Page):
                 charge_opts_g = ["z. Z. nicht vorrätig", "keine Eigenproduktion", "Bitte eingeben", "Kein Geflügel"]
                 entnahmeort_opts = ["Fischabteilung", "Produktionsraum", "Bedientheke", "Vorbereitungsraum", "Metzgerei", "Kühlraum", "SB-Theke"]
                 verpackung_opts = ["steriler Probenbecher", "steriler Probenbeutel", "Transportverpackung", "Kunststoffbecher mit Anrolldeckel u. etikett", "Pappschale mit Kunststofffolie umwickelt", "tiefgezogene Kunststoffschale mit Anrollfolie", "Styroporschale mit Kunststofffolie umwickelt", "SB-Kunststoffverpackung"]
-
+ 
                 def parse_datum(datum_str, def_t="", def_m="", def_j=""):
                     if not datum_str: return def_t, def_m, def_j
                     parts = datum_str.split(".")
                     if len(parts) == 3: return parts[0], parts[1], parts[2]
                     return def_t, def_m, def_j
-
+ 
                 def get_date_str(t, m, j):
                     t = (t or "").strip()
                     m = (m or "").strip()
                     j = (j or "").strip()
                     if not t and not m and not j: return ""
                     return f"{t}.{m}.{j}"
-
-                def erstelle_combo(label_text, wert, optionen, groesse=12, ausdehnbar=1, breite=None, on_change_func=None):
+ 
+                def erstelle_combo(label_text, wert, optionen, groesse=12, ausdehnbar=1, on_change_func=None):
                     def on_txt_change(e):
                         if on_change_func: on_change_func(e)
                         
                     combo = ft.TextField(
                         label=label_text, value=wert, color="yellow", 
                         text_style=ft.TextStyle(size=groesse, color="yellow"), label_style=stil_label_weiss, 
-                        border_color="white", expand=ausdehnbar if breite is None else False, width=breite, content_padding=5, 
+                        border_color="white", expand=ausdehnbar, content_padding=5, 
                         on_change=on_txt_change
                     )
                     items = []
@@ -246,24 +234,24 @@ def main(page: ft.Page):
                     pb = ft.PopupMenuButton(items=items, icon="arrow_drop_down", icon_color="white")
                     combo.suffix = pb 
                     return combo
-
+ 
                 def hat_charge_wert(val):
                     return bool(val and val != "Bitte eingeben")
-
+ 
                 def cb_row(links, rechts):
                     return ft.Row([ft.Container(links, expand=1), ft.Container(rechts, expand=1)], vertical_alignment=ft.CrossAxisAlignment.CENTER)
-
+ 
                 # --- 1. STAMMDATEN FELDER ---
                 d_tag, d_mon, d_jahr = parse_datum(aktuelle_daten.get("datum", heute_str), heute_str.split(".")[0], heute_str.split(".")[1], heute_str.split(".")[2])
                 tag_dd = erstelle_combo("Tag", d_tag, tage_opts, ausdehnbar=3)
                 mon_dd = erstelle_combo("Mon", d_mon, mon_opts, ausdehnbar=3)
                 jahr_dd = erstelle_combo("Jahr", d_jahr, jahr_opts, ausdehnbar=4)
-
+ 
                 datum_row = ft.Column([
                     ft.Text("Datum der Probenahme", color="white", weight="bold"),
                     ft.Row([tag_dd, mon_dd, jahr_dd])
                 ])
-
+ 
                 adr_in = ft.TextField(label="Adresse Markt", value=aktuelle_daten.get("adresse"), color="yellow", text_style=stil_tf_gelb_12, label_style=stil_label_weiss, border_color="white", content_padding=10, expand=True)
                 nr_in = ft.TextField(label="Marktnummer", value=aktuelle_daten.get("marktnummer"), color="yellow", text_style=stil_tf_gelb_12, label_style=stil_label_weiss, border_color="white", content_padding=10, expand=True)
                 auft_in = ft.TextField(label="Auftragsnummer", value=aktuelle_daten.get("auftragsnummer"), color="yellow", text_style=stil_tf_gelb_12, label_style=stil_label_weiss, border_color="white", content_padding=10, expand=True)
@@ -272,10 +260,10 @@ def main(page: ft.Page):
                 
                 ag_dd = erstelle_combo("Auftraggeber", aktuelle_daten.get("auftraggeber", ""), ["03509 - REWE Hackfleischmonitoring", "3001767 - REWE Dortmund (Hackfleischmonitoring)"])
                 typ_dd = erstelle_combo("Typ der Probenahme", aktuelle_daten.get("typ_probenahme", "Standard"), ["Standard", "Nachkontrolle", "Mehrwöchig"])
-
+ 
                 lims_warnung = ft.Text("⚠️ HINWEIS: Aktivierungs-Haken fehlt!", color="red", weight="bold", visible=False)
                 lims_override_cb = ft.Checkbox(label="Trotzdem speichern", visible=False, label_style=stil_cb_weiss, fill_color="red", check_color="white")
-
+ 
                 def pruefe_lims_warnung(e=None):
                     tw_hat_daten = bool((tw_zeit_in.value or "").strip() or (tw_temp_in.value or "").strip())
                     se_hat_daten = bool((se_zeit_in.value or "").strip() or (se_temp_in.value or "").strip())
@@ -283,7 +271,7 @@ def main(page: ft.Page):
                     se_okz_hat_daten = False
                     for i in range(1, 4):
                         if (se_okz_controls[i]["ort"].value or "").strip(): se_okz_hat_daten = True
-
+ 
                     hfm_hack_hat_daten = bool((hfm_hack_temp_in.value or "").strip() or (hfm_hack_mhd_s_tag_dd.value or "").strip() or (hfm_hack_mhd_r_tag_dd.value or "").strip() or hat_charge_wert(hfm_hack_charge_schwein_dd.value) or hat_charge_wert(hfm_hack_charge_rind_dd.value))
                     hfm_mett_hat_daten = bool((hfm_mett_temp_in.value or "").strip() or (hfm_mett_mhd_tag_dd.value or "").strip() or hat_charge_wert(hfm_mett_charge_dd.value))
                     hfm_fzs_hat_daten = bool((hfm_fzs_temp_in.value or "").strip() or (hfm_fzs_mhd_tag_dd.value or "").strip() or hat_charge_wert(hfm_fzs_charge_dd.value))
@@ -313,7 +301,7 @@ def main(page: ft.Page):
                     if not braucht_warnung:
                         lims_override_cb.value = False
                     page.update()
-
+ 
                 def format_zeit(e):
                     val = e.control.value or ""
                     zahlen = "".join([c for c in val if c.isdigit()])[:4]
@@ -322,19 +310,19 @@ def main(page: ft.Page):
                         e.control.value = neu_wert
                         e.control.update()
                     pruefe_lims_warnung()
-
+ 
                 def format_temp_blur(e):
                     val = (e.control.value or "").strip().replace(" °C", "").replace("°C", "").strip()
                     e.control.value = val + " °C" if val else ""
                     e.control.update()
                     pruefe_lims_warnung()
-
+ 
                 def format_gramm_blur(e):
                     val = (e.control.value or "").strip()
                     if val and not val.lower().endswith("g") and not val.lower().endswith("ml"):
                         e.control.value = val + " g"
                         e.control.update()
-
+ 
                 # --- 2. TRINKWASSER FELDER ---
                 tw_kalt_cb = ft.Checkbox(label="Trinkwasser kalt", value=aktuelle_daten.get("tw_kalt", False), on_change=pruefe_lims_warnung, label_style=stil_label_weiss, fill_color="yellow", check_color="black")
                 tw_zeit_in = ft.TextField(label="Probenahmezeit", value=aktuelle_daten.get("tw_zeit"), border_color="white", color="yellow", label_style=stil_label_weiss, on_change=format_zeit, content_padding=10, text_style=stil_tf_gelb_12, expand=True)
@@ -355,7 +343,7 @@ def main(page: ft.Page):
                 tw_verpackung_dd = erstelle_combo("Verpackung", aktuelle_daten.get("tw_verpackung", "500ml Kunststoff-Flasche mit Natriumthiosulfat"), ["500ml Kunststoff-Flasche mit Natriumthiosulfat"])
                 tw_entnahmeort_dd = erstelle_combo("Entnahmeort", aktuelle_daten.get("tw_entnahmeort", "Metzgerei"), ["Produktionsraum", "Bedientheke", "Vorbereitungsraum", "Metzgerei", "Kühlraum", "SB-Theke", "Salatbar", "Convenience Küche"])
                 tw_bemerkung_dd = erstelle_combo("TW Bemerkung", aktuelle_daten.get("tw_bemerkung", "Bitte eingeben"), ["Bitte eingeben", "Keine Besonderheiten"])
-
+ 
                 cb_pn = ft.Checkbox(label="PN-Hahn", value=aktuelle_daten.get("tw_cb_pn", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
                 cb_zwei = ft.Checkbox(label="Zweigriff", value=aktuelle_daten.get("tw_cb_zwei", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
                 cb_sensor = ft.Checkbox(label="Sensor", value=aktuelle_daten.get("tw_cb_sensor", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
@@ -371,7 +359,8 @@ def main(page: ft.Page):
                 cb_auff_verbrueh = ft.Checkbox(label="Armatur mit Verbrühschutz", value=aktuelle_daten.get("cb_auff_verbrueh", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
                 cb_auff_durchlauf = ft.Checkbox(label="Durchlauferhitzer", value=aktuelle_daten.get("cb_auff_durchlauf", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
                 
-                cb_auff_unterbau = ft.Checkbox(label="Unterbauspeicher", value=aktuelle_daten.get("cb_auff_unterbau", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
+                cb_auff_unterbau = ft.Checkbox(label="Unterbauspeicher [L]", value=aktuelle_daten.get("cb_auff_unterbau", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
+                tw_unterbau_l_in = ft.TextField(value=aktuelle_daten.get("tw_unterbau_l"), hint_text="Literangabe", hint_style=ft.TextStyle(color="white", size=12), expand=True, height=45, content_padding=10, text_style=stil_tf_gelb_12, color="yellow", border_color="white")
                 
                 cb_auff_eck_zu = ft.Checkbox(label="Eckventil warm/kalt geschlossen", value=aktuelle_daten.get("cb_auff_eck_zu", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
                 cb_auff_nichtmoeglich = ft.Checkbox(label="nicht möglich", value=aktuelle_daten.get("cb_auff_nichtmoeglich", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
@@ -381,7 +370,7 @@ def main(page: ft.Page):
                 
                 tw_auff_sonstiges_in = ft.TextField(label="Auffälligkeiten (Sonstiges)", value=aktuelle_daten.get("tw_auff_sonstiges"), color="yellow", label_style=stil_label_weiss, content_padding=10, text_style=stil_tf_gelb_12, expand=True)
                 tw_inhalt_in = ft.TextField(label="Inhalt", value=aktuelle_daten.get("tw_inhalt", "ca. 500 ml"), color="yellow", label_style=stil_label_weiss, content_padding=10, text_style=stil_tf_gelb_12, expand=True)
-
+ 
                 # --- 3. SCHERBENEIS FELDER ---
                 se_kalt_cb = ft.Checkbox(label="Scherbeneis Eigenkontrolle", value=aktuelle_daten.get("se_kalt", False), on_change=pruefe_lims_warnung, label_style=ft.TextStyle(color="white", size=16, weight="bold"), fill_color="yellow", check_color="black")
                 se_zeit_in = ft.TextField(label="Probenahmezeit", value=aktuelle_daten.get("se_zeit"), border_color="white", color="yellow", label_style=stil_label_weiss, on_change=format_zeit, content_padding=10, text_style=stil_tf_gelb_12, expand=True)
@@ -390,7 +379,7 @@ def main(page: ft.Page):
                 se_cb_eiswanne = ft.Checkbox(label="Eiswanne/Schöpfprobe", value=aktuelle_daten.get("se_cb_eiswanne", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
                 se_cb_fallprobe = ft.Checkbox(label="Fallprobe", value=aktuelle_daten.get("se_cb_fallprobe", True), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
                 se_tech_sonst_in = ft.TextField(label="Sonstiges (Technik)", value=aktuelle_daten.get("se_tech_sonst"), color="yellow", label_style=stil_label_weiss, content_padding=10, text_style=stil_tf_gelb_12, expand=True)
-
+ 
                 se_desinf_dd = erstelle_combo("Art der Desinfektion", aktuelle_daten.get("se_desinf", "ohne Desinfektion"), ["Abflammen", "Sprühdesinfektion", "ohne Desinfektion"])
                 se_cb_ozon = ft.Checkbox(label="Ozonsterilisator", value=aktuelle_daten.get("se_cb_ozon", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
                 se_auff_sonst_in = ft.TextField(label="Sonstiges (Auffälligkeiten)", value=aktuelle_daten.get("se_auff_sonst"), color="yellow", label_style=stil_label_weiss, content_padding=10, text_style=stil_tf_gelb_12, expand=True)
@@ -400,7 +389,7 @@ def main(page: ft.Page):
                 se_entnahmeort_dd = erstelle_combo("Entnahmeort", aktuelle_daten.get("se_entnahmeort", "Fischabteilung-Eismaschine"), ["Fischabteilung-Eismaschine", "Metzgerei", "Produktionsraum"])
                 se_temp_in = ft.TextField(label="Probenahmetemperatur", value=aktuelle_daten.get("se_temp"), border_color="white", color="yellow", label_style=stil_label_weiss, on_blur=format_temp_blur, content_padding=10, text_style=stil_tf_gelb_12, expand=True)
                 se_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("se_bemerkung", "Bitte eingeben"), ["Bitte eingeben", "Keine Besonderheiten"])
-
+ 
                 # --- 3b. SCHERBENEIS - OKZ ---
                 se_okz_cb = ft.Checkbox(label="Abklatschproben Scherbeneis", value=aktuelle_daten.get("se_okz_cb", False), on_change=pruefe_lims_warnung, label_style=ft.TextStyle(color="white", size=16, weight="bold"), fill_color="yellow", check_color="black")
                 se_okz_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("se_okz_bemerkung", "Bitte eingeben"), ["Bitte eingeben", "Keine Besonderheiten"])
@@ -438,7 +427,7 @@ def main(page: ft.Page):
                     se_okz_felder.append(ft.Row([ort_dd]))
                     se_okz_felder.append(ft.Row([abk_cb, tup_cb], alignment=ft.MainAxisAlignment.SPACE_AROUND))
                     se_okz_felder.append(ft.Divider(color="white24"))
-
+ 
                 # --- 4. HFM - HACKFLEISCH GEMISCHT ---
                 hfm_hack_cb = ft.Checkbox(label="Hackfleisch gemischt", value=aktuelle_daten.get("hfm_hack_cb", False), on_change=pruefe_lims_warnung, label_style=ft.TextStyle(color="white", size=16, weight="bold"), fill_color="yellow", check_color="black")
                 hfm_hack_entnahmeort_dd = erstelle_combo("Entnahmeort", aktuelle_daten.get("hfm_hack_entnahmeort", "Kühlraum"), entnahmeort_opts)
@@ -447,17 +436,17 @@ def main(page: ft.Page):
                 hfm_hack_herst_tag_dd = erstelle_combo("Tag", hfm_h_t, tage_opts, ausdehnbar=3)
                 hfm_hack_herst_mon_dd = erstelle_combo("Mon", hfm_h_m, mon_opts, ausdehnbar=3)
                 hfm_hack_herst_jahr_dd = erstelle_combo("Jahr", hfm_h_j, jahr_opts, ausdehnbar=4)
-
+ 
                 mhd_s_t, mhd_s_m, mhd_s_j = parse_datum(aktuelle_daten.get("hfm_hack_mhd_schwein", ""))
                 hfm_hack_mhd_s_tag_dd = erstelle_combo("Tag", mhd_s_t, tage_opts, ausdehnbar=3, on_change_func=pruefe_lims_warnung)
                 hfm_hack_mhd_s_mon_dd = erstelle_combo("Mon", mhd_s_m, mon_opts, ausdehnbar=3)
                 hfm_hack_mhd_s_jahr_dd = erstelle_combo("Jahr", mhd_s_j, jahr_opts, ausdehnbar=4)
-
+ 
                 mhd_r_t, mhd_r_m, mhd_r_j = parse_datum(aktuelle_daten.get("hfm_hack_mhd_rind", ""))
                 hfm_hack_mhd_r_tag_dd = erstelle_combo("Tag", mhd_r_t, tage_opts, ausdehnbar=3, on_change_func=pruefe_lims_warnung)
                 hfm_hack_mhd_r_mon_dd = erstelle_combo("Mon", mhd_r_m, mon_opts, ausdehnbar=3)
                 hfm_hack_mhd_r_jahr_dd = erstelle_combo("Jahr", mhd_r_j, jahr_opts, ausdehnbar=4)
-
+ 
                 hfm_hack_inhalt_in = ft.TextField(label="Inhalt", value=aktuelle_daten.get("hfm_hack_inhalt", "jeweils ca. 200 g"), hint_text="bitte Grammzahl angeben", hint_style=stil_hint_weiss, color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True, on_blur=format_gramm_blur)
                 hfm_hack_verpackung_dd = erstelle_combo("Verpackung", aktuelle_daten.get("hfm_hack_verpackung", "steriler Probenbeutel"), verpackung_opts)
                 
@@ -469,7 +458,7 @@ def main(page: ft.Page):
                 
                 hfm_hack_temp_in = ft.TextField(label="Probenahmetemperatur", hint_text="(Soll Schwein/Rind: <+7°C)", hint_style=stil_hint_weiss, value=aktuelle_daten.get("hfm_hack_temp", ""), border_color="white", color="yellow", label_style=stil_label_weiss, on_blur=format_temp_blur, content_padding=10, text_style=stil_tf_gelb_12, expand=True)
                 hfm_hack_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("hfm_hack_bemerkung", "Bitte eingeben"), ["Bitte eingeben", "Keine Besonderheiten"])
-
+ 
                 # --- 5. HFM - GEWÜRZTES SCHWEINEMETT ---
                 hfm_mett_cb = ft.Checkbox(label="Gewürztes Schweinemett", value=aktuelle_daten.get("hfm_mett_cb", False), on_change=pruefe_lims_warnung, label_style=ft.TextStyle(color="white", size=16, weight="bold"), fill_color="yellow", check_color="black")
                 hfm_mett_entnahmeort_dd = erstelle_combo("Entnahmeort", aktuelle_daten.get("hfm_mett_entnahmeort", "Kühlraum"), entnahmeort_opts)
@@ -478,12 +467,12 @@ def main(page: ft.Page):
                 hfm_mett_herst_tag_dd = erstelle_combo("Tag", hfm_m_t, tage_opts, ausdehnbar=3)
                 hfm_mett_herst_mon_dd = erstelle_combo("Mon", hfm_m_m, mon_opts, ausdehnbar=3)
                 hfm_mett_herst_jahr_dd = erstelle_combo("Jahr", hfm_m_j, jahr_opts, ausdehnbar=4)
-
+ 
                 mhd_mett_t, mhd_mett_m, mhd_mett_j = parse_datum(aktuelle_daten.get("hfm_mett_mhd", ""))
                 hfm_mett_mhd_tag_dd = erstelle_combo("Tag", mhd_mett_t, tage_opts, ausdehnbar=3, on_change_func=pruefe_lims_warnung)
                 hfm_mett_mhd_mon_dd = erstelle_combo("Mon", mhd_mett_m, mon_opts, ausdehnbar=3)
                 hfm_mett_mhd_jahr_dd = erstelle_combo("Jahr", mhd_mett_j, jahr_opts, ausdehnbar=4)
-
+ 
                 hfm_mett_inhalt_in = ft.TextField(label="Inhalt", value=aktuelle_daten.get("hfm_mett_inhalt", "ca. 200 g"), hint_text="bitte Grammzahl angeben", hint_style=stil_hint_weiss, color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True, on_blur=format_gramm_blur)
                 hfm_mett_verpackung_dd = erstelle_combo("Verpackung", aktuelle_daten.get("hfm_mett_verpackung", "steriler Probenbeutel"), verpackung_opts)
                 
@@ -492,7 +481,7 @@ def main(page: ft.Page):
                 
                 hfm_mett_temp_in = ft.TextField(label="Probenahmetemperatur", hint_text="(Soll Schwein: <+7°C)", hint_style=stil_hint_weiss, value=aktuelle_daten.get("hfm_mett_temp", ""), border_color="white", color="yellow", label_style=stil_label_weiss, on_blur=format_temp_blur, content_padding=10, text_style=stil_tf_gelb_12, expand=True)
                 hfm_mett_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("hfm_mett_bemerkung", "Bitte eingeben"), ["Bitte eingeben", "Keine Besonderheiten"])
-
+ 
                 # --- 6. HFM - FZ SCHWEIN ---
                 hfm_fzs_cb = ft.Checkbox(label="Fleischzubereitung Schwein", value=aktuelle_daten.get("hfm_fzs_cb", False), on_change=pruefe_lims_warnung, label_style=ft.TextStyle(color="white", size=16, weight="bold"), fill_color="yellow", check_color="black")
                 hfm_fzs_entnahmeort_dd = erstelle_combo("Entnahmeort", aktuelle_daten.get("hfm_fzs_entnahmeort", "Kühlraum"), entnahmeort_opts)
@@ -504,12 +493,12 @@ def main(page: ft.Page):
                 hfm_fzs_herst_tag_dd = erstelle_combo("Tag", hfm_fzs_h_t, tage_opts, ausdehnbar=3)
                 hfm_fzs_herst_mon_dd = erstelle_combo("Mon", hfm_fzs_h_m, mon_opts, ausdehnbar=3)
                 hfm_fzs_herst_jahr_dd = erstelle_combo("Jahr", hfm_fzs_h_j, jahr_opts, ausdehnbar=4)
-
+ 
                 mhd_fzs_t, mhd_fzs_m, mhd_fzs_j = parse_datum(aktuelle_daten.get("hfm_fzs_mhd", ""))
                 hfm_fzs_mhd_tag_dd = erstelle_combo("Tag", mhd_fzs_t, tage_opts, ausdehnbar=3, on_change_func=pruefe_lims_warnung)
                 hfm_fzs_mhd_mon_dd = erstelle_combo("Mon", mhd_fzs_m, mon_opts, ausdehnbar=3)
                 hfm_fzs_mhd_jahr_dd = erstelle_combo("Jahr", mhd_fzs_j, jahr_opts, ausdehnbar=4)
-
+ 
                 hfm_fzs_inhalt_in = ft.TextField(label="Inhalt", value=aktuelle_daten.get("hfm_fzs_inhalt", "ca. 200 g"), hint_text="bitte Grammzahl angeben", hint_style=stil_hint_weiss, color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True, on_blur=format_gramm_blur)
                 hfm_fzs_verpackung_dd = erstelle_combo("Verpackung", aktuelle_daten.get("hfm_fzs_verpackung", "steriler Probenbeutel"), verpackung_opts)
                 
@@ -518,7 +507,7 @@ def main(page: ft.Page):
                 
                 hfm_fzs_temp_in = ft.TextField(label="Probenahmetemperatur", hint_text="(Soll Schwein: <+7°C)", hint_style=stil_hint_weiss, value=aktuelle_daten.get("hfm_fzs_temp", ""), border_color="white", color="yellow", label_style=stil_label_weiss, on_blur=format_temp_blur, content_padding=10, text_style=stil_tf_gelb_12, expand=True)
                 hfm_fzs_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("hfm_fzs_bemerkung", "Bitte eingeben"), ["Bitte eingeben", "Keine Besonderheiten"])
-
+ 
                 # --- 7. HFM - FZ GEFLÜGEL ---
                 hfm_fzg_cb = ft.Checkbox(label="Fleischzubereitung Geflügel", value=aktuelle_daten.get("hfm_fzg_cb", False), on_change=pruefe_lims_warnung, label_style=ft.TextStyle(color="white", size=16, weight="bold"), fill_color="yellow", check_color="black")
                 hfm_fzg_entnahmeort_dd = erstelle_combo("Entnahmeort", aktuelle_daten.get("hfm_fzg_entnahmeort", "Kühlraum"), entnahmeort_opts)
@@ -530,12 +519,12 @@ def main(page: ft.Page):
                 hfm_fzg_herst_tag_dd = erstelle_combo("Tag", hfm_fzg_h_t, tage_opts, ausdehnbar=3)
                 hfm_fzg_herst_mon_dd = erstelle_combo("Mon", hfm_fzg_h_m, mon_opts, ausdehnbar=3)
                 hfm_fzg_herst_jahr_dd = erstelle_combo("Jahr", hfm_fzg_h_j, jahr_opts, ausdehnbar=4)
-
+ 
                 mhd_fzg_t, mhd_fzg_m, mhd_fzg_j = parse_datum(aktuelle_daten.get("hfm_fzg_mhd", ""))
                 hfm_fzg_mhd_tag_dd = erstelle_combo("Tag", mhd_fzg_t, tage_opts, ausdehnbar=3, on_change_func=pruefe_lims_warnung)
                 hfm_fzg_mhd_mon_dd = erstelle_combo("Mon", mhd_fzg_m, mon_opts, ausdehnbar=3)
                 hfm_fzg_mhd_jahr_dd = erstelle_combo("Jahr", mhd_fzg_j, jahr_opts, ausdehnbar=4)
-
+ 
                 hfm_fzg_inhalt_in = ft.TextField(label="Inhalt", value=aktuelle_daten.get("hfm_fzg_inhalt", "ca. 200 g"), hint_text="bitte Grammzahl angeben", hint_style=stil_hint_weiss, color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True, on_blur=format_gramm_blur)
                 hfm_fzg_verpackung_dd = erstelle_combo("Verpackung", aktuelle_daten.get("hfm_fzg_verpackung", "steriler Probenbeutel"), verpackung_opts)
                 
@@ -544,7 +533,7 @@ def main(page: ft.Page):
                 
                 hfm_fzg_temp_in = ft.TextField(label="Probenahmetemperatur", hint_text="(Soll Geflügel: <+4°C)", hint_style=stil_hint_weiss, value=aktuelle_daten.get("hfm_fzg_temp", ""), border_color="white", color="yellow", label_style=stil_label_weiss, on_blur=format_temp_blur, content_padding=10, text_style=stil_tf_gelb_12, expand=True)
                 hfm_fzg_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("hfm_fzg_bemerkung", "Bitte eingeben"), ["Bitte eingeben", "Keine Besonderheiten"])
-
+ 
                 # --- 8. HFM - BIO HACK ---
                 hfm_bio_cb = ft.Checkbox(label="Bio-Hackfleisch", value=aktuelle_daten.get("hfm_bio_cb", False), on_change=pruefe_lims_warnung, label_style=ft.TextStyle(color="white", size=16, weight="bold"), fill_color="yellow", check_color="black")
                 hfm_bio_entnahmeort_dd = erstelle_combo("Entnahmeort", aktuelle_daten.get("hfm_bio_entnahmeort", "Produktionsraum"), entnahmeort_opts)
@@ -553,17 +542,17 @@ def main(page: ft.Page):
                 hfm_bio_herst_tag_dd = erstelle_combo("Tag", hfm_b_t, tage_opts, ausdehnbar=3)
                 hfm_bio_herst_mon_dd = erstelle_combo("Mon", hfm_b_m, mon_opts, ausdehnbar=3)
                 hfm_bio_herst_jahr_dd = erstelle_combo("Jahr", hfm_b_j, jahr_opts, ausdehnbar=4)
-
+ 
                 mhd_b_s_t, mhd_b_s_m, mhd_b_s_j = parse_datum(aktuelle_daten.get("hfm_bio_mhd_schwein", ""))
                 hfm_bio_mhd_s_tag_dd = erstelle_combo("Tag", mhd_b_s_t, tage_opts, ausdehnbar=3, on_change_func=pruefe_lims_warnung)
                 hfm_bio_mhd_s_mon_dd = erstelle_combo("Mon", mhd_b_s_m, mon_opts, ausdehnbar=3)
                 hfm_bio_mhd_s_jahr_dd = erstelle_combo("Jahr", mhd_b_s_j, jahr_opts, ausdehnbar=4)
-
+ 
                 mhd_b_r_t, mhd_b_r_m, mhd_b_r_j = parse_datum(aktuelle_daten.get("hfm_bio_mhd_rind", ""))
                 hfm_bio_mhd_r_tag_dd = erstelle_combo("Tag", mhd_b_r_t, tage_opts, ausdehnbar=3, on_change_func=pruefe_lims_warnung)
                 hfm_bio_mhd_r_mon_dd = erstelle_combo("Mon", mhd_b_r_m, mon_opts, ausdehnbar=3)
                 hfm_bio_mhd_r_jahr_dd = erstelle_combo("Jahr", mhd_b_r_j, jahr_opts, ausdehnbar=4)
-
+ 
                 hfm_bio_inhalt_in = ft.TextField(label="Inhalt", value=aktuelle_daten.get("hfm_bio_inhalt", "jeweils ca. 200 g"), hint_text="bitte Grammzahl angeben", hint_style=stil_hint_weiss, color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True, on_blur=format_gramm_blur)
                 hfm_bio_verpackung_dd = erstelle_combo("Verpackung", aktuelle_daten.get("hfm_bio_verpackung", "steriler Probenbecher"), verpackung_opts)
                 
@@ -575,7 +564,7 @@ def main(page: ft.Page):
                 
                 hfm_bio_temp_in = ft.TextField(label="Probenahmetemperatur", hint_text="(Soll Schwein/Rind: <+7°C)", hint_style=stil_hint_weiss, value=aktuelle_daten.get("hfm_bio_temp", ""), border_color="white", color="yellow", label_style=stil_label_weiss, on_blur=format_temp_blur, content_padding=10, text_style=stil_tf_gelb_12, expand=True)
                 hfm_bio_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("hfm_bio_bemerkung", "Bitte eingeben"), ["Bitte eingeben", "Keine Besonderheiten"])
-
+ 
                 # --- 9. HFM - OKZ ---
                 hfm_okz_cb = ft.Checkbox(label="Abklatschproben HFM", value=aktuelle_daten.get("hfm_okz_cb", False), label_style=ft.TextStyle(color="white", size=16, weight="bold"), fill_color="yellow", check_color="black")
                 hfm_okz_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("hfm_okz_bemerkung", "Bitte eingeben"), ["Bitte eingeben", "Keine Besonderheiten"])
@@ -594,9 +583,9 @@ def main(page: ft.Page):
                     7: {"obj": "Wand am Fleischwolf", "abk": True, "tup": True},
                     8: {"obj": "", "abk": False, "tup": False},
                     9: {"obj": "", "abk": False, "tup": False},
-                    10: {"obj": "", "abk": False, "tup": False}
+                   10: {"obj": "", "abk": False, "tup": False}
                 }
-
+ 
                 okz_controls = {}
                 okz_felder = []
                 
@@ -620,7 +609,7 @@ def main(page: ft.Page):
                     okz_felder.append(ft.Row([ort_dd]))
                     okz_felder.append(ft.Row([abk_cb, tup_cb], alignment=ft.MainAxisAlignment.SPACE_AROUND))
                     okz_felder.append(ft.Divider(color="white24"))
-
+ 
                 # --- 10. OG (OBST/GEMÜSE) UNTERMENÜ ---
                 og_ort_opts = ["Produktionsraum", "Bedientheke", "Vorbereitungsraum", "Kühlraum", "SB-Theke", "Salatbar", "Saftpresse"]
                 og_verpackung_opts = ["SB-Kunststoffverpackung", "SB-Styroporverpackung", "Kunststoffschale mit Anrollfolie", "Styroporschale mit Kunststofffolie", "steriler Probenbecher", "steriler Probenbeutel", "Transportverpackung", "Kunststoffbecher mit Anrolldeckel"]
@@ -639,7 +628,7 @@ def main(page: ft.Page):
                     h_t = erstelle_combo("Tag", h_t_val, tage_opts, ausdehnbar=3)
                     h_m = erstelle_combo("Mon", h_m_val, mon_opts, ausdehnbar=3)
                     h_j = erstelle_combo("Jahr", h_j_val, jahr_opts, ausdehnbar=4)
-
+ 
                     v_t_val, v_m_val, v_j_val = parse_datum(aktuelle_daten.get(f"og_verb_{idx}", ""), "", "", "")
                     v_t = erstelle_combo("Tag", v_t_val, tage_opts, ausdehnbar=3, on_change_func=pruefe_lims_warnung)
                     v_m = erstelle_combo("Mon", v_m_val, mon_opts, ausdehnbar=3)
@@ -667,7 +656,7 @@ def main(page: ft.Page):
                     og_felder.append(verp_dd)
                     og_felder.append(temp_in)
                     og_felder.append(ft.Divider(color="white24"))
-
+ 
                 # --- 11. OG - OKZ ---
                 og_okz_cb = ft.Checkbox(label="Abklatschproben OG", value=aktuelle_daten.get("og_okz_cb", False), label_style=ft.TextStyle(color="white", size=16, weight="bold"), fill_color="yellow", check_color="black")
                 og_okz_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("og_okz_bemerkung", "Bitte eingeben"), ["Bitte eingeben", "Keine Besonderheiten"])
@@ -696,7 +685,7 @@ def main(page: ft.Page):
                     
                     if i == 2:
                         og_okz_felder.append(ft.Text("💡 Info: Bei Saftpresse bitte hier auswählen.", color="white54", italic=True, size=12))
-
+ 
                     s_dd = erstelle_combo("Status", aktuelle_daten.get(f"og_okz_status_{idx}", "R+D"), og_okz_status_opts)
                     obj_dd = erstelle_combo("Objekt", aktuelle_daten.get(f"og_okz_objekt_{idx}", def_obj), og_okz_objekt_opts)
                     ort_dd = erstelle_combo("Probenahmeort", aktuelle_daten.get(f"og_okz_ort_{idx}", ""), og_okz_ort_opts)
@@ -711,7 +700,7 @@ def main(page: ft.Page):
                     og_okz_felder.append(ft.Row([ort_dd]))
                     og_okz_felder.append(ft.Row([abk_cb, tup_cb], alignment=ft.MainAxisAlignment.SPACE_AROUND))
                     og_okz_felder.append(ft.Divider(color="white24"))
-
+ 
                 # --- 12. VORLAGEN LOGIK ---
                 alle_vorlagen = lade_vorlagen()
                 vorlagen_status = ft.Text("", weight="bold") 
@@ -740,16 +729,16 @@ def main(page: ft.Page):
                     hfm_hack_lief_schwein_in.value = ""; hfm_hack_lief_rind_in.value = ""
                     hfm_hack_mhd_s_tag_dd.value = ""; hfm_hack_mhd_s_mon_dd.value = ""; hfm_hack_mhd_s_jahr_dd.value = ""
                     hfm_hack_mhd_r_tag_dd.value = ""; hfm_hack_mhd_r_mon_dd.value = ""; hfm_hack_mhd_r_jahr_dd.value = ""
-
+ 
                     hfm_mett_cb.value = False; hfm_mett_temp_in.value = ""; hfm_mett_lief_in.value = ""
                     hfm_mett_mhd_tag_dd.value = ""; hfm_mett_mhd_mon_dd.value = ""; hfm_mett_mhd_jahr_dd.value = ""
-
+ 
                     hfm_fzs_cb.value = False; hfm_fzs_temp_in.value = ""; hfm_fzs_lief_in.value = ""; hfm_fzs_produkt_in.value = ""; hfm_fzs_marinade_in.value = ""
                     hfm_fzs_mhd_tag_dd.value = ""; hfm_fzs_mhd_mon_dd.value = ""; hfm_fzs_mhd_jahr_dd.value = ""
-
+ 
                     hfm_fzg_cb.value = False; hfm_fzg_temp_in.value = ""; hfm_fzg_lief_in.value = ""; hfm_fzg_produkt_in.value = ""; hfm_fzg_marinade_in.value = ""
                     hfm_fzg_mhd_tag_dd.value = ""; hfm_fzg_mhd_mon_dd.value = ""; hfm_fzg_mhd_jahr_dd.value = ""
-
+ 
                     hfm_bio_cb.value = False; hfm_bio_temp_in.value = ""; hfm_bio_lief_schwein_in.value = ""; hfm_bio_lief_rind_in.value = ""
                     hfm_bio_mhd_s_tag_dd.value = ""; hfm_bio_mhd_s_mon_dd.value = ""; hfm_bio_mhd_s_jahr_dd.value = ""
                     hfm_bio_mhd_r_tag_dd.value = ""; hfm_bio_mhd_r_mon_dd.value = ""; hfm_bio_mhd_r_jahr_dd.value = ""
@@ -762,7 +751,7 @@ def main(page: ft.Page):
                         ctrls["ort"].value = ""
                         ctrls["abklatsch"].value = se_okz_defaults[i]["abk"]
                         ctrls["tupfer"].value = se_okz_defaults[i]["tup"]
-
+ 
                     hfm_okz_cb.value = False; hfm_okz_bemerkung_dd.value = "Bitte eingeben"
                     for idx_str, ctrls in okz_controls.items():
                         i = int(idx_str)
@@ -775,11 +764,10 @@ def main(page: ft.Page):
                     og_cb.value = False
                     for i in range(1, 6):
                         ctrls = og_controls[i]
-                        ctrls["name"].value = ""; ctrls["ort"].value = ""
                         ctrls["h_t"].value = ""; ctrls["h_m"].value = ""; ctrls["h_j"].value = ""
                         ctrls["v_t"].value = ""; ctrls["v_m"].value = ""; ctrls["v_j"].value = ""
-                        ctrls["inhalt"].value = ""; ctrls["verpackung"].value = ""; ctrls["temp"].value = ""
-
+                        ctrls["temp"].value = ""
+ 
                     og_okz_cb.value = False; og_okz_bemerkung_dd.value = "Bitte eingeben"; og_okz_anmerkung_in.value = ""
                     for idx_str, ctrls in og_okz_controls.items():
                         i = int(idx_str)
@@ -790,10 +778,10 @@ def main(page: ft.Page):
                         ctrls["tupfer"].value = og_okz_defaults[i]["tup"]
                     
                     for cb in [cb_pn, cb_zwei, cb_sensor, cb_knie, cb_ein, cb_ein_g, cb_eck, cb_auff_ja, cb_auff_nein, cb_auff_perl, cb_auff_verkalk, cb_auff_verbrueh, cb_auff_durchlauf, cb_auff_unterbau, cb_auff_eck_zu, cb_auff_nichtmoeglich, cb_auff_dusche, cb_auff_handbrause, cb_auff_sonst, se_cb_eiswanne, se_cb_ozon]: cb.value = False
-                    tw_auff_sonstiges_in.value = ""; se_tech_sonst_in.value = ""; se_auff_sonst_in.value = ""
+                    tw_unterbau_l_in.value = ""; tw_auff_sonstiges_in.value = ""; se_tech_sonst_in.value = ""; se_auff_sonst_in.value = ""
                     
                     se_cb_fallprobe.value = True
-
+ 
                     if "name_in" in v: name_in.value = v["name_in"]
                     if "ag_dd" in v: ag_dd.value = v["ag_dd"]
                     if "typ_dd" in v: typ_dd.value = v["typ_dd"]
@@ -812,14 +800,14 @@ def main(page: ft.Page):
                     if "tw_verpackung_dd" in v: tw_verpackung_dd.value = v["tw_verpackung_dd"]
                     if "tw_entnahmeort_dd" in v: tw_entnahmeort_dd.value = v["tw_entnahmeort_dd"]
                     if "tw_bemerkung_dd" in v: tw_bemerkung_dd.value = v["tw_bemerkung_dd"]
-
+ 
                     if "se_zapf_dd" in v: se_zapf_dd.value = v["se_zapf_dd"]
                     if "se_desinf_dd" in v: se_desinf_dd.value = v["se_desinf_dd"]
                     if "se_inhalt_in" in v: se_inhalt_in.value = v["se_inhalt_in"]
                     if "se_verpackung_dd" in v: se_verpackung_dd.value = v["se_verpackung_dd"]
                     if "se_entnahmeort_dd" in v: se_entnahmeort_dd.value = v["se_entnahmeort_dd"]
                     if "se_bemerkung_dd" in v: se_bemerkung_dd.value = v["se_bemerkung_dd"]
-
+ 
                     if "hfm_hack_entnahmeort" in v: hfm_hack_entnahmeort_dd.value = v["hfm_hack_entnahmeort"]
                     if "hfm_hack_inhalt" in v: hfm_hack_inhalt_in.value = v["hfm_hack_inhalt"]
                     if "hfm_hack_verpackung" in v: hfm_hack_verpackung_dd.value = v["hfm_hack_verpackung"]
@@ -828,14 +816,14 @@ def main(page: ft.Page):
                     if "hfm_hack_bemerkung" in v: hfm_hack_bemerkung_dd.value = v["hfm_hack_bemerkung"]
                     if "hfm_hack_lief_schwein" in v: hfm_hack_lief_schwein_in.value = v["hfm_hack_lief_schwein"]
                     if "hfm_hack_lief_rind" in v: hfm_hack_lief_rind_in.value = v["hfm_hack_lief_rind"]
-
+ 
                     if "hfm_mett_entnahmeort" in v: hfm_mett_entnahmeort_dd.value = v["hfm_mett_entnahmeort"]
                     if "hfm_mett_inhalt" in v: hfm_mett_inhalt_in.value = v["hfm_mett_inhalt"]
                     if "hfm_mett_verpackung" in v: hfm_mett_verpackung_dd.value = v["hfm_mett_verpackung"]
                     if "hfm_mett_charge" in v: hfm_mett_charge_dd.value = v["hfm_mett_charge"]
                     if "hfm_mett_bemerkung" in v: hfm_mett_bemerkung_dd.value = v["hfm_mett_bemerkung"]
                     if "hfm_mett_lief" in v: hfm_mett_lief_in.value = v["hfm_mett_lief"]
-
+ 
                     if "hfm_fzs_entnahmeort" in v: hfm_fzs_entnahmeort_dd.value = v["hfm_fzs_entnahmeort"]
                     if "hfm_fzs_produkt" in v: hfm_fzs_produkt_in.value = v["hfm_fzs_produkt"]
                     if "hfm_fzs_marinade" in v: hfm_fzs_marinade_in.value = v["hfm_fzs_marinade"]
@@ -844,7 +832,7 @@ def main(page: ft.Page):
                     if "hfm_fzs_charge" in v: hfm_fzs_charge_dd.value = v["hfm_fzs_charge"]
                     if "hfm_fzs_bemerkung" in v: hfm_fzs_bemerkung_dd.value = v["hfm_fzs_bemerkung"]
                     if "hfm_fzs_lief" in v: hfm_fzs_lief_in.value = v["hfm_fzs_lief"]
-
+ 
                     if "hfm_fzg_entnahmeort" in v: hfm_fzg_entnahmeort_dd.value = v["hfm_fzg_entnahmeort"]
                     if "hfm_fzg_produkt" in v: hfm_fzg_produkt_in.value = v["hfm_fzg_produkt"]
                     if "hfm_fzg_marinade" in v: hfm_fzg_marinade_in.value = v["hfm_fzg_marinade"]
@@ -853,7 +841,7 @@ def main(page: ft.Page):
                     if "hfm_fzg_charge" in v: hfm_fzg_charge_dd.value = v["hfm_fzg_charge"]
                     if "hfm_fzg_bemerkung" in v: hfm_fzg_bemerkung_dd.value = v["hfm_fzg_bemerkung"]
                     if "hfm_fzg_lief" in v: hfm_fzg_lief_in.value = v["hfm_fzg_lief"]
-
+ 
                     if "hfm_bio_entnahmeort" in v: hfm_bio_entnahmeort_dd.value = v["hfm_bio_entnahmeort"]
                     if "hfm_bio_inhalt" in v: hfm_bio_inhalt_in.value = v["hfm_bio_inhalt"]
                     if "hfm_bio_verpackung" in v: hfm_bio_verpackung_dd.value = v["hfm_bio_verpackung"]
@@ -872,7 +860,7 @@ def main(page: ft.Page):
                         if f"se_okz_ort_{idx}" in v: ctrls["ort"].value = v[f"se_okz_ort_{idx}"]
                         if f"se_okz_abklatsch_{idx}" in v: ctrls["abklatsch"].value = v[f"se_okz_abklatsch_{idx}"]
                         if f"se_okz_tupfer_{idx}" in v: ctrls["tupfer"].value = v[f"se_okz_tupfer_{idx}"]
-
+ 
                     if "hfm_okz_bemerkung" in v: hfm_okz_bemerkung_dd.value = v["hfm_okz_bemerkung"]
                     for idx_str, ctrls in okz_controls.items():
                         if f"okz_status_{idx_str}" in v: ctrls["status"].value = v[f"okz_status_{idx_str}"]
@@ -883,12 +871,11 @@ def main(page: ft.Page):
                         
                     for i in range(1, 6):
                         ctrls = og_controls[i]
-                        idx = f"{i:02d}"
-                        if f"og_name_{idx}" in v: ctrls["name"].value = v[f"og_name_{idx}"]
-                        if f"og_ort_{idx}" in v: ctrls["ort"].value = v[f"og_ort_{idx}"]
-                        if f"og_inhalt_{idx}" in v: ctrls["inhalt"].value = v[f"og_inhalt_{idx}"]
-                        if f"og_verp_{idx}" in v: ctrls["verpackung"].value = v[f"og_verp_{idx}"]
-
+                        if f"og_name_{i:02d}" in v: ctrls["name"].value = v[f"og_name_{i:02d}"]
+                        if f"og_ort_{i:02d}" in v: ctrls["ort"].value = v[f"og_ort_{i:02d}"]
+                        if f"og_inhalt_{i:02d}" in v: ctrls["inhalt"].value = v[f"og_inhalt_{i:02d}"]
+                        if f"og_verp_{i:02d}" in v: ctrls["verpackung"].value = v[f"og_verp_{i:02d}"]
+ 
                     if "og_okz_bemerkung" in v: og_okz_bemerkung_dd.value = v["og_okz_bemerkung"]
                     if "og_okz_anmerkung" in v: og_okz_anmerkung_in.value = v["og_okz_anmerkung"]
                     for idx_str, ctrls in og_okz_controls.items():
@@ -902,7 +889,7 @@ def main(page: ft.Page):
                     vorlagen_status.color = "green"
                     pruefe_lims_warnung()
                     page.update()
-
+ 
                 vl_load_btn = sicherer_button("Laden 📥", lade_v, "blue", "white", width=90, height=40)
                 vl_name_in = ft.TextField(label="Name für neue Vorlage", expand=True, color="yellow", text_style=ft.TextStyle(size=12, color="yellow"), label_style=stil_label_weiss, border_color="white", dense=True, content_padding=10)
                 
@@ -915,11 +902,11 @@ def main(page: ft.Page):
                         vorlagen_status.color = "red"
                         vl_dd.value = None
                         page.update()
-
+ 
                 vl_del_btn = sicherer_button("Löschen 🗑️", del_v, "red", "white", width=100, height=40)
                 
                 def save_v(e):
-                    if not (vl_name_in.value or "").strip(): return
+                    if not vl_name_in.value: return
                     
                     d_v = {
                         "name_in": name_in.value, "ag_dd": ag_dd.value, "typ_dd": typ_dd.value, "bem_in": bem_in.value,
@@ -944,12 +931,12 @@ def main(page: ft.Page):
                         "hfm_fzs_marinade": hfm_fzs_marinade_in.value, "hfm_fzs_inhalt": hfm_fzs_inhalt_in.value,
                         "hfm_fzs_verpackung": hfm_fzs_verpackung_dd.value, "hfm_fzs_lief": hfm_fzs_lief_in.value,
                         "hfm_fzs_charge": hfm_fzs_charge_dd.value, "hfm_fzs_bemerkung": hfm_fzs_bemerkung_dd.value,
-
+ 
                         "hfm_fzg_entnahmeort": hfm_fzg_entnahmeort_dd.value, "hfm_fzg_produkt": hfm_fzg_produkt_in.value,
                         "hfm_fzg_marinade": hfm_fzg_marinade_in.value, "hfm_fzg_inhalt": hfm_fzg_inhalt_in.value,
                         "hfm_fzg_verpackung": hfm_fzg_verpackung_dd.value, "hfm_fzg_lief": hfm_fzg_lief_in.value,
                         "hfm_fzg_charge": hfm_fzg_charge_dd.value, "hfm_fzg_bemerkung": hfm_fzg_bemerkung_dd.value,
-
+ 
                         "hfm_bio_entnahmeort": hfm_bio_entnahmeort_dd.value, "hfm_bio_inhalt": hfm_bio_inhalt_in.value,
                         "hfm_bio_verpackung": hfm_bio_verpackung_dd.value,
                         "hfm_bio_lief_schwein": hfm_bio_lief_schwein_in.value, "hfm_bio_lief_rind": hfm_bio_lief_rind_in.value,
@@ -984,21 +971,21 @@ def main(page: ft.Page):
                         d_v[f"og_ort_{idx}"] = ctrls["ort"].value
                         d_v[f"og_inhalt_{idx}"] = ctrls["inhalt"].value
                         d_v[f"og_verp_{idx}"] = ctrls["verpackung"].value
-
+ 
                     for idx_str, ctrls in og_okz_controls.items():
                         d_v[f"og_okz_status_{idx_str}"] = ctrls["status"].value
                         d_v[f"og_okz_objekt_{idx_str}"] = ctrls["objekt"].value
                         d_v[f"og_okz_ort_{idx_str}"] = ctrls["ort"].value
                         d_v[f"og_okz_abklatsch_{idx_str}"] = ctrls["abklatsch"].value
                         d_v[f"og_okz_tupfer_{idx_str}"] = ctrls["tupfer"].value
-
+ 
                     alle_vorlagen[vl_name_in.value] = d_v
                     speichere_vorlagen(alle_vorlagen)
                     vl_dd.options = [ft.dropdown.Option(k) for k in alle_vorlagen.keys()]
                     vorlagen_status.value = f"✅ Vorlage '{vl_name_in.value}' gespeichert!"
                     vorlagen_status.color = "orange"
                     vl_name_in.value = ""
-
+ 
                     # ALLE TAGES-FELDER AUTOMATISCH LEEREN!
                     adr_in.value = ""; nr_in.value = ""; auft_in.value = ""
                     try:
@@ -1022,7 +1009,7 @@ def main(page: ft.Page):
                     hfm_fzg_mhd_tag_dd.value = ""; hfm_fzg_mhd_mon_dd.value = ""; hfm_fzg_mhd_jahr_dd.value = ""
                     hfm_bio_mhd_s_tag_dd.value = ""; hfm_bio_mhd_s_mon_dd.value = ""; hfm_bio_mhd_s_jahr_dd.value = ""
                     hfm_bio_mhd_r_tag_dd.value = ""; hfm_bio_mhd_r_mon_dd.value = ""; hfm_bio_mhd_r_jahr_dd.value = ""
-
+ 
                     hfm_hack_charge_schwein_dd.value = "Bitte eingeben"; hfm_hack_charge_rind_dd.value = "Bitte eingeben"
                     hfm_mett_charge_dd.value = "Bitte eingeben"
                     hfm_fzs_charge_dd.value = "Bitte eingeben"; hfm_fzg_charge_dd.value = "Bitte eingeben"
@@ -1036,31 +1023,30 @@ def main(page: ft.Page):
                         ctrls["abklatsch"].value = se_okz_defaults[i]["abk"]
                         ctrls["tupfer"].value = se_okz_defaults[i]["tup"]
                     
-                    for idx_str, ctrls in okz_controls.items():
+                    for idx_str, okz_ctrls in okz_controls.items():
                         i = int(idx_str)
-                        ctrls["status"].value = "R+D"
-                        ctrls["objekt"].value = okz_defaults[i]["obj"]
-                        ctrls["ort"].value = ""
-                        ctrls["abklatsch"].value = okz_defaults[i]["abk"]
-                        ctrls["tupfer"].value = okz_defaults[i]["tup"]
-
+                        okz_ctrls["status"].value = "R+D"
+                        okz_ctrls["objekt"].value = okz_defaults[i]["obj"]
+                        okz_ctrls["ort"].value = ""
+                        okz_ctrls["abklatsch"].value = okz_defaults[i]["abk"]
+                        okz_ctrls["tupfer"].value = okz_defaults[i]["tup"]
+ 
                     for i in range(1, 6):
                         ctrls = og_controls[i]
-                        ctrls["name"].value = ""; ctrls["ort"].value = ""
                         ctrls["h_t"].value = ""; ctrls["h_m"].value = ""; ctrls["h_j"].value = ""
                         ctrls["v_t"].value = ""; ctrls["v_m"].value = ""; ctrls["v_j"].value = ""
                         ctrls["temp"].value = ""
-
-                    for idx_str, ctrls in og_okz_controls.items():
+ 
+                    for idx_str, og_okz_ctrls in og_okz_controls.items():
                         i = int(idx_str)
-                        ctrls["status"].value = "R+D"
-                        ctrls["objekt"].value = og_okz_defaults[i]["obj"]
-                        ctrls["ort"].value = ""
-                        ctrls["abklatsch"].value = og_okz_defaults[i]["abk"]
-                        ctrls["tupfer"].value = og_okz_defaults[i]["tup"]
+                        og_okz_ctrls["status"].value = "R+D"
+                        og_okz_ctrls["objekt"].value = og_okz_defaults[i]["obj"]
+                        og_okz_ctrls["ort"].value = ""
+                        og_okz_ctrls["abklatsch"].value = og_okz_defaults[i]["abk"]
+                        og_okz_ctrls["tupfer"].value = og_okz_defaults[i]["tup"]
                     
                     page.update()
-
+ 
                 vl_save_btn = sicherer_button("Speichern 💾", save_v, "orange", "black", width=110, height=40)
                 
                 # KOMPAKTE VORLAGEN BOX
@@ -1072,7 +1058,7 @@ def main(page: ft.Page):
                         ft.Row([vl_name_in, vl_save_btn])
                     ], spacing=5)
                 )
-
+ 
                 # --- ZUSAMMENBAU DES LAYOUTS ---
                 stamm_col = ft.Column([datum_row, adr_in, nr_in, auft_in, ag_dd, name_in, typ_dd, bem_in], visible=True, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
                 
@@ -1092,13 +1078,13 @@ def main(page: ft.Page):
                     cb_auff_perl, cb_auff_verkalk, cb_auff_verbrueh, cb_auff_durchlauf,
                     cb_auff_eck_zu, cb_auff_nichtmoeglich, cb_auff_dusche, cb_auff_handbrause,
                     cb_auff_sonst,
-                    cb_auff_unterbau,
+                    ft.Row([cb_auff_unterbau, tw_unterbau_l_in]),
                     tw_auff_sonstiges_in,
                     ft.Divider(color="white24"),
                     ft.Text("Probenahmedetails", color="white", size=16, weight="bold"),
                     tw_zweck_dd, tw_inhalt_in, tw_verpackung_dd, tw_entnahmeort_dd, tw_bemerkung_dd
                 ], visible=False, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
-
+ 
                 se_eis_col = ft.Column([
                     se_kalt_cb, se_zeit_in, se_zapf_dd, ft.Divider(color="white24"),
                     ft.Text("Probenahmetechnik / Art der Zapfstelle:", color="white", weight="bold"),
@@ -1107,29 +1093,29 @@ def main(page: ft.Page):
                     se_cb_ozon, se_auff_sonst_in, ft.Divider(color="white24"),
                     se_inhalt_in, se_verpackung_dd, se_entnahmeort_dd, se_temp_in, se_bemerkung_dd
                 ], visible=True, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
-
+ 
                 se_okz_col = ft.Column([
                     ft.Text("⚠️ Bitte darauf achten: Haken setzen oder entfernen!", color="orange", weight="bold"),
                     se_okz_cb, ft.Divider(color="white24"), *se_okz_felder, se_okz_bemerkung_dd
                 ], visible=False, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
-
+ 
                 def switch_se_tab(tab_name):
                     se_eis_col.visible = (tab_name == "eis")
                     se_okz_col.visible = (tab_name == "okz")
                     btn_se_eis.bgcolor = "red" if tab_name == "eis" else "blue"
                     btn_se_okz.bgcolor = "red" if tab_name == "okz" else "blue"
                     page.update()
-
+ 
                 btn_se_eis = sicherer_button("Eis", lambda e: switch_se_tab("eis"), "red", "white")
                 btn_se_okz = sicherer_button("OKZ", lambda e: switch_se_tab("okz"), "blue", "white")
-
+ 
                 se_main_col = ft.Column([
                     ft.Row([btn_se_eis, btn_se_okz], scroll=ft.ScrollMode.AUTO),
                     ft.Divider(color="white24"),
                     se_eis_col, se_okz_col
                 ], visible=False, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
-
-
+ 
+ 
                 # --- HFM UNTERMENÜ ---
                 hfm_hack_col = ft.Column([
                     hfm_hack_cb,
@@ -1154,7 +1140,7 @@ def main(page: ft.Page):
                     hfm_hack_temp_in,
                     hfm_hack_bemerkung_dd
                 ], visible=True, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
-
+ 
                 hfm_mett_col = ft.Column([
                     hfm_mett_cb,
                     hfm_mett_entnahmeort_dd,
@@ -1174,7 +1160,7 @@ def main(page: ft.Page):
                     hfm_mett_temp_in,
                     hfm_mett_bemerkung_dd
                 ], visible=False, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
-
+ 
                 hfm_fzs_col = ft.Column([
                     hfm_fzs_cb,
                     hfm_fzs_entnahmeort_dd,
@@ -1195,7 +1181,7 @@ def main(page: ft.Page):
                     hfm_fzs_temp_in,
                     hfm_fzs_bemerkung_dd
                 ], visible=False, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
-
+ 
                 hfm_fzg_col = ft.Column([
                     hfm_fzg_cb,
                     hfm_fzg_entnahmeort_dd,
@@ -1216,7 +1202,7 @@ def main(page: ft.Page):
                     hfm_fzg_temp_in,
                     hfm_fzg_bemerkung_dd
                 ], visible=False, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
-
+ 
                 hfm_bio_col = ft.Column([
                     hfm_bio_cb,
                     hfm_bio_entnahmeort_dd,
@@ -1240,13 +1226,13 @@ def main(page: ft.Page):
                     hfm_bio_temp_in,
                     hfm_bio_bemerkung_dd
                 ], visible=False, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
-
+ 
                 hfm_okz_col = ft.Column([
                     ft.Text("💡 Tipp: Lege eine Vorlage für Dich an mit den jeweiligen Entnahmeorten.", color="white54", italic=True, size=12),
                     ft.Text("⚠️ Bitte darauf achten: Haken setzen oder entfernen!", color="orange", weight="bold"),
                     hfm_okz_cb, ft.Divider(color="white24"), *okz_felder, hfm_okz_bemerkung_dd
                 ], visible=False, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
-
+ 
                 def switch_hfm_tab(tab_name):
                     hfm_hack_col.visible = (tab_name == "hack")
                     hfm_mett_col.visible = (tab_name == "mett")
@@ -1262,24 +1248,24 @@ def main(page: ft.Page):
                     btn_hfm_bio.bgcolor = "red" if tab_name == "bio" else "blue"
                     btn_hfm_okz.bgcolor = "red" if tab_name == "okz" else "blue"
                     page.update()
-
+ 
                 btn_hfm_hack = sicherer_button("Hack gemischt", lambda e: switch_hfm_tab("hack"), "red", "white")
                 btn_hfm_mett = sicherer_button("Mett", lambda e: switch_hfm_tab("mett"), "blue", "white")
                 btn_hfm_fz_schwein = sicherer_button("FZ Schwein", lambda e: switch_hfm_tab("schwein"), "blue", "white")
                 btn_hfm_fz_gefluegel = sicherer_button("FZ Geflügel", lambda e: switch_hfm_tab("gefluegel"), "blue", "white")
                 btn_hfm_bio = sicherer_button("Bio-Hack", lambda e: switch_hfm_tab("bio"), "blue", "white")
                 btn_hfm_okz = sicherer_button("OKZ", lambda e: switch_hfm_tab("okz"), "blue", "white")
-
+ 
                 hfm_main_col = ft.Column([
                     ft.Row([btn_hfm_hack, btn_hfm_mett, btn_hfm_fz_schwein, btn_hfm_fz_gefluegel, btn_hfm_bio, btn_hfm_okz], scroll=ft.ScrollMode.AUTO),
                     ft.Divider(color="white24"),
                     hfm_hack_col, hfm_mett_col, hfm_fzs_col, hfm_fzg_col, hfm_bio_col, hfm_okz_col
                 ], visible=False, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
-
+ 
                 og_teil_col = ft.Column([
                     og_cb, ft.Divider(color="white24"), *og_felder
                 ], visible=True, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
-
+ 
                 og_okz_col = ft.Column([
                     ft.Text("⚠️ Bitte darauf achten: Haken setzen oder entfernen!", color="orange", weight="bold"),
                     og_okz_cb, 
@@ -1289,23 +1275,23 @@ def main(page: ft.Page):
                     og_okz_bemerkung_dd,
                     og_okz_anmerkung_in
                 ], visible=False, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
-
+ 
                 def switch_og_tab(tab_name):
                     og_teil_col.visible = (tab_name == "teil")
                     og_okz_col.visible = (tab_name == "okz")
                     btn_og_teil.bgcolor = "red" if tab_name == "teil" else "blue"
                     btn_og_okz.bgcolor = "red" if tab_name == "okz" else "blue"
                     page.update()
-
+ 
                 btn_og_teil = sicherer_button("Convenience", lambda e: switch_og_tab("teil"), "red", "white")
                 btn_og_okz = sicherer_button("OKZ", lambda e: switch_og_tab("okz"), "blue", "white")
-
+ 
                 og_main_col = ft.Column([
                     ft.Row([btn_og_teil, btn_og_okz], scroll=ft.ScrollMode.AUTO),
                     ft.Divider(color="white24"),
                     og_teil_col, og_okz_col
                 ], visible=False, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
-
+ 
                 # --- HAUPT-REITER SCHALTUNGEN ---
                 def switch_tab_stamm(e):
                     stamm_col.visible = True; tw_col.visible = False; se_main_col.visible = False; hfm_main_col.visible = False; og_main_col.visible = False
@@ -1316,12 +1302,12 @@ def main(page: ft.Page):
                     stamm_col.visible = False; tw_col.visible = True; se_main_col.visible = False; hfm_main_col.visible = False; og_main_col.visible = False
                     btn_stamm.bgcolor = "blue"; btn_tw.bgcolor = "red"; btn_se.bgcolor = "blue"; btn_hfm.bgcolor = "blue"; btn_og.bgcolor = "blue"
                     page.update()
-
+ 
                 def switch_tab_se(e):
                     stamm_col.visible = False; tw_col.visible = False; se_main_col.visible = True; hfm_main_col.visible = False; og_main_col.visible = False
                     btn_stamm.bgcolor = "blue"; btn_tw.bgcolor = "blue"; btn_se.bgcolor = "red"; btn_hfm.bgcolor = "blue"; btn_og.bgcolor = "blue"
                     page.update()
-
+ 
                 def switch_tab_hfm(e):
                     stamm_col.visible = False; tw_col.visible = False; se_main_col.visible = False; hfm_main_col.visible = True; og_main_col.visible = False
                     btn_stamm.bgcolor = "blue"; btn_tw.bgcolor = "blue"; btn_se.bgcolor = "blue"; btn_hfm.bgcolor = "red"; btn_og.bgcolor = "blue"
@@ -1331,20 +1317,20 @@ def main(page: ft.Page):
                     stamm_col.visible = False; tw_col.visible = False; se_main_col.visible = False; hfm_main_col.visible = False; og_main_col.visible = True
                     btn_stamm.bgcolor = "blue"; btn_tw.bgcolor = "blue"; btn_se.bgcolor = "blue"; btn_hfm.bgcolor = "blue"; btn_og.bgcolor = "red"
                     page.update()
-
+ 
                 btn_stamm = sicherer_button("STAMMDATEN", switch_tab_stamm, "red", "white")
                 btn_tw = sicherer_button("TRINKWASSER", switch_tab_tw, "blue", "white")
                 btn_se = sicherer_button("SCHERBENEIS", switch_tab_se, "blue", "white")
                 btn_hfm = sicherer_button("HFM", switch_tab_hfm, "blue", "white")
                 btn_og = sicherer_button("OG", switch_tab_og, "blue", "white")
-
+ 
                 fehler_text = ft.Text("", color="red", weight="bold", visible=False)
                 status_text = ft.Text("", color="yellow", weight="bold", size=16)
-
+ 
                 def hole_aktuelle_daten():
                     d = {
                         "datum": f"{tag_dd.value}.{mon_dd.value}.{jahr_dd.value}", "adresse": adr_in.value, "marktnummer": nr_in.value, "auftragsnummer": auft_in.value, 
-                        "mitarbeiter_name": name_in.value, "auftraggeber": ag_dd.value, "typ_probenahme": typ_dd.value, "bemerkung": bem_in.value,
+                        "mitarbeiter_name": og_name_in.value, "auftraggeber": ag_dd.value, "typ_probenahme": typ_dd.value, "bemerkung": bem_in.value,
                         
                         "tw_kalt": tw_kalt_cb.value, "tw_lims_override": lims_override_cb.value, "tw_zeit": tw_zeit_in.value, 
                         "tw_temp": tw_temp_in.value, "tw_desinf": tw_desinf_dd.value, "tw_zapf": tw_zapf_dd.value,
@@ -1354,12 +1340,12 @@ def main(page: ft.Page):
                         "tw_kurz3": tw_kurz3_dd.value, "tw_kurz4": tw_kurz4_dd.value, "cb_auff_ja": cb_auff_ja.value, 
                         "cb_auff_nein": cb_auff_nein.value, "cb_auff_perl": cb_auff_perl.value, "cb_auff_verkalk": cb_auff_verkalk.value, 
                         "cb_auff_verbrueh": cb_auff_verbrueh.value, "cb_auff_durchlauf": cb_auff_durchlauf.value,
-                        "cb_auff_unterbau": cb_auff_unterbau.value, "cb_auff_eck_zu": cb_auff_eck_zu.value, 
+                        "cb_auff_unterbau": cb_auff_unterbau.value, "tw_unterbau_l": tw_unterbau_l_in.value, "cb_auff_eck_zu": cb_auff_eck_zu.value, 
                         "cb_auff_nichtmoeglich": cb_auff_nichtmoeglich.value, "cb_auff_dusche": cb_auff_dusche.value, 
                         "cb_auff_handbrause": cb_auff_handbrause.value, "cb_auff_sonst": cb_auff_sonst.value, "tw_auff_sonstiges": tw_auff_sonstiges_in.value,
                         "tw_zweck": tw_zweck_dd.value, "tw_inhalt": tw_inhalt_in.value, "tw_verpackung": tw_verpackung_dd.value, 
                         "tw_entnahmeort": tw_entnahmeort_dd.value, "tw_tempkonst": tw_tempkonst_in.value, "tw_bemerkung": tw_bemerkung_dd.value,
-
+ 
                         "se_kalt": se_kalt_cb.value, "se_zeit": se_zeit_in.value, "se_zapf": se_zapf_dd.value,
                         "se_cb_eiswanne": se_cb_eiswanne.value, "se_cb_fallprobe": se_cb_fallprobe.value, "se_tech_sonst": se_tech_sonst_in.value,
                         "se_desinf": se_desinf_dd.value, "se_cb_ozon": se_cb_ozon.value, "se_auff_sonst": se_auff_sonst_in.value,
@@ -1367,7 +1353,7 @@ def main(page: ft.Page):
                         "se_temp": se_temp_in.value, "se_bemerkung": se_bemerkung_dd.value,
                         
                         "se_okz_cb": se_okz_cb.value, "se_okz_bemerkung": se_okz_bemerkung_dd.value,
-
+ 
                         "hfm_hack_cb": hfm_hack_cb.value, "hfm_hack_entnahmeort": hfm_hack_entnahmeort_dd.value,
                         "hfm_hack_herstelldatum": get_date_str(hfm_hack_herst_tag_dd.value, hfm_hack_herst_mon_dd.value, hfm_hack_herst_jahr_dd.value), 
                         "hfm_hack_inhalt": hfm_hack_inhalt_in.value, "hfm_hack_verpackung": hfm_hack_verpackung_dd.value, 
@@ -1376,7 +1362,7 @@ def main(page: ft.Page):
                         "hfm_hack_mhd_rind": get_date_str(hfm_hack_mhd_r_tag_dd.value, hfm_hack_mhd_r_mon_dd.value, hfm_hack_mhd_r_jahr_dd.value), 
                         "hfm_hack_charge_schwein": hfm_hack_charge_schwein_dd.value, "hfm_hack_charge_rind": hfm_hack_charge_rind_dd.value, 
                         "hfm_hack_temp": hfm_hack_temp_in.value, "hfm_hack_bemerkung": hfm_hack_bemerkung_dd.value,
-
+ 
                         "hfm_mett_cb": hfm_mett_cb.value, "hfm_mett_entnahmeort": hfm_mett_entnahmeort_dd.value,
                         "hfm_mett_herstelldatum": get_date_str(hfm_mett_herst_tag_dd.value, hfm_mett_herst_mon_dd.value, hfm_mett_herst_jahr_dd.value),
                         "hfm_mett_inhalt": hfm_mett_inhalt_in.value, "hfm_mett_verpackung": hfm_mett_verpackung_dd.value,
@@ -1384,7 +1370,7 @@ def main(page: ft.Page):
                         "hfm_mett_mhd": get_date_str(hfm_mett_mhd_tag_dd.value, hfm_mett_mhd_mon_dd.value, hfm_mett_mhd_jahr_dd.value),
                         "hfm_mett_charge": hfm_mett_charge_dd.value, "hfm_mett_temp": hfm_mett_temp_in.value,
                         "hfm_mett_bemerkung": hfm_mett_bemerkung_dd.value,
-
+ 
                         "hfm_fzs_cb": hfm_fzs_cb.value, "hfm_fzs_entnahmeort": hfm_fzs_entnahmeort_dd.value,
                         "hfm_fzs_produkt": hfm_fzs_produkt_in.value, "hfm_fzs_marinade": hfm_fzs_marinade_in.value,
                         "hfm_fzs_herstelldatum": get_date_str(hfm_fzs_herst_tag_dd.value, hfm_fzs_herst_mon_dd.value, hfm_fzs_herst_jahr_dd.value),
@@ -1393,7 +1379,7 @@ def main(page: ft.Page):
                         "hfm_fzs_mhd": get_date_str(hfm_fzs_mhd_tag_dd.value, hfm_fzs_mhd_mon_dd.value, hfm_fzs_mhd_jahr_dd.value),
                         "hfm_fzs_charge": hfm_fzs_charge_dd.value, "hfm_fzs_temp": hfm_fzs_temp_in.value,
                         "hfm_fzs_bemerkung": hfm_fzs_bemerkung_dd.value,
-
+ 
                         "hfm_fzg_cb": hfm_fzg_cb.value, "hfm_fzg_entnahmeort": hfm_fzg_entnahmeort_dd.value,
                         "hfm_fzg_produkt": hfm_fzg_produkt_in.value, "hfm_fzg_marinade": hfm_fzg_marinade_in.value,
                         "hfm_fzg_herstelldatum": get_date_str(hfm_fzg_herst_tag_dd.value, hfm_fzg_herst_mon_dd.value, hfm_fzg_herst_jahr_dd.value),
@@ -1402,7 +1388,7 @@ def main(page: ft.Page):
                         "hfm_fzg_mhd": get_date_str(hfm_fzg_mhd_tag_dd.value, hfm_fzg_mhd_mon_dd.value, hfm_fzg_mhd_jahr_dd.value),
                         "hfm_fzg_charge": hfm_fzg_charge_dd.value, "hfm_fzg_temp": hfm_fzg_temp_in.value,
                         "hfm_fzg_bemerkung": hfm_fzg_bemerkung_dd.value,
-
+ 
                         "hfm_bio_cb": hfm_bio_cb.value, "hfm_bio_entnahmeort": hfm_bio_entnahmeort_dd.value,
                         "hfm_bio_herstelldatum": get_date_str(hfm_bio_herst_tag_dd.value, hfm_bio_herst_mon_dd.value, hfm_bio_herst_jahr_dd.value),
                         "hfm_bio_inhalt": hfm_bio_inhalt_in.value, "hfm_bio_verpackung": hfm_bio_verpackung_dd.value,
@@ -1434,7 +1420,7 @@ def main(page: ft.Page):
                         d[f"okz_ort_{idx_str}"] = ctrls["ort"].value
                         d[f"okz_abklatsch_{idx_str}"] = ctrls["abklatsch"].value
                         d[f"okz_tupfer_{idx_str}"] = ctrls["tupfer"].value
-
+ 
                     for i in range(1, 6):
                         idx = f"{i:02d}"
                         ctrls = og_controls[i]
@@ -1454,26 +1440,26 @@ def main(page: ft.Page):
                         d[f"og_okz_tupfer_{idx_str}"] = ctrls["tupfer"].value
                         
                     return d
-
+ 
                 def nur_speichern(e):
                     if not (nr_in.value or "").strip() or not (auft_in.value or "").strip():
                         switch_tab_stamm(None)
                         fehler_text.value="⚠️ MARKTNUMMER UND AUFTRAGSNUMMER FEHLEN!"
                         fehler_text.visible=True; status_text.value=""
                         page.update(); return
-
+ 
                     try:
                         fehler_text.visible = False
                         status_text.value = "⏳ Speichere in Touren-Liste..."
                         status_text.color = "yellow"
                         page.update()
-
+ 
                         maerkte = lade_maerkte()
                         d = hole_aktuelle_daten()
                         if markt_index is None: maerkte.append(d)
                         else: maerkte[markt_index] = d
                         speichere_maerkte(maerkte)
-
+ 
                         status_text.value = "✅ Tour gespeichert!"
                         status_text.color = "orange"
                         page.update()
@@ -1481,7 +1467,7 @@ def main(page: ft.Page):
                         status_text.value = "❌ Fehler"
                         status_text.color = "red"
                         zeige_fehler(ex)
-
+ 
                 def save_final(e):
                     if not (nr_in.value or "").strip() or not (auft_in.value or "").strip():
                         switch_tab_stamm(None)
@@ -1495,7 +1481,7 @@ def main(page: ft.Page):
                     se_okz_hat_daten = False
                     for i in range(1, 4):
                         if (se_okz_controls[i]["ort"].value or "").strip(): se_okz_hat_daten = True
-
+ 
                     hfm_hack_hat_daten = bool((hfm_hack_temp_in.value or "").strip() or (hfm_hack_mhd_s_tag_dd.value or "").strip() or (hfm_hack_mhd_r_tag_dd.value or "").strip() or hat_charge_wert(hfm_hack_charge_schwein_dd.value) or hat_charge_wert(hfm_hack_charge_rind_dd.value))
                     hfm_mett_hat_daten = bool((hfm_mett_temp_in.value or "").strip() or (hfm_mett_mhd_tag_dd.value or "").strip() or hat_charge_wert(hfm_mett_charge_dd.value))
                     hfm_fzs_hat_daten = bool((hfm_fzs_temp_in.value or "").strip() or (hfm_fzs_mhd_tag_dd.value or "").strip() or hat_charge_wert(hfm_fzs_charge_dd.value))
@@ -1546,7 +1532,7 @@ def main(page: ft.Page):
                         switch_tab_og("teil")
                         fehler_text.value="⚠️ AKTIVIERUNGS-HAKEN BEI OG FEHLT!"
                         fehler_text.visible=True; status_text.value=""; page.update(); return
-
+ 
                     # 2. PFLICHTFELD WARNUNG (Uhrzeit, Temperatur, MHD, Charge)
                     fehlende_pflicht = []
                     if tw_kalt_cb.value:
@@ -1585,13 +1571,13 @@ def main(page: ft.Page):
                         fehler_text.value = f"⚠️ PFLICHTFELDER FEHLEN:\n{', '.join(fehlende_pflicht)}"
                         fehler_text.visible = True; status_text.value = ""
                         page.update(); return
-
+ 
                     try:
                         fehler_text.visible = False
                         status_text.value = "⏳ Speichere und erstelle PDF..."
                         status_text.color = "yellow"
                         page.update()
-
+ 
                         # Datei-Check!
                         pdf_dateien = [
                             "stammdaten.pdf", "trinkwasser.pdf", "scherbeneis.pdf", "okz-se.pdf",
@@ -1606,24 +1592,35 @@ def main(page: ft.Page):
                             status_text.value = ""
                             page.update()
                             return
-
+ 
                         maerkte = lade_maerkte()
                         d = hole_aktuelle_daten()
                         if markt_index is None: maerkte.append(d)
                         else: maerkte[markt_index] = d
                         speichere_maerkte(maerkte)
-
-                        temp_dir, final_dir, heute_ordner = get_rewe_paths()
+ 
+                        temp_dir, final_dir, heute_ordner, display_pfad = get_rewe_paths()
+                        
+                        # --- NEUE DATEINAMEN-LOGIK UM FEHLER ZU VERMEIDEN ---
                         s_markt = "".join([c for c in nr_in.value if c.isalnum()])
-                        final_ausg = os.path.join(final_dir, f"REWE_{s_markt}_{datetime.datetime.now().strftime('%d%m%y')}.pdf")
+                        base_name = f"REWE_{s_markt}_{datetime.datetime.now().strftime('%d%m%y')}"
+                        final_ausg = os.path.join(final_dir, f"{base_name}.pdf")
+                        
+                        counter = 1
+                        while os.path.exists(final_ausg):
+                            final_ausg = os.path.join(final_dir, f"{base_name}_{counter}.pdf")
+                            counter += 1
+                        # ----------------------------------------------------
                         
                         writer = pypdf.PdfWriter()
                         for pdf_datei in pdf_dateien:
                             writer.append(pypdf.PdfReader(os.path.join("assets", pdf_datei)))
                         
-                        def cb_val(val): return BooleanObject(True) if val else BooleanObject(False)
+                        def cb_val(val): return "/Yes" if val else "/Off"
                             
                         tw_sonst_text = tw_auff_sonstiges_in.value or ""
+                        if cb_auff_unterbau.value and (tw_unterbau_l_in.value or "").strip(): 
+                            tw_sonst_text += f" (L: {tw_unterbau_l_in.value})"
                         
                         f_map = {
                             "tf_0000_00_ZS-001870": adr_in.value, "tf_0000_00_ZS-1408": nr_in.value, "tf_0000_00_ZS-002000": auft_in.value, 
@@ -1653,7 +1650,7 @@ def main(page: ft.Page):
                                 "dd_0001_00_PE_ZS-002317": tw_zweck_dd.value, "tf_0001_00_ZS-1215": tw_inhalt_in.value, 
                                 "dd_0001_00_ZS-001798": tw_verpackung_dd.value, "dd_0001_00_ZS-001799": tw_entnahmeort_dd.value, "dd_0001_00_ZS-001796": tw_bemerkung_dd.value
                             })
-
+ 
                         if se_kalt_cb.value:
                             f_map.update({
                                 "cb_0002_00": cb_val(se_kalt_cb.value), "tf_0002_00_probenahmeUhrzeit": se_zeit_in.value, 
@@ -1664,7 +1661,7 @@ def main(page: ft.Page):
                                 "dd_0002_00_ZS-001798": se_verpackung_dd.value, "dd_0002_00_ZS-001799": se_entnahmeort_dd.value, 
                                 "tf_0002_00_ZS-1441": se_temp_in.value, "dd_0002_00_ZS-001796": se_bemerkung_dd.value
                             })
-
+ 
                         if se_okz_cb.value:
                             f_map.update({
                                 "cb_0003_00": cb_val(se_okz_cb.value), "tf_0003_00": "Abklatschproben Scherbeneis",
@@ -1678,7 +1675,7 @@ def main(page: ft.Page):
                                 f_map[f"dd_0003_{idx}_ZS-001792"] = ctrls["ort"].value
                                 f_map[f"cb_0003_{idx}_ZS-002294"] = cb_val(ctrls["abklatsch"].value)
                                 f_map[f"cb_0003_{idx}_ZS-002295"] = cb_val(ctrls["tupfer"].value)
-
+ 
                         if hfm_hack_cb.value:
                             f_map.update({
                                 "cb_0004_00": cb_val(hfm_hack_cb.value), "tf_0004_00": "Hackfleisch gemischt",
@@ -1693,19 +1690,19 @@ def main(page: ft.Page):
                                 "tf_0004_00_ZS-002081_Rindfleisch: XXX": hfm_hack_charge_rind_dd.value,
                                 "tf_0004_00_ZS-1441": hfm_hack_temp_in.value, "dd_0004_00_ZS-001796": hfm_hack_bemerkung_dd.value
                             })
-
+ 
                         if hfm_mett_cb.value:
                             f_map.update({
                                 "cb_0006_00": cb_val(hfm_mett_cb.value), "tf_0006_00": "gewürztes Schweinemett",
                                 "dd_0006_00_ZS-001799": hfm_mett_entnahmeort_dd.value,
                                 "cal_0006_00_ZS-001810": get_date_str(hfm_mett_herst_tag_dd.value, hfm_mett_herst_mon_dd.value, hfm_mett_herst_jahr_dd.value),
                                 "tf_0006_00_ZS-1215": hfm_mett_inhalt_in.value, "dd_0006_00_ZS-001798": hfm_mett_verpackung_dd.value,
-                                "tf_0006_00_ZS-1209": hfm_mett_lief_in.value,
+                                "tf_0006_00_ZS-1209": hfm_mett_lief_in.value, 
                                 "tf_0006_00_ZS-001835": get_date_str(hfm_mett_mhd_tag_dd.value, hfm_mett_mhd_mon_dd.value, hfm_mett_mhd_jahr_dd.value),
                                 "tf_0006_00_ZS-002081": hfm_mett_charge_dd.value, "tf_0006_00_ZS-1441": hfm_mett_temp_in.value,
                                 "dd_0006_00_ZS-001796": hfm_mett_bemerkung_dd.value
                             })
-
+ 
                         if hfm_fzs_cb.value:
                             prod_s = (hfm_fzs_produkt_in.value or "").strip(); mar_s = (hfm_fzs_marinade_in.value or "").strip()
                             prod_mar_str_s = f"{prod_s} / {mar_s}" if (prod_s and mar_s) else (prod_s or mar_s)
@@ -1714,12 +1711,12 @@ def main(page: ft.Page):
                                 "tf_0008_00_ Produkt \"Marinade\"": prod_mar_str_s, "dd_0008_00_ZS-001799": hfm_fzs_entnahmeort_dd.value,
                                 "cal_0008_00_ZS-001810": get_date_str(hfm_fzs_herst_tag_dd.value, hfm_fzs_herst_mon_dd.value, hfm_fzs_herst_jahr_dd.value),
                                 "tf_0008_00_ZS-1215": hfm_fzs_inhalt_in.value, "dd_0008_00_ZS-001798": hfm_fzs_verpackung_dd.value,
-                                "tf_0008_00_ZS-1209": hfm_fzs_lief_in.value,
+                                "tf_0008_00_ZS-1209": hfm_fzs_lief_in.value, 
                                 "tf_0008_00_ZS-001835": get_date_str(hfm_fzs_mhd_tag_dd.value, hfm_fzs_mhd_mon_dd.value, hfm_fzs_mhd_jahr_dd.value),
                                 "tf_0008_00_ZS-002081": hfm_fzs_charge_dd.value, "tf_0008_00_ZS-1441": hfm_fzs_temp_in.value,
                                 "dd_0008_00_ZS-001796": hfm_fzs_bemerkung_dd.value
                             })
-
+ 
                         if hfm_fzg_cb.value:
                             prod_g = (hfm_fzg_produkt_in.value or "").strip(); mar_g = (hfm_fzg_marinade_in.value or "").strip()
                             prod_mar_str_g = f"{prod_g} / {mar_g}" if (prod_g and mar_g) else (prod_g or mar_g)
@@ -1728,12 +1725,12 @@ def main(page: ft.Page):
                                 "tf_0007_00_ Produkt \"Marinade\"": prod_mar_str_g, "dd_0007_00_ZS-001799": hfm_fzg_entnahmeort_dd.value,
                                 "cal_0007_00_ZS-001810": get_date_str(hfm_fzg_herst_tag_dd.value, hfm_fzg_herst_mon_dd.value, hfm_fzg_herst_jahr_dd.value),
                                 "tf_0007_00_ZS-1215": hfm_fzg_inhalt_in.value, "dd_0007_00_ZS-001798": hfm_fzg_verpackung_dd.value,
-                                "tf_0007_00_ZS-1209": hfm_fzg_lief_in.value,
+                                "tf_0007_00_ZS-1209": hfm_fzg_lief_in.value, 
                                 "tf_0007_00_ZS-001835": get_date_str(hfm_fzg_mhd_tag_dd.value, hfm_fzg_mhd_mon_dd.value, hfm_fzg_mhd_jahr_dd.value),
                                 "tf_0007_00_ZS-002081": hfm_fzg_charge_dd.value, "tf_0007_00_ZS-1441": hfm_fzg_temp_in.value,
                                 "dd_0007_00_ZS-001796": hfm_fzg_bemerkung_dd.value
                             })
-
+ 
                         if hfm_bio_cb.value:
                             f_map.update({
                                 "cb_0005_00": cb_val(hfm_bio_cb.value), "tf_0005_00": "Biohackfleisch",
@@ -1748,7 +1745,7 @@ def main(page: ft.Page):
                                 "tf_0005_00_ZS-002081_Rindfleisch: XXX": hfm_bio_charge_rind_dd.value,
                                 "tf_0005_00_ZS-1441": hfm_bio_temp_in.value, "dd_0005_00_ZS-001796": hfm_bio_bemerkung_dd.value
                             })
-
+ 
                         if hfm_okz_cb.value:
                             f_map.update({
                                 "cb_0010_00": cb_val(hfm_okz_cb.value), "tf_0010_00": "Abklatschproben HFM",
@@ -1762,7 +1759,7 @@ def main(page: ft.Page):
                                 f_map[f"dd_0010_{idx}_ZS-001792"] = ctrls["ort"].value
                                 f_map[f"cb_0010_{idx}_ZS-002294"] = cb_val(ctrls["abklatsch"].value)
                                 f_map[f"cb_0010_{idx}_ZS-002295"] = cb_val(ctrls["tupfer"].value)
-                                
+                                 
                         if og_cb.value:
                             f_map.update({
                                 "cb_0009_00": cb_val(og_cb.value), "tf_0009_00": "Obst-/Gemüse Convenience"
@@ -1777,7 +1774,7 @@ def main(page: ft.Page):
                                 f_map[f"tf_0009_{idx}_ZS-1215"] = ctrls["inhalt"].value
                                 f_map[f"dd_0009_{idx}_ZS-001798"] = ctrls["verpackung"].value
                                 f_map[f"tf_0009_{idx}_ZS-1441"] = ctrls["temp"].value
-                                
+                                 
                         if og_okz_cb.value:
                             f_map.update({
                                 "cb_0011_00": cb_val(og_okz_cb.value), "tf_0011_00": "Obst-Gemüse Abklatschproben",
@@ -1792,36 +1789,34 @@ def main(page: ft.Page):
                                 f_map[f"dd_0011_{idx}_ZS-001792"] = ctrls["ort"].value
                                 f_map[f"cb_0011_{idx}_ZS-002294"] = cb_val(ctrls["abklatsch"].value)
                                 f_map[f"cb_0011_{idx}_ZS-002295"] = cb_val(ctrls["tupfer"].value)
-                            
+                           
                         if "/AcroForm" not in writer.root_object: 
                             writer.root_object.update({NameObject("/AcroForm"): DictionaryObject()})
-                            
-                        if "/Fields" not in writer.root_object["/AcroForm"]: 
+                           
+                        if "/Fields" not in writer.root_object["/AcroForm"]:
                             writer.root_object["/AcroForm"].update({NameObject("/Fields"): ArrayObject()})
-                            
+                           
                         for p in writer.pages: 
                             writer.update_page_form_field_values(p, f_map)
-                            
+                           
                         with open(final_ausg, "wb") as f: 
                             writer.write(f)
-                            
+                           
                         status_text.value = "✅ PDF erfolgreich erstellt!"
                         status_text.color = "green"
                         page.update()
-
-                    except PermissionError:
-                        status_text.value = ""
-                        fehler_text.value = "⚠️ SPEICHER-FEHLER: Dein Handy blockiert das Speichern! Gehe in die Android-Einstellungen -> Apps -> Deine App -> Berechtigungen und erlaube den Zugriff auf 'Dateien und Medien' (bzw. Speicher)."
-                        fehler_text.visible = True
-                        page.update()
+                       
                     except Exception as ex: 
                         status_text.value = "❌ Fehler"
                         status_text.color = "red"
                         zeige_fehler(ex)
-
+ 
                 btn_zurueck = sicherer_button("🔙 Touren", lambda e: zeige_dashboard(), "red", "white", expand=True, height=45)
                 btn_speichern = sicherer_button("💾 Tour speichern", nur_speichern, "orange", "black", expand=True, height=45)
                 btn_final = sicherer_button("📄 Bericht erstellen (PDF)", save_final, "blue", "white", expand=True, height=50)
+ 
+                _, _, _, ui_pfad = get_rewe_paths()
+                info_pfad_text = ft.Text(f"ℹ️ PDFs werden automatisch gespeichert unter:\n{ui_pfad}", color="white54", size=12, italic=True, text_align=ft.TextAlign.CENTER)
 
                 ansicht.controls.extend([
                     ft.Row([btn_stamm, btn_tw, btn_se, btn_hfm, btn_og], scroll=ft.ScrollMode.AUTO),
@@ -1835,31 +1830,30 @@ def main(page: ft.Page):
                     fehler_text,
                     status_text,
                     ft.Row([btn_zurueck, btn_speichern]),
+                    ft.Row([info_pfad_text], alignment=ft.MainAxisAlignment.CENTER),
                     ft.Row([btn_final])
                 ])
                 page.update()
                 
             except Exception as intern_e:
                 zeige_fehler(intern_e)
-
+ 
         def bereinige_archiv():
-            base_dl = "/storage/emulated/0/Download" if os.path.exists("/storage/emulated/0/Download") else os.path.join(os.path.expanduser("~"), "Downloads")
-            rewe_dir = os.path.join(base_dl, "REWE")
+            temp_dir, _, _, _ = get_rewe_paths()
+            rewe_dir = os.path.dirname(temp_dir)
             if not os.path.exists(rewe_dir): return
             
             heute = datetime.datetime.now()
-            try:
-                for ordner in os.listdir(rewe_dir):
-                    ordner_pfad = os.path.join(rewe_dir, ordner)
-                    if os.path.isdir(ordner_pfad) and ordner != "temp":
-                        try:
-                            ordner_datum = datetime.datetime.strptime(ordner, '%Y-%m-%d')
-                            alter = (heute - ordner_datum).days
-                            if alter > 7:
-                                shutil.rmtree(ordner_pfad)
-                        except: pass
-            except PermissionError: pass
-
+            for ordner in os.listdir(rewe_dir):
+                ordner_pfad = os.path.join(rewe_dir, ordner)
+                if os.path.isdir(ordner_pfad) and ordner != "temp":
+                    try:
+                        ordner_datum = datetime.datetime.strptime(ordner, '%Y-%m-%d')
+                        alter = (heute - ordner_datum).days
+                        if alter > 7:
+                            shutil.rmtree(ordner_pfad)
+                    except: pass
+ 
         def zeige_archiv():
             ansicht.controls.clear()
             ansicht.controls.append(nav_leiste())
@@ -1867,50 +1861,37 @@ def main(page: ft.Page):
             
             bereinige_archiv()
             
-            rewe_dir = get_base_rewe_dir()
+            temp_dir, _, _, display_pfad = get_rewe_paths()
+            rewe_dir = os.path.dirname(temp_dir)
             
-            ansicht.controls.append(ft.Container(
-                bgcolor="#330000", padding=10, border_radius=10,
-                content=ft.Column([
-                    ft.Text("📱 WICHTIGE INFO ZUM VERSENDEN:", color="orange", weight="bold"),
-                    ft.Text("Da Handys das direkte Anhängen von Dateien oft blockieren, gehe bitte so vor:", color="white", size=12),
-                    ft.Text("1. Klicke auf 'Mail versenden' (die E-Mail öffnet sich).", color="white", size=12),
-                    ft.Text("2. Klicke in der E-Mail auf die Büroklammer (Anhang).", color="white", size=12),
-                    ft.Text("3. Wähle die PDF aus dem REWE-Ordner deines Handys (Downloads oder Android/media).", color="yellow", size=12, weight="bold"),
-                    ft.Text("Tipp: Du kannst die Dateien über 'Eigene Dateien' auch manuell auf OneDrive hochladen.", color="white54", size=11, italic=True)
-                ])
-            ))
-            
+            ansicht.controls.append(ft.Text(f"📂 Speicherort:\n{display_pfad} / [Datum]", color="orange", size=12, italic=True))
+            ansicht.controls.append(ft.Text("💡 INFO: Falls 'Mail versenden' nicht funktioniert, öffne deine Dateien-App, gehe zu diesem Pfad und versende die PDFs von dort.", color="white54", size=12))
+            ansicht.controls.append(ft.Divider(color="transparent"))
+
             pdfs_gefunden = False
             if os.path.exists(rewe_dir):
-                try:
-                    ordner_liste = sorted([o for o in os.listdir(rewe_dir) if os.path.isdir(os.path.join(rewe_dir, o)) and o != "temp"], reverse=True)
-                    for ordner in ordner_liste:
-                        ordner_pfad = os.path.join(rewe_dir, ordner)
-                        p_list = [f for f in os.listdir(ordner_pfad) if f.endswith(".pdf")]
-                        
-                        if p_list:
-                            ansicht.controls.append(ft.Text(ordner, color="yellow", weight="bold", size=16))
-                            for pdf in p_list:
-                                pdfs_gefunden = True
+                ordner_liste = sorted([o for o in os.listdir(rewe_dir) if os.path.isdir(os.path.join(rewe_dir, o)) and o != "temp"], reverse=True)
+                for ordner in ordner_liste:
+                    ordner_pfad = os.path.join(rewe_dir, ordner)
+                    p_list = [f for f in os.listdir(ordner_pfad) if f.endswith(".pdf")]
+                    
+                    if p_list:
+                        ansicht.controls.append(ft.Text(ordner, color="yellow", weight="bold", size=16))
+                        for pdf in p_list:
+                            pdfs_gefunden = True
+                            
+                            def mail_senden(e, d=pdf):
+                                page.launch_url(f"mailto:registration-mibi.ber@tentamus.com?subject=REWE Monitoring Bericht: {d}&body=Bitte den Bericht im Anhang manuell anfuegen.")
                                 
-                                def mail_senden(e, d=pdf):
-                                    betreff = urllib.parse.quote(f"REWE Monitoring Bericht: {d}")
-                                    body = urllib.parse.quote("Hallo,\n\nbitte den Bericht im Anhang manuell aus dem REWE-Ordner anfügen.\n\nViele Grüße")
-                                    page.launch_url(f"mailto:registration-mibi.ber@tentamus.com?subject={betreff}&body={body}")
-                                    
-                                ansicht.controls.append(
-                                    ft.Container(bgcolor="#002200", padding=10, border_radius=10, 
-                                        content=ft.Row([
-                                            ft.Text(pdf, color="white", size=12, expand=True), 
-                                            sicherer_button("📧 Mail versenden", mail_senden, "blue", "white")
-                                        ])
-                                    )
+                            ansicht.controls.append(
+                                ft.Container(bgcolor="#002200", padding=10, border_radius=10, 
+                                    content=ft.Row([
+                                        ft.Text(pdf, color="white", size=12, expand=True), 
+                                        sicherer_button("📧 Mail vorbereiten", mail_senden, "blue", "white")
+                                    ])
                                 )
-                            ansicht.controls.append(ft.Divider(color="white24"))
-                except PermissionError:
-                    ansicht.controls.append(ft.Text("⚠️ BERECHTIGUNG FEHLT! Bitte in den Android-Einstellungen den Speicherzugriff erlauben.", color="red", weight="bold"))
-                    pdfs_gefunden = True
+                            )
+                        ansicht.controls.append(ft.Divider(color="white24"))
                         
             if not pdfs_gefunden:
                 ansicht.controls.append(ft.Text("Keine Berichte im Archiv.", color="grey", size=14))
@@ -1920,51 +1901,45 @@ def main(page: ft.Page):
         def zeige_postausgang():
             ansicht.controls.clear(); ansicht.controls.append(nav_leiste())
             ansicht.controls.append(ft.Text("Postausgang", size=25, weight="bold", color="white"))
-            temp_dir, final_dir, heute_ordner = get_rewe_paths()
+            temp_dir, final_dir, heute_ordner, display_pfad = get_rewe_paths()
             
             def oeffne_ordner(e):
                 try: page.launch_url(f"file://{final_dir}")
                 except: pass
                 
             ansicht.controls.append(
-                ft.Container(
-                    bgcolor="#330000", padding=10, border_radius=10,
-                    content=ft.Column([
-                        ft.Text("Die Berichte für heute liegen im Ordner:", color="red", size=12),
-                        ft.Text(f"{final_dir}\n", color="red", size=14, weight="bold"),
-                        sicherer_button("📂 Ordner öffnen", oeffne_ordner, "blue", "white"),
-                        ft.Text("Versuche Datei/Ordner zu öffnen... Falls nichts passiert, blockiert dein Handy den Direktzugriff. Nutze dann die App 'Eigene Dateien'.", color="orange", size=10, italic=True)
-                    ])
-                )
+                ft.Row([
+                    ft.Text("Die Berichte für heute liegen im Ordner:", color="red", size=12, expand=True),
+                    sicherer_button("📂 Ordner öffnen", oeffne_ordner, "blue", "white")
+                ])
             )
             
+            ansicht.controls.append(ft.Text(f"{display_pfad} / {heute_ordner} /\n", color="red", size=14, weight="bold"))
+            ansicht.controls.append(ft.Text("💡 INFO: Falls sich der Ordner nicht öffnet oder E-Mail nicht geht:\nÖffne die App 'Dateien' (oder 'Eigene Dateien') auf deinem Handy und suche genau diesen Pfad. Von dort kannst du die PDFs auswählen und versenden.", color="orange", size=12, italic=True))
             ansicht.controls.append(ft.Container(height=10))
             
-            try:
-                p_list = [f for f in os.listdir(final_dir) if f.endswith(".pdf")] if os.path.exists(final_dir) else []
-                if not p_list: ansicht.controls.append(ft.Text("Noch keine Berichte für heute erstellt.", color="grey", size=14))
-                for pdf in p_list:
-                    def rm(e, d=pdf): os.remove(os.path.join(final_dir, d)); zeige_postausgang()
-                    def oeffne(e, d=pdf): 
-                        try: page.launch_url(f"file://{os.path.join(final_dir, d)}")
-                        except: pass
-                        
-                    ansicht.controls.append(
-                        ft.Container(bgcolor="#002200", padding=10, border_radius=10, 
-                            content=ft.Row([
-                                ft.Text(pdf, color="white", size=10, expand=True),
-                                sicherer_button("📄 Öffnen", oeffne, "blue", "white"),
-                                sicherer_button("🗑️", rm, "red", "white")
-                            ])
-                        )
+            p_list = [f for f in os.listdir(final_dir) if f.endswith(".pdf")] if os.path.exists(final_dir) else []
+            if not p_list: ansicht.controls.append(ft.Text("Noch keine Berichte für heute erstellt.", color="grey", size=14))
+            for pdf in p_list:
+                def rm(e, d=pdf): os.remove(os.path.join(final_dir, d)); zeige_postausgang()
+                def oeffne(e, d=pdf): 
+                    try: page.launch_url(f"file://{os.path.join(final_dir, d)}")
+                    except: pass
+                    
+                ansicht.controls.append(
+                    ft.Container(bgcolor="#002200", padding=10, border_radius=10, 
+                        content=ft.Row([
+                            ft.Text(pdf, color="white", size=10, expand=True),
+                            sicherer_button("📄 Öffnen", oeffne, "blue", "white"),
+                            sicherer_button("🗑️", rm, "red", "white")
+                        ])
                     )
-            except PermissionError:
-                ansicht.controls.append(ft.Text("⚠️ BERECHTIGUNG FEHLT! Bitte in den Android-Einstellungen den Speicherzugriff erlauben.", color="red", weight="bold"))
-
+                )
             page.update()
-
+ 
         zeige_startbildschirm()
         
     except Exception as e: zeige_fehler(e)
-
-if __name__ == "__main__": ft.app(target=main, assets_dir="assets")
+        
+if __name__ == "__main__": 
+    ft.app(target=main, assets_dir="assets")
