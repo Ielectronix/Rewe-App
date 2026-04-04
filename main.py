@@ -47,7 +47,7 @@ def main(page: ft.Page):
 
     try:
         import pypdf
-        from pypdf.generic import DictionaryObject, NameObject, ArrayObject
+        from pypdf.generic import DictionaryObject, NameObject, ArrayObject, BooleanObject
 
         SPEICHER_DATEI = "meine_monitoring_daten.json"
         BENUTZER_DATEI = "benutzer_daten.json"
@@ -705,8 +705,9 @@ def main(page: ft.Page):
                     
                     hfm_hack_cb.value = False; hfm_hack_temp_in.value = ""
                     hfm_hack_lief_schwein_in.value = ""; hfm_hack_lief_rind_in.value = ""
-                    hfm_hack_mhd_s_tag_dd.value = ""; hfm_hack_mhd_s_mon_dd.value = ""; hfm_hack_mhd_s_jahr_dd.value = ""
-                    hfm_hack_mhd_r_tag_dd.value = ""; hfm_hack_mhd_r_mon_dd.value = ""; hfm_hack_mhd_r_jahr_dd.value = ""
+                    hfm_hack_mhd_s_tag_dd.value = ""; hfm_hack_mhd_s_mon_dd.value = ""
+                    hfm_hack_mhd_s_jahr_dd.value = ""; hfm_hack_mhd_r_tag_dd.value = ""
+                    hfm_hack_mhd_r_mon_dd.value = ""; hfm_hack_mhd_r_jahr_dd.value = ""
 
                     hfm_mett_cb.value = False; hfm_mett_temp_in.value = ""; hfm_mett_lief_in.value = ""
                     hfm_mett_mhd_tag_dd.value = ""; hfm_mett_mhd_mon_dd.value = ""; hfm_mett_mhd_jahr_dd.value = ""
@@ -745,7 +746,7 @@ def main(page: ft.Page):
                         ctrls["name"].value = ""; ctrls["ort"].value = ""
                         ctrls["h_t"].value = ""; ctrls["h_m"].value = ""; ctrls["h_j"].value = ""
                         ctrls["v_t"].value = ""; ctrls["v_m"].value = ""; ctrls["v_j"].value = ""
-                        ctrls["inhalt"].value = ""; ctrls["verpackung"].value = ""; ctrls["temp"].value = ""
+                        ctrls["temp"].value = ""
 
                     og_okz_cb.value = False; og_okz_bemerkung_dd.value = "Bitte eingeben"; og_okz_anmerkung_in.value = ""
                     for idx_str, ctrls in og_okz_controls.items():
@@ -1320,7 +1321,7 @@ def main(page: ft.Page):
                         "tw_kurz3": tw_kurz3_dd.value, "tw_kurz4": tw_kurz4_dd.value, "cb_auff_ja": cb_auff_ja.value, 
                         "cb_auff_nein": cb_auff_nein.value, "cb_auff_perl": cb_auff_perl.value, "cb_auff_verkalk": cb_auff_verkalk.value, 
                         "cb_auff_verbrueh": cb_auff_verbrueh.value, "cb_auff_durchlauf": cb_auff_durchlauf.value,
-                        "cb_auff_eck_zu": cb_auff_eck_zu.value, 
+                        "cb_auff_unterbau": cb_auff_unterbau.value, "cb_auff_eck_zu": cb_auff_eck_zu.value, 
                         "cb_auff_nichtmoeglich": cb_auff_nichtmoeglich.value, "cb_auff_dusche": cb_auff_dusche.value, 
                         "cb_auff_handbrause": cb_auff_handbrause.value, "cb_auff_sonst": cb_auff_sonst.value, "tw_auff_sonstiges": tw_auff_sonstiges_in.value,
                         "tw_zweck": tw_zweck_dd.value, "tw_inhalt": tw_inhalt_in.value, "tw_verpackung": tw_verpackung_dd.value, 
@@ -1581,7 +1582,7 @@ def main(page: ft.Page):
                         for pdf_datei in pdf_dateien:
                             writer.append(pypdf.PdfReader(os.path.join("assets", pdf_datei)))
                         
-                        def cb_val(val): return "/Yes" if val else "/Off"
+                        def cb_val(val): return BooleanObject(True) if val else BooleanObject(False)
                             
                         tw_sonst_text = tw_auff_sonstiges_in.value or ""
                         
@@ -1866,8 +1867,8 @@ def main(page: ft.Page):
                         p_list = [f for f in os.listdir(ordner_pfad) if f.endswith(".pdf")]
                         
                         if p_list:
-                            # Zeigt den Ordnernamen UND den Speicherort an
-                            ansicht.controls.append(ft.Text(f"{ordner} (in {base.split('/')[-2]})", color="yellow", weight="bold", size=16))
+                            parent_folder = os.path.basename(os.path.dirname(base))
+                            ansicht.controls.append(ft.Text(f"{ordner} (in {parent_folder})", color="yellow", weight="bold", size=16))
                             for pdf in p_list:
                                 pdfs_gefunden = True
                                 def mail_senden(e, d=pdf):
