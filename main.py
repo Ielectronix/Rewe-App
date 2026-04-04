@@ -47,7 +47,7 @@ def main(page: ft.Page):
 
     try:
         import pypdf
-        from pypdf.generic import DictionaryObject, NameObject, ArrayObject
+        from pypdf.generic import DictionaryObject, NameObject, ArrayObject, BooleanObject
 
         SPEICHER_DATEI = "meine_monitoring_daten.json"
         BENUTZER_DATEI = "benutzer_daten.json"
@@ -398,7 +398,7 @@ def main(page: ft.Page):
                     abk_cb = ft.Checkbox(label="Abklatsch", value=aktuelle_daten.get(f"se_okz_abklatsch_{idx}", def_abk), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
                     tup_cb = ft.Checkbox(label="Tupfer", value=aktuelle_daten.get(f"se_okz_tupfer_{idx}", def_tup), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
                     
-                    se_okz_controls[idx] = {"status": s_dd, "objekt": obj_dd, "ort": ort_dd, "abklatsch": abk_cb, "tupfer": tup_cb}
+                    se_okz_controls[i] = {"status": s_dd, "objekt": obj_dd, "ort": ort_dd, "abklatsch": abk_cb, "tupfer": tup_cb}
                     
                     se_okz_felder.append(ft.Text(f"Probe {i}", color="yellow", weight="bold", size=14))
                     se_okz_felder.append(ft.Row([s_dd, obj_dd]))
@@ -723,12 +723,13 @@ def main(page: ft.Page):
                     hfm_bio_mhd_r_tag_dd.value = ""; hfm_bio_mhd_r_mon_dd.value = ""; hfm_bio_mhd_r_jahr_dd.value = ""
                     
                     se_okz_cb.value = False; se_okz_bemerkung_dd.value = "Bitte eingeben"
-                    for idx_str, ctrls in se_okz_controls.items():
+                    for i in range(1, 4):
+                        ctrls = se_okz_controls[i]
                         ctrls["status"].value = "R+D"
-                        ctrls["objekt"].value = se_okz_defaults[int(idx_str)]["obj"]
+                        ctrls["objekt"].value = se_okz_defaults[i]["obj"]
                         ctrls["ort"].value = ""
-                        ctrls["abklatsch"].value = se_okz_defaults[int(idx_str)]["abk"]
-                        ctrls["tupfer"].value = se_okz_defaults[int(idx_str)]["tup"]
+                        ctrls["abklatsch"].value = se_okz_defaults[i]["abk"]
+                        ctrls["tupfer"].value = se_okz_defaults[i]["tup"]
 
                     hfm_okz_cb.value = False; hfm_okz_bemerkung_dd.value = "Bitte eingeben"
                     for idx_str, ctrls in okz_controls.items():
@@ -831,12 +832,14 @@ def main(page: ft.Page):
                     if "hfm_bio_lief_rind" in v: hfm_bio_lief_rind_in.value = v["hfm_bio_lief_rind"]
                     
                     if "se_okz_bemerkung" in v: se_okz_bemerkung_dd.value = v["se_okz_bemerkung"]
-                    for idx_str, ctrls in se_okz_controls.items():
-                        if f"se_okz_status_{idx_str}" in v: ctrls["status"].value = v[f"se_okz_status_{idx_str}"]
-                        if f"se_okz_objekt_{idx_str}" in v: ctrls["objekt"].value = v[f"se_okz_objekt_{idx_str}"]
-                        if f"se_okz_ort_{idx_str}" in v: ctrls["ort"].value = v[f"se_okz_ort_{idx_str}"]
-                        if f"se_okz_abklatsch_{idx_str}" in v: ctrls["abklatsch"].value = v[f"se_okz_abklatsch_{idx_str}"]
-                        if f"se_okz_tupfer_{idx_str}" in v: ctrls["tupfer"].value = v[f"se_okz_tupfer_{idx_str}"]
+                    for i in range(1, 4):
+                        idx = f"{i:02d}"
+                        ctrls = se_okz_controls[i]
+                        if f"se_okz_status_{idx}" in v: ctrls["status"].value = v[f"se_okz_status_{idx}"]
+                        if f"se_okz_objekt_{idx}" in v: ctrls["objekt"].value = v[f"se_okz_objekt_{idx}"]
+                        if f"se_okz_ort_{idx}" in v: ctrls["ort"].value = v[f"se_okz_ort_{idx}"]
+                        if f"se_okz_abklatsch_{idx}" in v: ctrls["abklatsch"].value = v[f"se_okz_abklatsch_{idx}"]
+                        if f"se_okz_tupfer_{idx}" in v: ctrls["tupfer"].value = v[f"se_okz_tupfer_{idx}"]
 
                     if "hfm_okz_bemerkung" in v: hfm_okz_bemerkung_dd.value = v["hfm_okz_bemerkung"]
                     for idx_str, ctrls in okz_controls.items():
@@ -926,12 +929,14 @@ def main(page: ft.Page):
                         "se_okz_bemerkung": se_okz_bemerkung_dd.value
                     }
                     
-                    for idx_str, ctrls in se_okz_controls.items():
-                        d_v[f"se_okz_status_{idx_str}"] = ctrls["status"].value
-                        d_v[f"se_okz_objekt_{idx_str}"] = ctrls["objekt"].value
-                        d_v[f"se_okz_ort_{idx_str}"] = ctrls["ort"].value
-                        d_v[f"se_okz_abklatsch_{idx_str}"] = ctrls["abklatsch"].value
-                        d_v[f"se_okz_tupfer_{idx_str}"] = ctrls["tupfer"].value
+                    for i in range(1, 4):
+                        idx = f"{i:02d}"
+                        ctrls = se_okz_controls[i]
+                        d_v[f"se_okz_status_{idx}"] = ctrls["status"].value
+                        d_v[f"se_okz_objekt_{idx}"] = ctrls["objekt"].value
+                        d_v[f"se_okz_ort_{idx}"] = ctrls["ort"].value
+                        d_v[f"se_okz_abklatsch_{idx}"] = ctrls["abklatsch"].value
+                        d_v[f"se_okz_tupfer_{idx}"] = ctrls["tupfer"].value
                     
                     for idx_str, ctrls in okz_controls.items():
                         d_v[f"okz_status_{idx_str}"] = ctrls["status"].value
@@ -991,12 +996,13 @@ def main(page: ft.Page):
                     hfm_fzs_charge_dd.value = "Bitte eingeben"; hfm_fzg_charge_dd.value = "Bitte eingeben"
                     hfm_bio_charge_schwein_dd.value = "Bitte eingeben"; hfm_bio_charge_rind_dd.value = "Bitte eingeben"
                     
-                    for idx_str, ctrls in se_okz_controls.items():
+                    for i in range(1, 4):
+                        ctrls = se_okz_controls[i]
                         ctrls["status"].value = "R+D"
-                        ctrls["objekt"].value = se_okz_defaults[int(idx_str)]["obj"]
+                        ctrls["objekt"].value = se_okz_defaults[i]["obj"]
                         ctrls["ort"].value = ""
-                        ctrls["abklatsch"].value = se_okz_defaults[int(idx_str)]["abk"]
-                        ctrls["tupfer"].value = se_okz_defaults[int(idx_str)]["tup"]
+                        ctrls["abklatsch"].value = se_okz_defaults[i]["abk"]
+                        ctrls["tupfer"].value = se_okz_defaults[i]["tup"]
                     
                     for idx_str, ctrls in okz_controls.items():
                         i = int(idx_str)
@@ -1379,12 +1385,14 @@ def main(page: ft.Page):
                         "og_okz_anmerkung": og_okz_anmerkung_in.value
                     }
                     
-                    for idx_str, ctrls in se_okz_controls.items():
-                        d[f"se_okz_status_{idx_str}"] = ctrls["status"].value
-                        d[f"se_okz_objekt_{idx_str}"] = ctrls["objekt"].value
-                        d[f"se_okz_ort_{idx_str}"] = ctrls["ort"].value
-                        d[f"se_okz_abklatsch_{idx_str}"] = ctrls["abklatsch"].value
-                        d[f"se_okz_tupfer_{idx_str}"] = ctrls["tupfer"].value
+                    for i in range(1, 4):
+                        idx = f"{i:02d}"
+                        ctrls = se_okz_controls[i]
+                        d[f"se_okz_status_{idx}"] = ctrls["status"].value
+                        d[f"se_okz_objekt_{idx}"] = ctrls["objekt"].value
+                        d[f"se_okz_ort_{idx}"] = ctrls["ort"].value
+                        d[f"se_okz_abklatsch_{idx}"] = ctrls["abklatsch"].value
+                        d[f"se_okz_tupfer_{idx}"] = ctrls["tupfer"].value
                         
                     for idx_str, ctrls in okz_controls.items():
                         d[f"okz_status_{idx_str}"] = ctrls["status"].value
@@ -1550,7 +1558,6 @@ def main(page: ft.Page):
                         status_text.color = "yellow"
                         page.update()
 
-                        # Datei-Check!
                         pdf_dateien = [
                             "stammdaten.pdf", "trinkwasser.pdf", "scherbeneis.pdf", "okz-se.pdf",
                             "hackfleisch_gemischt.pdf", "schweinemett.pdf", "fz_schwein.pdf", 
@@ -1740,7 +1747,7 @@ def main(page: ft.Page):
                                 f_map[f"dd_0011_{idx_str}_ZS-1419"] = ctrls["objekt"].value
                                 f_map[f"dd_0011_{idx_str}_ZS-001792"] = ctrls["ort"].value
                                 f_map[f"cb_0011_{idx_str}_ZS-002294"] = cb_val(ctrls["abklatsch"].value)
-                                f_map[f"cb_0011_{idx}_ZS-002295"] = cb_val(ctrls["tupfer"].value)
+                                f_map[f"cb_0011_{idx_str}_ZS-002295"] = cb_val(ctrls["tupfer"].value)
                             
                         if "/AcroForm" not in writer.root_object: 
                             writer.root_object.update({NameObject("/AcroForm"): DictionaryObject()})
@@ -1835,11 +1842,13 @@ def main(page: ft.Page):
             ansicht.controls.append(ft.Container(
                 bgcolor="#330000", padding=10, border_radius=10,
                 content=ft.Column([
-                    ft.Text("📱 WICHTIGE INFO ZUM VERSENDEN:", color="orange", weight="bold"),
-                    ft.Text("Da Android das direkte Anhängen von Dateien oft blockiert, ist der sicherste Weg:", color="white", size=12),
-                    ft.Text("1. Klicke auf '📧 Mail' (die E-Mail öffnet sich).", color="white", size=12),
-                    ft.Text("2. Klicke in deiner Mail-App auf die Büroklammer (Anhang hinzufügen).", color="white", size=12),
-                    ft.Text("3. Wähle die PDF-Datei manuell aus dem angezeigten Ordner aus.", color="yellow", size=12, weight="bold"),
+                    ft.Text("📧 MANUELLER E-MAIL VERSAND:", color="orange", weight="bold"),
+                    ft.Text("Empfänger: registration-mibi.ber@tentamus.com", color="yellow", size=14, weight="bold", selectable=True),
+                    ft.Text("Betreff: REWE + Marktnummer (z.B. REWE 1234)", color="yellow", size=14, weight="bold", selectable=True),
+                    ft.Text("Da Android das automatische Anhängen blockiert, versende den Bericht bitte so:", color="white54", size=11, italic=True),
+                    ft.Text("1. Halte die gelbe E-Mail-Adresse gedrückt, um sie zu kopieren.", color="white", size=12),
+                    ft.Text("2. Öffne deine E-Mail-App und füge die Adresse und den Betreff ein.", color="white", size=12),
+                    ft.Text("3. Drücke auf die Büroklammer und hänge die PDF-Datei an.", color="white", size=12),
                 ])
             ))
             
@@ -1860,13 +1869,13 @@ def main(page: ft.Page):
                                 pdfs_gefunden = True
                                 def mail_senden(e, d=pdf):
                                     betreff = urllib.parse.quote(f"REWE Monitoring Bericht: {d}")
-                                    body = urllib.parse.quote("Hallo,\n\nbitte den Bericht im Anhang finden. (WICHTIG: Die Datei muss noch manuell angehängt werden!)\n\nViele Grüße")
+                                    body = urllib.parse.quote("Hallo,\n\nbitte den Bericht im Anhang finden. (WICHTIG: Die PDF-Datei muss noch manuell angehängt werden!)\n\nViele Grüße")
                                     page.launch_url(f"mailto:registration-mibi.ber@tentamus.com?subject={betreff}&body={body}")
                                     
                                 ansicht.controls.append(
                                     ft.Container(bgcolor="#002200", padding=10, border_radius=10, 
                                         content=ft.Row([
-                                            ft.Text(pdf, color="white", size=12, expand=True), 
+                                            ft.Text(pdf, color="white", size=12, expand=True, selectable=True), 
                                             sicherer_button("📧 Mail", mail_senden, "blue", "white")
                                         ])
                                     )
@@ -1905,7 +1914,7 @@ def main(page: ft.Page):
                                 bgcolor="#330000", padding=10, border_radius=10,
                                 content=ft.Column([
                                     ft.Text("Berichte für heute liegen in:", color="red", size=12),
-                                    ft.Text(f"{final_dir}", color="red", size=12, weight="bold"),
+                                    ft.Text(f"{final_dir}", color="red", size=12, weight="bold", selectable=True),
                                     sicherer_button("📂 Ordner öffnen", oeffne_ordner, "blue", "white"),
                                     ft.Text("Info: Falls sich die Datei/Ordner nicht öffnen lässt, blockiert dein Handy den Direktzugriff. Öffne dann manuell deine 'Eigene Dateien'-App und navigiere zu dem Ordner, der oben in fett steht!", color="orange", size=11, italic=True)
                                 ])
