@@ -12,6 +12,7 @@ def main(page: ft.Page):
     page.padding = 10
     page.scroll = ft.ScrollMode.AUTO
     
+    # Setzt das Icon für die App-Fenster
     try:
         page.window.icon = "icon.png"
     except: pass
@@ -19,22 +20,25 @@ def main(page: ft.Page):
     ansicht = ft.Column(expand=True, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
     page.add(ansicht)
  
-    # --- PFAD LOGIK MIT ANDROID GEHEIMTRICK ---
+    # PFADE
     def get_rewe_paths():
         heute_ordner = datetime.datetime.now().strftime('%Y-%m-%d')
         primary_base = "/storage/emulated/0/Download"
         fallback_base = "/storage/emulated/0/Android/media"
         desktop_base = os.path.join(os.path.expanduser("~"), "Downloads")
- 
+
+        # Prüfen, wo gespeichert werden kann
         if os.path.exists(primary_base):
             rewe_dir = os.path.join(primary_base, "REWE")
             try:
                 os.makedirs(rewe_dir, exist_ok=True)
+                # Testen, ob wir Schreibrechte haben
                 test_file = os.path.join(rewe_dir, ".test_write")
                 with open(test_file, "w") as f: f.write("ok")
                 os.remove(test_file)
                 display_pfad = "Downloads / REWE"
             except (PermissionError, OSError):
+                # GEHEIMTRICK: Ausweichen auf Android/media bei fehlenden Rechten
                 rewe_dir = os.path.join(fallback_base, "REWE")
                 os.makedirs(rewe_dir, exist_ok=True)
                 display_pfad = "Android / media / REWE"
@@ -45,11 +49,12 @@ def main(page: ft.Page):
         else:
             rewe_dir = os.path.join(desktop_base, "REWE")
             display_pfad = "Downloads / REWE"
- 
+
         temp_dir = os.path.join(rewe_dir, "temp")
         final_dir = os.path.join(rewe_dir, heute_ordner)
         os.makedirs(temp_dir, exist_ok=True)
         os.makedirs(final_dir, exist_ok=True)
+
         return temp_dir, final_dir, heute_ordner, display_pfad
  
     def zeige_fehler(e):
@@ -108,7 +113,7 @@ def main(page: ft.Page):
                 bgcolor="#001100", padding=10, border_radius=10, 
                 content=ft.Row(alignment=ft.MainAxisAlignment.SPACE_EVENLY, controls=[
                     sicherer_button("Touren", lambda e: zeige_dashboard(), "#004400", "white"),
-                    sicherer_button("Postausg.", lambda e: zeige_postausgang(), "#004400", "white"),
+                    sicherer_button("Senden", lambda e: zeige_postausgang(), "#004400", "white"),
                     sicherer_button("Archiv", lambda e: zeige_archiv(), "#004400", "white")
                 ])
             )
@@ -116,6 +121,7 @@ def main(page: ft.Page):
         def zeige_startbildschirm():
             ansicht.controls.clear()
             v, z = lade_benutzer()
+            
             stil_label_weiss = ft.TextStyle(color="white")
             stil_hint_weiss = ft.TextStyle(color="white", size=12)
             
@@ -126,8 +132,20 @@ def main(page: ft.Page):
                 speichere_benutzer(v_in.value, z_in.value); zeige_dashboard()
                 
             btn_start = sicherer_button("Neuen Tag starten", start_klick, "red", "white", height=60, width=250)
-            header = ft.Text(spans=[ft.TextSpan("REWE ", ft.TextStyle(color="red", weight="bold", size=32)), ft.TextSpan("Monitoring", ft.TextStyle(color="white", weight="bold", size=32))], text_align=ft.TextAlign.CENTER)
-            ansicht.controls.extend([ft.Container(height=50), ft.Row([header], alignment=ft.MainAxisAlignment.CENTER), ft.Container(height=40), ft.Column([v_in, z_in], horizontal_alignment=ft.CrossAxisAlignment.CENTER), ft.Container(height=40), ft.Row([btn_start], alignment=ft.MainAxisAlignment.CENTER)])
+            
+            header = ft.Text(spans=[
+                ft.TextSpan("REWE ", ft.TextStyle(color="red", weight="bold", size=32)),
+                ft.TextSpan("Monitoring", ft.TextStyle(color="white", weight="bold", size=32))
+            ], text_align=ft.TextAlign.CENTER)
+ 
+            ansicht.controls.extend([
+                ft.Container(height=50), 
+                ft.Row([header], alignment=ft.MainAxisAlignment.CENTER), 
+                ft.Container(height=40), 
+                ft.Column([v_in, z_in], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                ft.Container(height=40), 
+                ft.Row([btn_start], alignment=ft.MainAxisAlignment.CENTER)
+            ])
             page.update()
  
         def zeige_dashboard():
@@ -143,9 +161,11 @@ def main(page: ft.Page):
                     adr = (markt.get("adresse") or "").strip() or "Unbenannter Markt"
                     buchstabe = chr(65 + index) if index < 26 else str(index)
                     def loesche_t(e, i=index): maerkte.pop(i); speichere_maerkte(maerkte); zeige_dashboard()
+                    
                     btn_tour = sicherer_button(f"Tour {buchstabe}: {adr}", lambda e, i=index: zeige_maske(i), "#005500", "white", expand=True, height=50)
                     btn_del = sicherer_button("🗑️", loesche_t, "red", "white", height=50, width=65)
                     ansicht.controls.append(ft.Row([btn_tour, btn_del]))
+                    
             ansicht.controls.append(ft.Divider(color="white"))
             btn_neu = sicherer_button("Tour voranlegen", lambda e: zeige_maske(None), "red", "white", height=50)
             ansicht.controls.append(ft.Row([btn_neu], alignment=ft.MainAxisAlignment.CENTER))
@@ -155,9 +175,8 @@ def main(page: ft.Page):
             try:
                 ansicht.controls.clear()
                 
-                # FIX: Status-Variablen SOFORT definieren, damit sie überall bekannt sind
-                status_text = ft.Text("", color="yellow", weight="bold", size=16)
                 fehler_text = ft.Text("", color="red", weight="bold", visible=False)
+                status_text = ft.Text("", color="yellow", weight="bold", size=16)
                 
                 maerkte = lade_maerkte()
                 v, z = lade_benutzer()
@@ -178,6 +197,7 @@ def main(page: ft.Page):
                 tage_opts = [""] + [f"{i:02d}" for i in range(1, 32)]
                 mon_opts = [""] + [f"{i:02d}" for i in range(1, 13)]
                 jahr_opts = [""] + [str(i) for i in range(2024, 2035)]
+                
                 charge_opts_s = ["z. Z. nicht vorrätig", "keine Eigenproduktion", "Bitte eingeben", "Kein Schweinehackfleisch"]
                 charge_opts_r = ["z. Z. nicht vorrätig", "keine Eigenproduktion", "Bitte eingeben", "Kein Rinderhackfleisch"]
                 charge_opts_g = ["z. Z. nicht vorrätig", "keine Eigenproduktion", "Bitte eingeben", "Kein Geflügel"]
@@ -191,13 +211,16 @@ def main(page: ft.Page):
                     return def_t, def_m, def_j
  
                 def get_date_str(t, m, j):
-                    t, m, j = (t or "").strip(), (m or "").strip(), (j or "").strip()
+                    t = (t or "").strip()
+                    m = (m or "").strip()
+                    j = (j or "").strip()
                     if not t and not m and not j: return ""
                     return f"{t}.{m}.{j}"
  
                 def erstelle_combo(label_text, wert, optionen, groesse=12, ausdehnbar=1, on_change_func=None):
                     def on_txt_change(e):
                         if on_change_func: on_change_func(e)
+                        
                     combo = ft.TextField(
                         label=label_text, value=wert, color="yellow", 
                         text_style=ft.TextStyle(size=groesse, color="yellow"), label_style=stil_label_weiss, 
@@ -217,8 +240,11 @@ def main(page: ft.Page):
                     combo.suffix = pb 
                     return combo
  
-                def hat_charge_wert(val): return bool(val and val != "Bitte eingeben")
-                def cb_row(links, rechts): return ft.Row([ft.Container(links, expand=1), ft.Container(rechts, expand=1)], vertical_alignment=ft.CrossAxisAlignment.CENTER)
+                def hat_charge_wert(val):
+                    return bool(val and val != "Bitte eingeben")
+ 
+                def cb_row(links, rechts):
+                    return ft.Row([ft.Container(links, expand=1), ft.Container(rechts, expand=1)], vertical_alignment=ft.CrossAxisAlignment.CENTER)
  
                 # --- 1. STAMMDATEN FELDER ---
                 d_tag, d_mon, d_jahr = parse_datum(aktuelle_daten.get("datum", heute_str), heute_str.split(".")[0], heute_str.split(".")[1], heute_str.split(".")[2])
@@ -226,7 +252,11 @@ def main(page: ft.Page):
                 mon_dd = erstelle_combo("Mon", d_mon, mon_opts, ausdehnbar=3)
                 jahr_dd = erstelle_combo("Jahr", d_jahr, jahr_opts, ausdehnbar=4)
  
-                datum_row = ft.Column([ft.Text("Datum der Probenahme", color="white", weight="bold"), ft.Row([tag_dd, mon_dd, jahr_dd])])
+                datum_row = ft.Column([
+                    ft.Text("Datum der Probenahme", color="white", weight="bold"),
+                    ft.Row([tag_dd, mon_dd, jahr_dd])
+                ])
+ 
                 adr_in = ft.TextField(label="Adresse Markt", value=aktuelle_daten.get("adresse"), color="yellow", text_style=stil_tf_gelb_12, label_style=stil_label_weiss, border_color="white", content_padding=10, expand=True)
                 nr_in = ft.TextField(label="Marktnummer", value=aktuelle_daten.get("marktnummer"), color="yellow", text_style=stil_tf_gelb_12, label_style=stil_label_weiss, border_color="white", content_padding=10, expand=True)
                 auft_in = ft.TextField(label="Auftragsnummer", value=aktuelle_daten.get("auftragsnummer"), color="yellow", text_style=stil_tf_gelb_12, label_style=stil_label_weiss, border_color="white", content_padding=10, expand=True)
@@ -272,14 +302,18 @@ def main(page: ft.Page):
                     
                     lims_warnung.visible = braucht_warnung
                     lims_override_cb.visible = braucht_warnung
-                    if not braucht_warnung: lims_override_cb.value = False
+                    
+                    if not braucht_warnung:
+                        lims_override_cb.value = False
                     page.update()
  
                 def format_zeit(e):
                     val = e.control.value or ""
                     zahlen = "".join([c for c in val if c.isdigit()])[:4]
                     neu_wert = zahlen[:2] + ":" + zahlen[2:] if len(zahlen) >= 3 else zahlen
-                    if e.control.value != neu_wert: e.control.value = neu_wert; e.control.update()
+                    if e.control.value != neu_wert:
+                        e.control.value = neu_wert
+                        e.control.update()
                     pruefe_lims_warnung()
  
                 def format_temp_blur(e):
@@ -671,7 +705,7 @@ def main(page: ft.Page):
                     og_okz_felder.append(ft.Row([ort_dd]))
                     og_okz_felder.append(ft.Row([abk_cb, tup_cb], alignment=ft.MainAxisAlignment.SPACE_AROUND))
                     og_okz_felder.append(ft.Divider(color="white24"))
-                # --- 12. VORLAGEN LOGIK ---
+                 # --- 12. VORLAGEN LOGIK ---
                 alle_vorlagen = lade_vorlagen()
                 vorlagen_status = ft.Text("", weight="bold") 
                 
@@ -1106,7 +1140,7 @@ def main(page: ft.Page):
                         d[f"se_okz_ort_{idx}"] = ctrls["ort"].value
                         d[f"se_okz_abklatsch_{idx}"] = ctrls["abklatsch"].value
                         d[f"se_okz_tupfer_{idx}"] = ctrls["tupfer"].value
-                        
+                    
                     for idx_str, ctrls in okz_controls.items():
                         d[f"okz_status_{idx_str}"] = ctrls["status"].value
                         d[f"okz_objekt_{idx_str}"] = ctrls["objekt"].value
@@ -1133,6 +1167,7 @@ def main(page: ft.Page):
                         d[f"og_okz_tupfer_{idx_str}"] = ctrls["tupfer"].value
                         
                     return d
+ 
                 def nur_speichern(e):
                     if not (nr_in.value or "").strip() or not (auft_in.value or "").strip():
                         switch_tab_stamm(None)
@@ -1248,7 +1283,11 @@ def main(page: ft.Page):
                         status_text.color = "yellow"
                         page.update()
  
-                        pdf_dateien = ["stammdaten.pdf", "trinkwasser.pdf", "scherbeneis.pdf", "okz-se.pdf", "hackfleisch_gemischt.pdf", "schweinemett.pdf", "fz_schwein.pdf", "fz_huhn.pdf", "bio.pdf", "okz-hfm.pdf", "og.pdf", "okz-og.pdf"]
+                        pdf_dateien = [
+                            "stammdaten.pdf", "trinkwasser.pdf", "scherbeneis.pdf", "okz-se.pdf",
+                            "hackfleisch_gemischt.pdf", "schweinemett.pdf", "fz_schwein.pdf", 
+                            "fz_huhn.pdf", "bio.pdf", "okz-hfm.pdf", "og.pdf", "okz-og.pdf"
+                        ]
                         fehlende_pdfs = [p for p in pdf_dateien if not os.path.exists(os.path.join("assets", p))]
                         
                         if fehlende_pdfs:
@@ -1266,7 +1305,7 @@ def main(page: ft.Page):
  
                         temp_dir, final_dir, heute_ordner, display_pfad = get_rewe_paths()
                         
-                        # --- GEHEIMTRICK DATEINAME: Automatischer Zähler gegen FileExistsError ---
+                        # --- GEHEIMTRICK DATEINAME: Automatischer Zähler verhindert Fehler ---
                         s_markt = "".join([c for c in nr_in.value if c.isalnum()])
                         base_name = f"REWE_{s_markt}_{datetime.datetime.now().strftime('%d%m%y')}"
                         final_ausg = os.path.join(final_dir, f"{base_name}.pdf")
@@ -1275,7 +1314,7 @@ def main(page: ft.Page):
                         while os.path.exists(final_ausg):
                             final_ausg = os.path.join(final_dir, f"{base_name}_{counter}.pdf")
                             counter += 1
-                        # -------------------------------------------------------------------------
+                        # ---------------------------------------------------------------------
                         
                         writer = pypdf.PdfWriter()
                         for pdf_datei in pdf_dateien:
@@ -1501,7 +1540,6 @@ def main(page: ft.Page):
                     btn_stamm.bgcolor = "blue"; btn_tw.bgcolor = "blue"; btn_se.bgcolor = "blue"; btn_hfm.bgcolor = "blue"; btn_og.bgcolor = "red"
                     page.update()
  
-                # FIX: Diese Buttons MÜSSEN hier stehen, damit sie existieren, wenn sie unten im ft.Row aufgerufen werden.
                 btn_stamm = sicherer_button("STAMMDATEN", switch_tab_stamm, "red", "white")
                 btn_tw = sicherer_button("TRINKWASSER", switch_tab_tw, "blue", "white")
                 btn_se = sicherer_button("SCHERBENEIS", switch_tab_se, "blue", "white")
@@ -1513,7 +1551,7 @@ def main(page: ft.Page):
                 btn_final = sicherer_button("📄 Bericht erstellen (PDF)", save_final, "blue", "white", expand=True, height=50)
  
                 _, _, _, ui_pfad = get_rewe_paths()
-                info_pfad_text = ft.Text(f"ℹ️ PDFs werden automatisch gespeichert unter:\n{ui_pfad}", color="white54", size=12, italic=True, text_align=ft.TextAlign.CENTER)
+                info_pfad_text = ft.Text(f"ℹ️ PDFs werden gespeichert unter:\n{ui_pfad}", color="white54", size=12, italic=True, text_align=ft.TextAlign.CENTER)
 
                 ansicht.controls.extend([
                     ft.Row([btn_stamm, btn_tw, btn_se, btn_hfm, btn_og], scroll=ft.ScrollMode.AUTO),
@@ -1534,6 +1572,7 @@ def main(page: ft.Page):
                 
             except Exception as intern_e:
                 zeige_fehler(intern_e)
+ 
         def bereinige_archiv():
             temp_dir, _, _, _ = get_rewe_paths()
             rewe_dir = os.path.dirname(temp_dir)
