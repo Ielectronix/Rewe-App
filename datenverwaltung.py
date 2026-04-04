@@ -1,4 +1,5 @@
-import json, os
+import json
+import os
 
 SPEICHER_DATEI = "meine_monitoring_daten.json"
 BENUTZER_DATEI = "benutzer_daten.json"
