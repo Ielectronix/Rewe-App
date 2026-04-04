@@ -47,7 +47,7 @@ def main(page: ft.Page):
 
     try:
         import pypdf
-        from pypdf.generic import DictionaryObject, NameObject, ArrayObject, BooleanObject
+        from pypdf.generic import DictionaryObject, NameObject, ArrayObject
 
         SPEICHER_DATEI = "meine_monitoring_daten.json"
         BENUTZER_DATEI = "benutzer_daten.json"
@@ -248,8 +248,8 @@ def main(page: ft.Page):
                     se_hat_daten = bool((se_zeit_in.value or "").strip() or (se_temp_in.value or "").strip())
                     
                     se_okz_hat_daten = False
-                    for i in range(1, 4):
-                        if (se_okz_controls[i]["ort"].value or "").strip(): se_okz_hat_daten = True
+                    for idx_str, ctrls in se_okz_controls.items():
+                        if (ctrls["ort"].value or "").strip(): se_okz_hat_daten = True
 
                     hfm_hack_hat_daten = bool((hfm_hack_temp_in.value or "").strip() or (hfm_hack_mhd_s_tag_dd.value or "").strip() or (hfm_hack_mhd_r_tag_dd.value or "").strip() or hat_charge_wert(hfm_hack_charge_schwein_dd.value) or hat_charge_wert(hfm_hack_charge_rind_dd.value))
                     hfm_mett_hat_daten = bool((hfm_mett_temp_in.value or "").strip() or (hfm_mett_mhd_tag_dd.value or "").strip() or hat_charge_wert(hfm_mett_charge_dd.value))
@@ -398,7 +398,7 @@ def main(page: ft.Page):
                     abk_cb = ft.Checkbox(label="Abklatsch", value=aktuelle_daten.get(f"se_okz_abklatsch_{idx}", def_abk), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
                     tup_cb = ft.Checkbox(label="Tupfer", value=aktuelle_daten.get(f"se_okz_tupfer_{idx}", def_tup), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
                     
-                    se_okz_controls[i] = {"status": s_dd, "objekt": obj_dd, "ort": ort_dd, "abklatsch": abk_cb, "tupfer": tup_cb}
+                    se_okz_controls[idx] = {"status": s_dd, "objekt": obj_dd, "ort": ort_dd, "abklatsch": abk_cb, "tupfer": tup_cb}
                     
                     se_okz_felder.append(ft.Text(f"Probe {i}", color="yellow", weight="bold", size=14))
                     se_okz_felder.append(ft.Row([s_dd, obj_dd]))
@@ -723,13 +723,12 @@ def main(page: ft.Page):
                     hfm_bio_mhd_r_tag_dd.value = ""; hfm_bio_mhd_r_mon_dd.value = ""; hfm_bio_mhd_r_jahr_dd.value = ""
                     
                     se_okz_cb.value = False; se_okz_bemerkung_dd.value = "Bitte eingeben"
-                    for i in range(1, 4):
-                        ctrls = se_okz_controls[i]
+                    for idx_str, ctrls in se_okz_controls.items():
                         ctrls["status"].value = "R+D"
-                        ctrls["objekt"].value = se_okz_defaults[i]["obj"]
+                        ctrls["objekt"].value = se_okz_defaults[int(idx_str)]["obj"]
                         ctrls["ort"].value = ""
-                        ctrls["abklatsch"].value = se_okz_defaults[i]["abk"]
-                        ctrls["tupfer"].value = se_okz_defaults[i]["tup"]
+                        ctrls["abklatsch"].value = se_okz_defaults[int(idx_str)]["abk"]
+                        ctrls["tupfer"].value = se_okz_defaults[int(idx_str)]["tup"]
 
                     hfm_okz_cb.value = False; hfm_okz_bemerkung_dd.value = "Bitte eingeben"
                     for idx_str, ctrls in okz_controls.items():
@@ -746,7 +745,7 @@ def main(page: ft.Page):
                         ctrls["name"].value = ""; ctrls["ort"].value = ""
                         ctrls["h_t"].value = ""; ctrls["h_m"].value = ""; ctrls["h_j"].value = ""
                         ctrls["v_t"].value = ""; ctrls["v_m"].value = ""; ctrls["v_j"].value = ""
-                        ctrls["temp"].value = ""
+                        ctrls["inhalt"].value = ""; ctrls["verpackung"].value = ""; ctrls["temp"].value = ""
 
                     og_okz_cb.value = False; og_okz_bemerkung_dd.value = "Bitte eingeben"; og_okz_anmerkung_in.value = ""
                     for idx_str, ctrls in og_okz_controls.items():
@@ -832,14 +831,12 @@ def main(page: ft.Page):
                     if "hfm_bio_lief_rind" in v: hfm_bio_lief_rind_in.value = v["hfm_bio_lief_rind"]
                     
                     if "se_okz_bemerkung" in v: se_okz_bemerkung_dd.value = v["se_okz_bemerkung"]
-                    for i in range(1, 4):
-                        idx = f"{i:02d}"
-                        ctrls = se_okz_controls[i]
-                        if f"se_okz_status_{idx}" in v: ctrls["status"].value = v[f"se_okz_status_{idx}"]
-                        if f"se_okz_objekt_{idx}" in v: ctrls["objekt"].value = v[f"se_okz_objekt_{idx}"]
-                        if f"se_okz_ort_{idx}" in v: ctrls["ort"].value = v[f"se_okz_ort_{idx}"]
-                        if f"se_okz_abklatsch_{idx}" in v: ctrls["abklatsch"].value = v[f"se_okz_abklatsch_{idx}"]
-                        if f"se_okz_tupfer_{idx}" in v: ctrls["tupfer"].value = v[f"se_okz_tupfer_{idx}"]
+                    for idx_str, ctrls in se_okz_controls.items():
+                        if f"se_okz_status_{idx_str}" in v: ctrls["status"].value = v[f"se_okz_status_{idx_str}"]
+                        if f"se_okz_objekt_{idx_str}" in v: ctrls["objekt"].value = v[f"se_okz_objekt_{idx_str}"]
+                        if f"se_okz_ort_{idx_str}" in v: ctrls["ort"].value = v[f"se_okz_ort_{idx_str}"]
+                        if f"se_okz_abklatsch_{idx_str}" in v: ctrls["abklatsch"].value = v[f"se_okz_abklatsch_{idx_str}"]
+                        if f"se_okz_tupfer_{idx_str}" in v: ctrls["tupfer"].value = v[f"se_okz_tupfer_{idx_str}"]
 
                     if "hfm_okz_bemerkung" in v: hfm_okz_bemerkung_dd.value = v["hfm_okz_bemerkung"]
                     for idx_str, ctrls in okz_controls.items():
@@ -850,8 +847,8 @@ def main(page: ft.Page):
                         if f"okz_tupfer_{idx_str}" in v: ctrls["tupfer"].value = v[f"okz_tupfer_{idx_str}"]
                         
                     for i in range(1, 6):
-                        ctrls = og_controls[i]
                         idx = f"{i:02d}"
+                        ctrls = og_controls[i]
                         if f"og_name_{idx}" in v: ctrls["name"].value = v[f"og_name_{idx}"]
                         if f"og_ort_{idx}" in v: ctrls["ort"].value = v[f"og_ort_{idx}"]
                         if f"og_inhalt_{idx}" in v: ctrls["inhalt"].value = v[f"og_inhalt_{idx}"]
@@ -929,14 +926,12 @@ def main(page: ft.Page):
                         "se_okz_bemerkung": se_okz_bemerkung_dd.value
                     }
                     
-                    for i in range(1, 4):
-                        idx = f"{i:02d}"
-                        ctrls = se_okz_controls[i]
-                        d_v[f"se_okz_status_{idx}"] = ctrls["status"].value
-                        d_v[f"se_okz_objekt_{idx}"] = ctrls["objekt"].value
-                        d_v[f"se_okz_ort_{idx}"] = ctrls["ort"].value
-                        d_v[f"se_okz_abklatsch_{idx}"] = ctrls["abklatsch"].value
-                        d_v[f"se_okz_tupfer_{idx}"] = ctrls["tupfer"].value
+                    for idx_str, ctrls in se_okz_controls.items():
+                        d_v[f"se_okz_status_{idx_str}"] = ctrls["status"].value
+                        d_v[f"se_okz_objekt_{idx_str}"] = ctrls["objekt"].value
+                        d_v[f"se_okz_ort_{idx_str}"] = ctrls["ort"].value
+                        d_v[f"se_okz_abklatsch_{idx_str}"] = ctrls["abklatsch"].value
+                        d_v[f"se_okz_tupfer_{idx_str}"] = ctrls["tupfer"].value
                     
                     for idx_str, ctrls in okz_controls.items():
                         d_v[f"okz_status_{idx_str}"] = ctrls["status"].value
@@ -996,13 +991,12 @@ def main(page: ft.Page):
                     hfm_fzs_charge_dd.value = "Bitte eingeben"; hfm_fzg_charge_dd.value = "Bitte eingeben"
                     hfm_bio_charge_schwein_dd.value = "Bitte eingeben"; hfm_bio_charge_rind_dd.value = "Bitte eingeben"
                     
-                    for i in range(1, 4):
-                        ctrls = se_okz_controls[i]
+                    for idx_str, ctrls in se_okz_controls.items():
                         ctrls["status"].value = "R+D"
-                        ctrls["objekt"].value = se_okz_defaults[i]["obj"]
+                        ctrls["objekt"].value = se_okz_defaults[int(idx_str)]["obj"]
                         ctrls["ort"].value = ""
-                        ctrls["abklatsch"].value = se_okz_defaults[i]["abk"]
-                        ctrls["tupfer"].value = se_okz_defaults[i]["tup"]
+                        ctrls["abklatsch"].value = se_okz_defaults[int(idx_str)]["abk"]
+                        ctrls["tupfer"].value = se_okz_defaults[int(idx_str)]["tup"]
                     
                     for idx_str, ctrls in okz_controls.items():
                         i = int(idx_str)
@@ -1321,7 +1315,7 @@ def main(page: ft.Page):
                         "tw_kurz3": tw_kurz3_dd.value, "tw_kurz4": tw_kurz4_dd.value, "cb_auff_ja": cb_auff_ja.value, 
                         "cb_auff_nein": cb_auff_nein.value, "cb_auff_perl": cb_auff_perl.value, "cb_auff_verkalk": cb_auff_verkalk.value, 
                         "cb_auff_verbrueh": cb_auff_verbrueh.value, "cb_auff_durchlauf": cb_auff_durchlauf.value,
-                        "cb_auff_unterbau": cb_auff_unterbau.value, "cb_auff_eck_zu": cb_auff_eck_zu.value, 
+                        "cb_auff_eck_zu": cb_auff_eck_zu.value, 
                         "cb_auff_nichtmoeglich": cb_auff_nichtmoeglich.value, "cb_auff_dusche": cb_auff_dusche.value, 
                         "cb_auff_handbrause": cb_auff_handbrause.value, "cb_auff_sonst": cb_auff_sonst.value, "tw_auff_sonstiges": tw_auff_sonstiges_in.value,
                         "tw_zweck": tw_zweck_dd.value, "tw_inhalt": tw_inhalt_in.value, "tw_verpackung": tw_verpackung_dd.value, 
@@ -1385,14 +1379,12 @@ def main(page: ft.Page):
                         "og_okz_anmerkung": og_okz_anmerkung_in.value
                     }
                     
-                    for i in range(1, 4):
-                        idx = f"{i:02d}"
-                        ctrls = se_okz_controls[i]
-                        d[f"se_okz_status_{idx}"] = ctrls["status"].value
-                        d[f"se_okz_objekt_{idx}"] = ctrls["objekt"].value
-                        d[f"se_okz_ort_{idx}"] = ctrls["ort"].value
-                        d[f"se_okz_abklatsch_{idx}"] = ctrls["abklatsch"].value
-                        d[f"se_okz_tupfer_{idx}"] = ctrls["tupfer"].value
+                    for idx_str, ctrls in se_okz_controls.items():
+                        d[f"se_okz_status_{idx_str}"] = ctrls["status"].value
+                        d[f"se_okz_objekt_{idx_str}"] = ctrls["objekt"].value
+                        d[f"se_okz_ort_{idx_str}"] = ctrls["ort"].value
+                        d[f"se_okz_abklatsch_{idx_str}"] = ctrls["abklatsch"].value
+                        d[f"se_okz_tupfer_{idx_str}"] = ctrls["tupfer"].value
                         
                     for idx_str, ctrls in okz_controls.items():
                         d[f"okz_status_{idx_str}"] = ctrls["status"].value
@@ -1459,8 +1451,8 @@ def main(page: ft.Page):
                     se_hat_daten = bool((se_zeit_in.value or "").strip() or (se_temp_in.value or "").strip())
                     
                     se_okz_hat_daten = False
-                    for i in range(1, 4):
-                        if (se_okz_controls[i]["ort"].value or "").strip(): se_okz_hat_daten = True
+                    for idx_str, ctrls in se_okz_controls.items():
+                        if (ctrls["ort"].value or "").strip(): se_okz_hat_daten = True
 
                     hfm_hack_hat_daten = bool((hfm_hack_temp_in.value or "").strip() or (hfm_hack_mhd_s_tag_dd.value or "").strip() or (hfm_hack_mhd_r_tag_dd.value or "").strip() or hat_charge_wert(hfm_hack_charge_schwein_dd.value) or hat_charge_wert(hfm_hack_charge_rind_dd.value))
                     hfm_mett_hat_daten = bool((hfm_mett_temp_in.value or "").strip() or (hfm_mett_mhd_tag_dd.value or "").strip() or hat_charge_wert(hfm_mett_charge_dd.value))
@@ -1558,6 +1550,7 @@ def main(page: ft.Page):
                         status_text.color = "yellow"
                         page.update()
 
+                        # Datei-Check!
                         pdf_dateien = [
                             "stammdaten.pdf", "trinkwasser.pdf", "scherbeneis.pdf", "okz-se.pdf",
                             "hackfleisch_gemischt.pdf", "schweinemett.pdf", "fz_schwein.pdf", 
@@ -1582,7 +1575,8 @@ def main(page: ft.Page):
                         for pdf_datei in pdf_dateien:
                             writer.append(pypdf.PdfReader(os.path.join("assets", pdf_datei)))
                         
-                        def cb_val(val): return BooleanObject(True) if val else BooleanObject(False)
+                        # DER GEHEIMTRICK GEGEN DIE CHECKBOX-ZICKEN: Standard-PDF-Befehl "/Yes" oder "/Off"
+                        def cb_val(val): return "/Yes" if val else "/Off"
                             
                         tw_sonst_text = tw_auff_sonstiges_in.value or ""
                         
@@ -1631,14 +1625,12 @@ def main(page: ft.Page):
                                 "cb_0003_00": cb_val(se_okz_cb.value), "tf_0003_00": "Abklatschproben Scherbeneis",
                                 "dd_0003_00_ZS-001796": se_okz_bemerkung_dd.value
                             })
-                            for i in range(1, 4):
-                                idx = f"{i:02d}"
-                                ctrls = se_okz_controls[i]
-                                f_map[f"dd_0003_{idx}_ZS-001880"] = ctrls["status"].value
-                                f_map[f"dd_0003_{idx}_ZS-1419"] = ctrls["objekt"].value
-                                f_map[f"dd_0003_{idx}_ZS-001792"] = ctrls["ort"].value
-                                f_map[f"cb_0003_{idx}_ZS-002294"] = cb_val(ctrls["abklatsch"].value)
-                                f_map[f"cb_0003_{idx}_ZS-002295"] = cb_val(ctrls["tupfer"].value)
+                            for idx_str, ctrls in se_okz_controls.items():
+                                f_map[f"dd_0003_{idx_str}_ZS-001880"] = ctrls["status"].value
+                                f_map[f"dd_0003_{idx_str}_ZS-1419"] = ctrls["objekt"].value
+                                f_map[f"dd_0003_{idx_str}_ZS-001792"] = ctrls["ort"].value
+                                f_map[f"cb_0003_{idx_str}_ZS-002294"] = cb_val(ctrls["abklatsch"].value)
+                                f_map[f"cb_0003_{idx_str}_ZS-002295"] = cb_val(ctrls["tupfer"].value)
 
                         if hfm_hack_cb.value:
                             f_map.update({
@@ -1715,14 +1707,12 @@ def main(page: ft.Page):
                                 "cb_0010_00": cb_val(hfm_okz_cb.value), "tf_0010_00": "Abklatschproben HFM",
                                 "dd_0010_00_ZS-001796": hfm_okz_bemerkung_dd.value
                             })
-                            for i in range(1, 11):
-                                idx = f"{i:02d}"
-                                ctrls = okz_controls[idx]
-                                f_map[f"dd_0010_{idx}_ZS-001880"] = ctrls["status"].value
-                                f_map[f"dd_0010_{idx}_ZS-1419"] = ctrls["objekt"].value
-                                f_map[f"dd_0010_{idx}_ZS-001792"] = ctrls["ort"].value
-                                f_map[f"cb_0010_{idx}_ZS-002294"] = cb_val(ctrls["abklatsch"].value)
-                                f_map[f"cb_0010_{idx}_ZS-002295"] = cb_val(ctrls["tupfer"].value)
+                            for idx_str, ctrls in okz_controls.items():
+                                f_map[f"dd_0010_{idx_str}_ZS-001880"] = ctrls["status"].value
+                                f_map[f"dd_0010_{idx_str}_ZS-1419"] = ctrls["objekt"].value
+                                f_map[f"dd_0010_{idx_str}_ZS-001792"] = ctrls["ort"].value
+                                f_map[f"cb_0010_{idx_str}_ZS-002294"] = cb_val(ctrls["abklatsch"].value)
+                                f_map[f"cb_0010_{idx_str}_ZS-002295"] = cb_val(ctrls["tupfer"].value)
                                 
                         if og_cb.value:
                             f_map.update({
@@ -1745,13 +1735,11 @@ def main(page: ft.Page):
                                 "dd_0011_00_ZS-001796": og_okz_bemerkung_dd.value,
                                 "Anmerkung": og_okz_anmerkung_in.value
                             })
-                            for i in range(1, 6):
-                                idx = f"{i:02d}"
-                                ctrls = og_okz_controls[idx]
-                                f_map[f"dd_0011_{idx}_ZS-001880"] = ctrls["status"].value
-                                f_map[f"dd_0011_{idx}_ZS-1419"] = ctrls["objekt"].value
-                                f_map[f"dd_0011_{idx}_ZS-001792"] = ctrls["ort"].value
-                                f_map[f"cb_0011_{idx}_ZS-002294"] = cb_val(ctrls["abklatsch"].value)
+                            for idx_str, ctrls in og_okz_controls.items():
+                                f_map[f"dd_0011_{idx_str}_ZS-001880"] = ctrls["status"].value
+                                f_map[f"dd_0011_{idx_str}_ZS-1419"] = ctrls["objekt"].value
+                                f_map[f"dd_0011_{idx_str}_ZS-001792"] = ctrls["ort"].value
+                                f_map[f"cb_0011_{idx_str}_ZS-002294"] = cb_val(ctrls["abklatsch"].value)
                                 f_map[f"cb_0011_{idx}_ZS-002295"] = cb_val(ctrls["tupfer"].value)
                             
                         if "/AcroForm" not in writer.root_object: 
@@ -1766,13 +1754,12 @@ def main(page: ft.Page):
                         s_markt = "".join([c for c in nr_in.value if c.isalnum()])
                         heute_ordner = datetime.datetime.now().strftime('%Y-%m-%d')
                         date_str = datetime.datetime.now().strftime('%d%m%y')
-                        time_str = datetime.datetime.now().strftime('%H%M%S') # Zeit, um Überschreiben zu verhindern
+                        time_str = datetime.datetime.now().strftime('%H%M%S') 
                         filename = f"REWE_{s_markt}_{date_str}_{time_str}.pdf"
                         
                         saved = False
                         saved_path = ""
                         
-                        # Fallback-Schleife: Versucht alle Ordner, bis einer das Speichern zulässt!
                         for base in get_all_rewe_bases():
                             target_dir = os.path.join(base, heute_ordner)
                             target_file = os.path.join(target_dir, filename)
@@ -1782,9 +1769,9 @@ def main(page: ft.Page):
                                     writer.write(f)
                                 saved = True
                                 saved_path = target_file
-                                break # Erfolg! Schleife abbrechen
+                                break
                             except (PermissionError, OSError):
-                                continue # Blockiert? Nächsten Ordner versuchen!
+                                continue
                                 
                         if saved:
                             status_text.value = f"✅ PDF erstellt!\nGespeichert in:\n{saved_path}"
