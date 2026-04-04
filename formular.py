@@ -1,43 +1,37 @@
 import flet as ft
 import datetime
 import os
-from datenverwaltung import lade_maerkte, speichere_maerkte
+from datenverwaltung import lade_maerkte, speichere_maerkte, lade_benutzer
 from pdf_generator import erstelle_bericht
 
 def zeige_maske_ui(page, ansicht, zeige_dashboard, markt_index):
     maerkte = lade_maerkte()
+    v, z = lade_benutzer()
     heute = datetime.datetime.now().strftime('%d.%m.%Y')
     
-    # Lade existierende Tour oder erstelle neue
-    d = maerkte[markt_index] if markt_index is not None else {"datum": heute, "auftraggeber": "03509 - REWE Hackfleischmonitoring", "typ_probenahme": "Standard"}
+    d = maerkte[markt_index] if markt_index is not None else {"datum": heute, "mitarbeiter_name": f"{v} {z}".strip(), "auftraggeber": "03509 - REWE Hackfleischmonitoring", "typ_probenahme": "Standard"}
 
-    ctrls = {} # Hier sammeln wir automatisch ALLE Eingabefelder
+    ctrls = {}
 
-    # --- INTELLIGENTE UI HELFER ---
     def TF(k, l, dv="", w=None, exp=False):
-        # Textfeld erstellen und in ctrls speichern
         ctrls[k] = ft.TextField(label=l, value=str(d.get(k, dv)), width=w, expand=exp, color="yellow", border_color="white", text_size=12, content_padding=5, label_style=ft.TextStyle(color="white"))
         return ctrls[k]
         
     def CB(k, l, dv=False):
-        # Checkbox erstellen
         ctrls[k] = ft.Checkbox(label=l, value=bool(d.get(k, dv)), label_style=ft.TextStyle(color="white"), fill_color="yellow", check_color="black")
         return ctrls[k]
         
     def DD(k, l, opts, dv="", exp=False):
-        # Dropdown erstellen
         c = TF(k, l, dv, exp=exp)
         c.suffix = ft.PopupMenuButton(items=[ft.PopupMenuItem(content=ft.Text(o), on_click=lambda e, opt=o: (setattr(c, 'value', opt), c.update())) for o in opts], icon="arrow_drop_down", icon_color="white")
         return c
 
-    # Konstanten für Dropdowns
     opts_ort = ["Fischabteilung", "Produktionsraum", "Bedientheke", "Vorbereitungsraum", "Metzgerei", "Kühlraum", "SB-Theke"]
     opts_verp = ["steriler Probenbecher", "steriler Probenbeutel", "Transportverpackung", "Kunststoffbecher mit Anrolldeckel u. etikett", "Pappschale mit Kunststofffolie umwickelt", "tiefgezogene Kunststoffschale mit Anrollfolie", "Styroporschale mit Kunststofffolie umwickelt", "SB-Kunststoffverpackung"]
     opts_s = ["z. Z. nicht vorrätig", "keine Eigenproduktion", "Bitte eingeben", "Kein Schweinehackfleisch"]
     opts_r = ["z. Z. nicht vorrätig", "keine Eigenproduktion", "Bitte eingeben", "Kein Rinderhackfleisch"]
     opts_g = ["z. Z. nicht vorrätig", "keine Eigenproduktion", "Bitte eingeben", "Kein Geflügel"]
 
-    # --- 1. STAMMDATEN ---
     dp = d.get("datum", heute).split(".")
     stamm_ui = ft.Column([
         ft.Row([TF("tag", "Tag", dp[0] if len(dp)>0 else "", w=60), TF("mon", "Monat", dp[1] if len(dp)>1 else "", w=60), TF("jahr", "Jahr", dp[2] if len(dp)>2 else "2026", w=80)]),
@@ -46,7 +40,6 @@ def zeige_maske_ui(page, ansicht, zeige_dashboard, markt_index):
         DD("typ_probenahme", "Typ der Probenahme", ["Standard", "Nachkontrolle", "Mehrwöchig"], "Standard", exp=True), TF("bemerkung", "Zusätzliche Bemerkung", exp=True)
     ], scroll=ft.ScrollMode.AUTO)
 
-    # --- 2. TRINKWASSER & SCHERBENEIS ---
     tw_se_ui = ft.Column([
         ft.Text("TRINKWASSER", size=18, color="white", weight="bold"),
         CB("tw_kalt", "Trinkwasser kalt"), ft.Row([TF("tw_zeit", "Uhrzeit", exp=True), TF("tw_temp", "Temp", exp=True)]),
@@ -78,7 +71,6 @@ def zeige_maske_ui(page, ansicht, zeige_dashboard, markt_index):
         DD("se_entnahmeort", "Entnahmeort", ["Fischabteilung-Eismaschine", "Metzgerei", "Produktionsraum"], "Fischabteilung-Eismaschine", exp=True), DD("se_bemerkung", "Bemerkungen", ["Bitte eingeben", "Keine Besonderheiten"], "Bitte eingeben", exp=True)
     ], scroll=ft.ScrollMode.AUTO)
 
-    # --- 3. HFM (HACK, METT, FZS, FZG, BIO) ---
     def make_hfm_block(prefix, name, is_bio=False):
         return ft.Column([
             CB(f"{prefix}_cb", name), DD(f"{prefix}_entnahmeort", "Entnahmeort", opts_ort, "Kühlraum", exp=True),
@@ -104,7 +96,6 @@ def zeige_maske_ui(page, ansicht, zeige_dashboard, markt_index):
         ft.Tab(text="Bio", content=make_hfm_block("hfm_bio", "Bio-Hack", True))
     ], expand=True)
 
-    # --- 4. OG ---
     og_ui_rows = [CB("og_cb", "Obst-/Gemüse Convenience")]
     for i in range(1, 6):
         idx = f"{i:02d}"
@@ -116,7 +107,6 @@ def zeige_maske_ui(page, ansicht, zeige_dashboard, markt_index):
         ])
     og_ui = ft.Column(og_ui_rows, scroll=ft.ScrollMode.AUTO)
 
-    # --- 5. OKZ (SE, HFM, OG) ---
     def make_okz(prefix, count, cb_label, defaults, opts_obj):
         r = [CB(f"{prefix}_cb", cb_label), DD(f"{prefix}_bemerkung", "Bemerkung", ["Bitte eingeben", "Keine Besonderheiten"], "Bitte eingeben", exp=True)]
         if prefix == "og_okz": r.append(TF(f"{prefix}_anmerkung", "Anmerkung", exp=True))
@@ -133,56 +123,32 @@ def zeige_maske_ui(page, ansicht, zeige_dashboard, markt_index):
     se_okz_ui = make_okz("se_okz", 3, "Abklatschproben Scherbeneis", {1:"Eiswanne innen rechts", 2:"Eiswanne innen links", 3:"Auswurfrohr"}, ["Eiswanne innen rechts", "Eiswanne innen links", "Auswurfrohr", "Eisschaufel", "Eiswanne", "Eismaschine innen", "Klappe/Deckel", "Sonstiges"])
     hfm_okz_ui = make_okz("okz", 10, "Abklatschproben HFM", {1:"Fleischwolf-Auflage", 2:"Fleischwolf-Auswurf", 3:"Thekenschale", 4:"Hackstecher", 5:"Messer", 6:"Schneidebrett", 7:"Wand am Fleischwolf"}, ["Fleischwolf-Auflage", "Fleischwolf-Lochscheibe", "Fleischwolf-Auswurf", "Fleischwolf-Spirale", "Wand am Fleischwolf", "Hackstecher", "Schaufel", "Thekenschale", "Messer", "Schneidebrett", "Auflage Knochensäge", "Tisch", "Flesichwanne", "Kühlhausgriff", "Schüssel", "Seifenspender"])
     og_okz_ui = make_okz("og_okz", 6, "Abklatschproben OG", {1:"Schneidebrett", 2:"Messer", 3:"Waagenauflage", 4:"Schüssel", 5:"Löffel"}, ["Schneidebrett", "Messer", "Saftpresse Auffanggitter", "Saftpresse Rückwand", "Saftpresse Auslass", "Waagenauflage", "Schüssel", "Löffel", "GN-Behälter"])
-    
     okz_tabs = ft.Tabs(tabs=[ft.Tab(text="SE OKZ", content=se_okz_ui), ft.Tab(text="HFM OKZ", content=hfm_okz_ui), ft.Tab(text="OG OKZ", content=og_okz_ui)], expand=True)
 
-    # --- DATEN SAMMELN UND SPEICHERN ---
     status_text = ft.Text("", color="yellow", weight="bold")
 
     def speichere_tour(e):
         try:
             status_text.value = "⏳ Erstelle Bericht..."; page.update()
-            
-            # Alle generierten Felder in ein Dictionary packen
             d_neu = {k: v.value for k, v in ctrls.items()}
             
-            # Die Einzel-Datumsfelder zu den von der PDF benötigten Strings zusammenbauen
             d_neu["datum"] = f"{d_neu.get('tag','')}.{d_neu.get('mon','')}.{d_neu.get('jahr','')}"
-            for p in ["hfm_hack", "hfm_mett", "hfm_fzs", "hfm_fzg", "hfm_bio"]:
-                d_neu[f"{p}_herstelldatum"] = f"{d_neu.get(p+'_h_t','')}.{d_neu.get(p+'_h_m','')}.{d_neu.get(p+'_h_j','')}"
-                if p in ["hfm_hack", "hfm_bio"]:
-                    d_neu[f"{p}_mhd_schwein"] = f"{d_neu.get(p+'_mhd_s_t','')}.{d_neu.get(p+'_mhd_s_m','')}.{d_neu.get(p+'_mhd_s_j','')}"
-                    d_neu[f"{p}_mhd_rind"] = f"{d_neu.get(p+'_mhd_r_t','')}.{d_neu.get(p+'_mhd_r_m','')}.{d_neu.get(p+'_mhd_r_j','')}"
-                else:
-                    d_neu[f"{p}_mhd"] = f"{d_neu.get(p+'_mhd_t','')}.{d_neu.get(p+'_mhd_m','')}.{d_neu.get(p+'_mhd_j','')}"
-            
-            for i in range(1, 6):
-                idx = f"{i:02d}"
-                d_neu[f"og_herst_{idx}"] = f"{d_neu.get(f'og_h_t_{idx}','')}.{d_neu.get(f'og_h_m_{idx}','')}.{d_neu.get(f'og_h_j_{idx}','')}"
-                d_neu[f"og_verb_{idx}"] = f"{d_neu.get(f'og_v_t_{idx}','')}.{d_neu.get(f'og_v_m_{idx}','')}.{d_neu.get(f'og_v_j_{idx}','')}"
-
-            # Speichern
             if markt_index is None: maerkte.append(d_neu)
             else: maerkte[markt_index] = d_neu
             speichere_maerkte(maerkte)
 
-            # PDF erstellen
             pfad = erstelle_bericht(d_neu)
             status_text.value = f"✅ PDF erstellt!\nOrdner: {os.path.basename(os.path.dirname(pfad))}"; status_text.color = "green"
         except Exception as ex:
             status_text.value = f"❌ Fehler: {str(ex)}"; status_text.color = "red"
         page.update()
 
-    # --- LAYOUT ANZEIGEN ---
     ansicht.controls.clear()
     ansicht.controls.extend([
         ft.Text("TOUR BEARBEITEN", size=20, weight="bold", color="white"),
         ft.Tabs(selected_index=0, expand=True, tabs=[
-            ft.Tab(text="STAMM", content=stamm_ui),
-            ft.Tab(text="TW/SE", content=tw_se_ui),
-            ft.Tab(text="HFM", content=hfm_ui),
-            ft.Tab(text="OG", content=og_ui),
-            ft.Tab(text="OKZ", content=okz_tabs)
+            ft.Tab(text="STAMM", content=stamm_ui), ft.Tab(text="TW/SE", content=tw_se_ui),
+            ft.Tab(text="HFM", content=hfm_ui), ft.Tab(text="OG", content=og_ui), ft.Tab(text="OKZ", content=okz_tabs)
         ]),
         ft.Divider(), status_text,
         ft.Row([
