@@ -5,10 +5,12 @@ import datetime
 import shutil
 import urllib.parse
 
-# Importiere unsere ausgelagerten Module
+# 1. Das neue Modul importieren!
+import flet_permission_handler as fph
+
 from datenverwaltung import lade_maerkte, speichere_maerkte, lade_benutzer, speichere_benutzer
 from pdf_generator import get_all_rewe_bases
-from formular import zeige_maske_ui  # Das ist die neue UI-Datei!
+from formular import zeige_maske_ui
 
 def main(page: ft.Page):
     page.title = "Rewe Monitoring System"
@@ -18,6 +20,10 @@ def main(page: ft.Page):
     
     try: page.window.icon = "icon.png"
     except: pass
+
+    # 2. Den "Türsteher" (PermissionHandler) für das Pop-up zur App hinzufügen
+    ph = fph.PermissionHandler()
+    page.overlay.append(ph)
 
     ansicht = ft.Column(expand=True, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
     page.add(ansicht)
@@ -63,6 +69,13 @@ def main(page: ft.Page):
             def start_klick(e):
                 speichere_benutzer(v_in.value, z_in.value); zeige_dashboard()
                 
+            # 3. Die Funktion, die das echte Android Pop-up aufruft
+            def frage_nach_rechten(e):
+                # Fragt nach dem modernen "All Files Access" (ab Android 11) oder normalem Speicher
+                ph.request(fph.Permission.MANAGE_EXTERNAL_STORAGE)
+                ph.request(fph.Permission.STORAGE)
+                
+            btn_rechte = sicherer_button("🔐 Speicher-Rechte erlauben", frage_nach_rechten, "orange", "black", height=40, width=250)
             btn_start = sicherer_button("Neuen Tag starten", start_klick, "red", "white", height=60, width=250)
             
             header = ft.Text(spans=[
@@ -72,8 +85,12 @@ def main(page: ft.Page):
 
             ansicht.controls.extend([
                 ft.Container(height=50), ft.Row([header], alignment=ft.MainAxisAlignment.CENTER), 
-                ft.Container(height=40), ft.Column([v_in, z_in], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-                ft.Container(height=40), ft.Row([btn_start], alignment=ft.MainAxisAlignment.CENTER)
+                ft.Container(height=20), ft.Column([v_in, z_in], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                ft.Container(height=20), 
+                ft.Text("WICHTIG: Vor dem ersten Start bitte die Rechte aktivieren!", color="orange", size=11, text_align=ft.TextAlign.CENTER),
+                ft.Row([btn_rechte], alignment=ft.MainAxisAlignment.CENTER),
+                ft.Container(height=20), 
+                ft.Row([btn_start], alignment=ft.MainAxisAlignment.CENTER)
             ])
             page.update()
 
@@ -91,7 +108,6 @@ def main(page: ft.Page):
                     buchstabe = chr(65 + index) if index < 26 else str(index)
                     def loesche_t(e, i=index): maerkte.pop(i); speichere_maerkte(maerkte); zeige_dashboard()
                     
-                    # Hier rufen wir das neue Modul formular.py auf!
                     btn_tour = sicherer_button(f"Tour {buchstabe}: {adr}", lambda e, i=index: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, i), "#005500", "white", expand=True, height=50)
                     btn_del = sicherer_button("🗑️", loesche_t, "red", "white", height=50, width=65)
                     ansicht.controls.append(ft.Row([btn_tour, btn_del]))
