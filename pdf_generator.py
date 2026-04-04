@@ -29,7 +29,7 @@ def erstelle_bericht(d, assets_dir="assets"):
     
     fehlende_pdfs = [p for p in pdf_dateien if not os.path.exists(os.path.join(assets_dir, p))]
     if fehlende_pdfs:
-        raise FileNotFoundError(f"⚠️ FEHLENDE PDF-VORLAGEN IM ASSETS-ORDNER:\n{', '.join(fehlende_pdfs)}")
+        raise FileNotFoundError(f"⚠️ FEHLENDE PDF-VORLAGEN:\n{', '.join(fehlende_pdfs)}")
 
     writer = pypdf.PdfWriter()
     for pdf_datei in pdf_dateien:
@@ -39,32 +39,47 @@ def erstelle_bericht(d, assets_dir="assets"):
     # DER MAGISCHE SCHLOSSKNACKER FÜR ADOBE CHECKBOXEN!
     # ---------------------------------------------------------
     def cb_val(key, val): 
-        if not val: return "/Off" # Aus ist immer /Off
+        if not val: return "/Off" # Haken nicht gesetzt = immer /Off
         
-        # Der HFM-OKZ Wahnsinn entschlüsselt:
+        # 1. HFM-OKZ Haken entschlüsselt:
         if "cb_0010_" in key:
-            if "2294" in key: return "/j" # Abklatsch ist laut deiner Liste immer /j
+            if "2294" in key: return "/j"
             if "2295" in key:
-                # Tupfer wechselt wild:
                 if any(x in key for x in ["_02_", "_04_", "_07_"]): return "/j"
                 return "/Yes"
                 
-        # (Falls OG oder SE später auch zicken, können wir das hier genauso eintragen)
+        # 2. Scherbeneis-OKZ Haken entschlüsselt:
+        if "cb_0003_" in key and ("2294" in key or "2295" in key):
+            return "/j"
+            
+        # 3. Obst/Gemüse-OKZ Haken entschlüsselt (NEU!):
+        if "cb_0011_" in key:
+            if "2294" in key: return "/j" # Abklatsch immer /j
+            if "2295" in key:
+                if "_01_" in key or "_02_" in key: return "/j" # Tupfer 1 und 2 sind /j
+                return "/Yes" # Tupfer 3, 4, 5 sind /Yes
+            
+        # Für alle normalen Haken in der App:
         return "/Yes" 
     # ---------------------------------------------------------
-
+        
     tw_sonst_text = d.get("tw_auff_sonstiges", "")
     
     f_map = {
-        "tf_0000_00_ZS-001870": d.get("adresse", ""), "tf_0000_00_ZS-1408": d.get("marktnummer", ""),
-        "tf_0000_00_ZS-002000": d.get("auftragsnummer", ""), "cal_templateLaborderprobenahmeDatum": d.get("datum", ""),
-        "dd_0000_00_ZS-002314": d.get("mitarbeiter_name", ""), "dd_0000_00_ZS-1566": d.get("auftraggeber", ""),
-        "dd_0000_00_ZS-002315": d.get("typ_probenahme", ""), "dd_0000_00_ZS-001796": d.get("bemerkung", "")
+        "tf_0000_00_ZS-001870": d.get("adresse", ""),
+        "tf_0000_00_ZS-1408": d.get("marktnummer", ""),
+        "tf_0000_00_ZS-002000": d.get("auftragsnummer", ""),
+        "cal_templateLaborderprobenahmeDatum": d.get("datum", ""),
+        "dd_0000_00_ZS-002314": d.get("mitarbeiter_name", ""),
+        "dd_0000_00_ZS-1566": d.get("auftraggeber", ""),
+        "dd_0000_00_ZS-002315": d.get("typ_probenahme", ""),
+        "dd_0000_00_ZS-001796": d.get("bemerkung", "")
     }
     
     if d.get("tw_kalt", False):
         f_map.update({
-            "cb_0001_00": cb_val("cb_0001_00", True), "tf_0001_00_probenahmeUhrzeit": d.get("tw_zeit", ""), 
+            "cb_0001_00": cb_val("cb_0001_00", True), 
+            "tf_0001_00_probenahmeUhrzeit": d.get("tw_zeit", ""), 
             "tf_0001_00_ZS-1441": d.get("tw_temp", ""), "tf_0001_00_PE_ZS-1514": d.get("tw_tempkonst", ""), 
             "dd_0001_00_PE_ZS-002255": d.get("tw_desinf", ""), "dd_0001_00_PE_ZS-002318": d.get("tw_zapf", ""), 
             "cb_0001_00_PE_ZS-002304_PN-Hahn": cb_val("cb", d.get("tw_cb_pn")), "cb_0001_00_PE_ZS-002304_ Einhebel-Mischarmatur": cb_val("cb", d.get("tw_cb_ein")), 
@@ -86,7 +101,7 @@ def erstelle_bericht(d, assets_dir="assets"):
 
     if d.get("se_kalt", False):
         f_map.update({
-            "cb_0002_00": cb_val("cb", True), "tf_0002_00_probenahmeUhrzeit": d.get("se_zeit", ""), 
+            "cb_0002_00": cb_val("cb_0002_00", True), "tf_0002_00_probenahmeUhrzeit": d.get("se_zeit", ""), 
             "dd_0002_00_PE_ZS-002319": d.get("se_zapf", ""), "cb_0002_00_PE_ZS-002304_Eiswanne": cb_val("cb", d.get("se_cb_eiswanne")), 
             "cb_0002_00_PE_ZS-002304_ Fallprobe": cb_val("cb", d.get("se_cb_fallprobe")), "cb_0002_00_PE_ZS-002304_Sonstiges": d.get("se_tech_sonst", ""), 
             "dd_0002_00_PE_ZS-002255": d.get("se_desinf", ""), "cb_0002_00_PE_ZS-1268_Ozonsterilisator": cb_val("cb", d.get("se_cb_ozon")), 
@@ -97,7 +112,7 @@ def erstelle_bericht(d, assets_dir="assets"):
 
     if d.get("se_okz_cb", False):
         f_map.update({
-            "cb_0003_00": cb_val("cb", True), "tf_0003_00": "Abklatschproben Scherbeneis", "dd_0003_00_ZS-001796": d.get("se_okz_bemerkung", "")
+            "cb_0003_00": cb_val("cb_0003_00", True), "tf_0003_00": "Abklatschproben Scherbeneis", "dd_0003_00_ZS-001796": d.get("se_okz_bemerkung", "")
         })
         for i in range(1, 4):
             idx = f"{i:02d}"
@@ -110,7 +125,7 @@ def erstelle_bericht(d, assets_dir="assets"):
 
     if d.get("hfm_hack_cb", False):
         f_map.update({
-            "cb_0004_00": cb_val("cb", True), "tf_0004_00": "Hackfleisch gemischt", "dd_0004_00_ZS-001799": d.get("hfm_hack_entnahmeort", ""),
+            "cb_0004_00": cb_val("cb_0004_00", True), "tf_0004_00": "Hackfleisch gemischt", "dd_0004_00_ZS-001799": d.get("hfm_hack_entnahmeort", ""),
             "cal_0004_00_ZS-001810": d.get("hfm_hack_herstelldatum", ""), "tf_0004_00_ZS-1215": d.get("hfm_hack_inhalt", ""), 
             "dd_0004_00_ZS-001798": d.get("hfm_hack_verpackung", ""), "tf_0004_00_ZS-1209_Schweinefleisch: XXX": d.get("hfm_hack_lief_schwein", ""),
             "tf_0004_00_ZS-1209_Rindfleisch: XXX": d.get("hfm_hack_lief_rind", ""), "tf_0004_00_ZS-001835_Schweinefleisch: XXX": d.get("hfm_hack_mhd_schwein", ""),
@@ -120,7 +135,7 @@ def erstelle_bericht(d, assets_dir="assets"):
 
     if d.get("hfm_mett_cb", False):
         f_map.update({
-            "cb_0006_00": cb_val("cb", True), "tf_0006_00": "gewürztes Schweinemett", "dd_0006_00_ZS-001799": d.get("hfm_mett_entnahmeort", ""),
+            "cb_0006_00": cb_val("cb_0006_00", True), "tf_0006_00": "gewürztes Schweinemett", "dd_0006_00_ZS-001799": d.get("hfm_mett_entnahmeort", ""),
             "cal_0006_00_ZS-001810": d.get("hfm_mett_herstelldatum", ""), "tf_0006_00_ZS-1215": d.get("hfm_mett_inhalt", ""), "dd_0006_00_ZS-001798": d.get("hfm_mett_verpackung", ""),
             "tf_0006_00_ZS-1209": d.get("hfm_mett_lief", ""), "tf_0006_00_ZS-001835": d.get("hfm_mett_mhd", ""),
             "tf_0006_00_ZS-002081": d.get("hfm_mett_charge", ""), "tf_0006_00_ZS-1441": d.get("hfm_mett_temp", ""), "dd_0006_00_ZS-001796": d.get("hfm_mett_bemerkung", "")
@@ -130,7 +145,7 @@ def erstelle_bericht(d, assets_dir="assets"):
         prod_s = (d.get("hfm_fzs_produkt", "")).strip(); mar_s = (d.get("hfm_fzs_marinade", "")).strip()
         prod_mar_str_s = f"{prod_s} / {mar_s}" if (prod_s and mar_s) else (prod_s or mar_s)
         f_map.update({
-            "cb_0008_00": cb_val("cb", True), "tf_0008_00": "Fleischzubereitung Schwein", "tf_0008_00_ Produkt \"Marinade\"": prod_mar_str_s,
+            "cb_0008_00": cb_val("cb_0008_00", True), "tf_0008_00": "Fleischzubereitung Schwein", "tf_0008_00_ Produkt \"Marinade\"": prod_mar_str_s,
             "dd_0008_00_ZS-001799": d.get("hfm_fzs_entnahmeort", ""), "cal_0008_00_ZS-001810": d.get("hfm_fzs_herstelldatum", ""),
             "tf_0008_00_ZS-1215": d.get("hfm_fzs_inhalt", ""), "dd_0008_00_ZS-001798": d.get("hfm_fzs_verpackung", ""),
             "tf_0008_00_ZS-1209": d.get("hfm_fzs_lief", ""), "tf_0008_00_ZS-001835": d.get("hfm_fzs_mhd", ""),
@@ -141,7 +156,7 @@ def erstelle_bericht(d, assets_dir="assets"):
         prod_g = (d.get("hfm_fzg_produkt", "")).strip(); mar_g = (d.get("hfm_fzg_marinade", "")).strip()
         prod_mar_str_g = f"{prod_g} / {mar_g}" if (prod_g and mar_g) else (prod_g or mar_g)
         f_map.update({
-            "cb_0007_00": cb_val("cb", True), "tf_0007_00": "Fleischzubereitung Geflügel", "tf_0007_00_ Produkt \"Marinade\"": prod_mar_str_g, 
+            "cb_0007_00": cb_val("cb_0007_00", True), "tf_0007_00": "Fleischzubereitung Geflügel", "tf_0007_00_ Produkt \"Marinade\"": prod_mar_str_g, 
             "dd_0007_00_ZS-001799": d.get("hfm_fzg_entnahmeort", ""), "cal_0007_00_ZS-001810": d.get("hfm_fzg_herstelldatum", ""),
             "tf_0007_00_ZS-1215": d.get("hfm_fzg_inhalt", ""), "dd_0007_00_ZS-001798": d.get("hfm_fzg_verpackung", ""),
             "tf_0007_00_ZS-1209": d.get("hfm_fzg_lief", ""), "tf_0007_00_ZS-001835": d.get("hfm_fzg_mhd", ""),
@@ -150,7 +165,7 @@ def erstelle_bericht(d, assets_dir="assets"):
 
     if d.get("hfm_bio_cb", False):
         f_map.update({
-            "cb_0005_00": cb_val("cb", True), "tf_0005_00": "Biohackfleisch", "dd_0005_00_ZS-001799": d.get("hfm_bio_entnahmeort", ""),
+            "cb_0005_00": cb_val("cb_0005_00", True), "tf_0005_00": "Biohackfleisch", "dd_0005_00_ZS-001799": d.get("hfm_bio_entnahmeort", ""),
             "cal_0005_00_ZS-001810": d.get("hfm_bio_herstelldatum", ""), "tf_0005_00_ZS-1215": d.get("hfm_bio_inhalt", ""), 
             "dd_0005_00_ZS-001798": d.get("hfm_bio_verpackung", ""), "tf_0005_00_ZS-1209_Schweinefleisch: XXX": d.get("hfm_bio_lief_schwein", ""),
             "tf_0005_00_ZS-1209_Rindfleisch: XXX": d.get("hfm_bio_lief_rind", ""), "tf_0005_00_ZS-001835_Schweinefleisch: XXX": d.get("hfm_bio_mhd_schwein", ""),
@@ -160,22 +175,19 @@ def erstelle_bericht(d, assets_dir="assets"):
 
     if d.get("hfm_okz_cb", False):
         f_map.update({
-            "cb_0010_00": cb_val("cb_0010_00", True), 
-            "tf_0010_00": "Abklatschproben HFM", 
-            "dd_0010_00_ZS-001796": d.get("hfm_okz_bemerkung", "")
+            "cb_0010_00": cb_val("cb_0010_00", True), "tf_0010_00": "Abklatschproben HFM", "dd_0010_00_ZS-001796": d.get("hfm_okz_bemerkung", "")
         })
         for i in range(1, 11):
             idx = f"{i:02d}"
             f_map.update({
-                f"dd_0010_{idx}_ZS-001880": d.get(f"okz_status_{idx}", ""), 
-                f"dd_0010_{idx}_ZS-1419": d.get(f"okz_objekt_{idx}", ""),
+                f"dd_0010_{idx}_ZS-001880": d.get(f"okz_status_{idx}", ""), f"dd_0010_{idx}_ZS-1419": d.get(f"okz_objekt_{idx}", ""),
                 f"dd_0010_{idx}_ZS-001792": d.get(f"okz_ort_{idx}", ""), 
                 f"cb_0010_{idx}_ZS-002294": cb_val(f"cb_0010_{idx}_ZS-002294", d.get(f"okz_abklatsch_{idx}")),
                 f"cb_0010_{idx}_ZS-002295": cb_val(f"cb_0010_{idx}_ZS-002295", d.get(f"okz_tupfer_{idx}"))
             })
             
     if d.get("og_cb", False):
-        f_map.update({"cb_0009_00": cb_val("cb", True), "tf_0009_00": "Obst-/Gemüse Convenience"})
+        f_map.update({"cb_0009_00": cb_val("cb_0009_00", True), "tf_0009_00": "Obst-/Gemüse Convenience"})
         for i in range(1, 6):
             idx = f"{i:02d}"
             f_map.update({
