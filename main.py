@@ -8,10 +8,17 @@ def main(page: ft.Page):
     ansicht = ft.Column(expand=True)
     page.add(ansicht)
     
-    # BERECHTIGUNG ANFORDERN
+    # BERECHTIGUNG ANFORDERN MIT FEEDBACK
     def check_permissions(e=None):
         page.request_permission(ft.PermissionType.WRITE_EXTERNAL_STORAGE)
         page.request_permission(ft.PermissionType.MANAGE_EXTERNAL_STORAGE)
+        
+        # Zeige dem Nutzer, dass der Button funktioniert!
+        page.snack_bar = ft.SnackBar(
+            ft.Text("Rechte-Anfrage an Android gesendet! (Passiert nichts, sind Rechte schon erteilt oder durch Android stummgeschaltet.)", color="white"),
+            bgcolor="orange"
+        )
+        page.snack_bar.open = True
         page.update()
 
     try:
@@ -21,7 +28,6 @@ def main(page: ft.Page):
         def zeige_dashboard():
             ansicht.controls.clear()
             
-            # HIER IST DER FIX: Text-Emojis statt ft.icons!
             ansicht.controls.append(ft.Row([
                 ft.Text("Meine Touren", size=25, weight="bold", color="white"),
                 ft.ElevatedButton("🔓 Rechte prüfen", color="orange", bgcolor="#111111", on_click=check_permissions)
@@ -33,7 +39,6 @@ def main(page: ft.Page):
                     on_click=lambda e, idx=i: zeige_maske_ui(page, ansicht, zeige_dashboard, idx)
                 ))
                 
-            # HIER IST DER FIX: Text-Emoji "➕" statt ft.icons.ADD!
             ansicht.controls.append(ft.ElevatedButton("➕ Neue Tour", on_click=lambda _: zeige_maske_ui(page, ansicht, zeige_dashboard, None)))
             page.update()
 
