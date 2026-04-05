@@ -938,7 +938,8 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
         alle_vorlagen = lade_vorlagen()
         vorlagen_status = ft.Text("", weight="bold") 
-        vl_dd = ft.Dropdown(options=[ft.dropdown.Option(k) for k in alle_vorlagen.keys()], expand=True, dense=True, content_padding=10)
+        # Hier ist der Fix: color="white" und text_style hinzugefügt!
+        vl_dd = ft.Dropdown(options=[ft.dropdown.Option(k) for k in alle_vorlagen.keys()], expand=True, dense=True, content_padding=10, color="white", text_style=ft.TextStyle(color="white"))
         
         def lade_v(e):
             if not vl_dd.value: return
