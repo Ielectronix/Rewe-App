@@ -34,22 +34,32 @@ def main(page: ft.Page):
         page.update()
 
     try:
-        def sicherer_button(text, on_click, bgcolor="blue", color="white", expand=False, height=None, width=None, bild_name=None):
+        def sicherer_button(text, on_click, bgcolor="blue", color="white", expand=False, height=None, width=None, bild_name=None, ft_icon_name=None):
             inhalt = []
+            
+            # 1. Handle Bild-Icons
             if bild_name:
-                # Icon-Größe etwas moderater, damit mehr Platz für Text bleibt
                 icon_groesse = 30
                 inhalt.append(ft.Image(src=bild_name, width=icon_groesse, height=icon_groesse, fit="contain"))
+            # 2. Handle Flet-interne Icons (Diskette, Mülleimer)
+            elif ft_icon_name:
+                icon_groesse = 30
+                inhalt.append(ft.Icon(name=ft_icon_name, color=color, size=icon_groesse))
+                
             if text:
-                # HIER DIE WICHTIGE ÄNDERUNG: soft_wrap=True erlaubt Zeilenumbrüche!
-                txt_obj = ft.Text(text, weight="bold", size=12, soft_wrap=True, text_align=ft.TextAlign.LEFT)
-                # Wir packen den Text in einen Container, der den Rest des Platzes nutzt
-                inhalt.append(ft.Container(content=txt_obj, expand=True, padding=ft.padding.only(left=5)))
+                # Text wird zentriert!
+                txt_obj = ft.Text(text, weight="bold", size=12, text_align=ft.TextAlign.CENTER)
+                
+                # Wir packen den Text in einen Container, damit er bei Bedarf umbrechen darf
+                # aber der Text selbst ist im Container zentriert.
+                inhalt.append(ft.Container(content=txt_obj, expand=True))
                     
             return ft.ElevatedButton(
-                content=ft.Row(inhalt, alignment=ft.MainAxisAlignment.START, spacing=5),
+                # Der komplette Inhalt der Row wird zentriert!
+                content=ft.Row(inhalt, alignment=ft.MainAxisAlignment.CENTER, spacing=5),
                 on_click=on_click, bgcolor=bgcolor, color=color, expand=expand, height=height, width=width,
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.padding.symmetric(horizontal=10, vertical=10))
+                # Padding auf 2 reduziert, damit das Bild richtig groß werden kann!
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=2)
             )
 
         def nav_leiste():
