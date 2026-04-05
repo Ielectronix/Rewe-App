@@ -28,8 +28,8 @@ def erstelle_bericht(d, assets_dir="assets"):
     def cb_val(key, val): 
         if not val: return "/Off"
         if "cb_0010_" in key or "cb_0011_" in key or "cb_0003_" in key:
-            if "2294" in key: return "/j" # 2294 (Tupfer) ist immer /j
-            if "2295" in key: # 2295 (Abklatsch) ist gemischt
+            if "2294" in key: return "/j" 
+            if "2295" in key: 
                 if any(y in key for y in ["_02_", "_04_", "_07_"]): return "/j"
                 return "/Yes"
         return "/Yes"
@@ -45,15 +45,14 @@ def erstelle_bericht(d, assets_dir="assets"):
         f_map["cb_0010_00"] = cb_val("cb_0010_00", True)
         for i in range(1, 11):
             idx = f"{i:02d}"
-            # HIER IST DER FIX: 2295 ist Abklatsch, 2294 ist Tupfer!
+            # WICHTIG: 2295 ist Abklatsch, 2294 ist Tupfer laut deinem Bild!
             f_map[f"cb_0010_{idx}_ZS-002295"] = cb_val(f"cb_0010_{idx}_ZS-002295", d.get(f"okz_abklatsch_{idx}"))
             f_map[f"cb_0010_{idx}_ZS-002294"] = cb_val(f"cb_0010_{idx}_ZS-002294", d.get(f"okz_tupfer_{idx}"))
-            
             f_map[f"dd_0010_{idx}_ZS-001880"] = d.get(f"okz_status_{idx}", "")
             f_map[f"dd_0010_{idx}_ZS-1419"] = d.get(f"okz_objekt_{idx}", "")
             f_map[f"dd_0010_{idx}_ZS-001792"] = d.get(f"okz_ort_{idx}", "")
 
-    # (Lass die anderen Felder wie in deiner großen alten Version)
+    # (Lass die anderen OKZ Mappings hier weg, wir testen erstmal HFM)
 
     if "/AcroForm" not in writer.root_object: writer.root_object.update({NameObject("/AcroForm"): DictionaryObject()})
     if "/Fields" not in writer.root_object["/AcroForm"]: writer.root_object["/AcroForm"].update({NameObject("/Fields"): ArrayObject()})
