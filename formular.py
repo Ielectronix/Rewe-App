@@ -17,20 +17,32 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             aktuelle_daten = maerkte[markt_index]
             titel = "Tour bearbeiten"
 
-        def sicherer_button(text, on_click, bgcolor="blue", color="white", expand=False, height=None, width=None, bild_name=None):
+        def sicherer_button(text, on_click, bgcolor="blue", color="white", expand=False, height=None, width=None, bild_name=None, ft_icon_name=None):
             inhalt = []
+            
+            # 1. Handle Bild-Icons
             if bild_name:
-                # Bildgröße dynamisch, aber ein kleines bisschen Luft lassen
-                icon_groesse = (height - 8) if height else 26
+                icon_groesse = 30
                 inhalt.append(ft.Image(src=bild_name, width=icon_groesse, height=icon_groesse, fit="contain"))
-            if text:
-                inhalt.append(ft.Text(text, weight="bold", size=12))
+            # 2. Handle Flet-interne Icons (Diskette, Mülleimer)
+            elif ft_icon_name:
+                icon_groesse = 30
+                inhalt.append(ft.Icon(name=ft_icon_name, color=color, size=icon_groesse))
                 
+            if text:
+                # Text wird zentriert!
+                txt_obj = ft.Text(text, weight="bold", size=12, text_align=ft.TextAlign.CENTER)
+                
+                # Wir packen den Text in einen Container, damit er bei Bedarf umbrechen darf
+                # aber der Text selbst ist im Container zentriert.
+                inhalt.append(ft.Container(content=txt_obj, expand=True))
+                    
             return ft.ElevatedButton(
-                content=ft.Row(inhalt, alignment=ft.MainAxisAlignment.CENTER, spacing=6),
+                # Der komplette Inhalt der Row wird zentriert!
+                content=ft.Row(inhalt, alignment=ft.MainAxisAlignment.CENTER, spacing=5),
                 on_click=on_click, bgcolor=bgcolor, color=color, expand=expand, height=height, width=width,
-                # HIER IST DIE LÖSUNG: horizontal=15 gibt dem Text links und rechts Platz, vertical=2 hält das Icon groß!
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.padding.symmetric(horizontal=15, vertical=2))
+                # Padding auf 2 reduziert, damit das Bild richtig groß werden kann!
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=2)
             )
         stil_tf_gelb_12 = ft.TextStyle(color="yellow", size=12)
         stil_label_weiss = ft.TextStyle(color="white")
