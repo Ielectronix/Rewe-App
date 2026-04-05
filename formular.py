@@ -20,18 +20,18 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         def sicherer_button(text, on_click, bgcolor="blue", color="white", expand=False, height=None, width=None, bild_name=None):
             inhalt = []
             if bild_name:
-                # Berechnet die Größe automatisch: Ist der Button z.B. 50 hoch, wird das Bild 35 groß.
-                # Hat der Button keine feste Höhe, nimmt er standardmäßig 28 Pixel.
-                icon_groesse = (height - 15) if height else 28
+                # Bildgröße dynamisch, aber ein kleines bisschen Luft lassen
+                icon_groesse = (height - 8) if height else 26
                 inhalt.append(ft.Image(src=bild_name, width=icon_groesse, height=icon_groesse, fit="contain"))
             if text:
                 inhalt.append(ft.Text(text, weight="bold", size=12))
+                
             return ft.ElevatedButton(
-                content=ft.Row(inhalt, alignment=ft.MainAxisAlignment.CENTER, spacing=5),
+                content=ft.Row(inhalt, alignment=ft.MainAxisAlignment.CENTER, spacing=6),
                 on_click=on_click, bgcolor=bgcolor, color=color, expand=expand, height=height, width=width,
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=5)
+                # HIER IST DIE LÖSUNG: horizontal=15 gibt dem Text links und rechts Platz, vertical=2 hält das Icon groß!
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.padding.symmetric(horizontal=15, vertical=2))
             )
-
         stil_tf_gelb_12 = ft.TextStyle(color="yellow", size=12)
         stil_label_weiss = ft.TextStyle(color="white")
         stil_cb_weiss = ft.TextStyle(color="white", size=12)
