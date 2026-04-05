@@ -8,7 +8,7 @@ import urllib.parse
 def main(page: ft.Page):
     page.title = "Rewe Monitoring System"
     page.bgcolor = "#003300" 
-    # HIER IST DER FIX FÜR DEN ABSTAND OBEN! (top=55 rückt alles nach unten)
+    # Abstand oben für die Status-Leiste
     page.padding = ft.padding.only(left=10, top=55, right=10, bottom=10)
     page.scroll = ft.ScrollMode.AUTO
 
@@ -42,28 +42,31 @@ def main(page: ft.Page):
                 icon_groesse = 28
                 inhalt.append(ft.Image(src=bild_name, width=icon_groesse, height=icon_groesse, fit="contain"))
             if text:
-                align_txt = ft.TextAlign.LEFT if expand else ft.TextAlign.CENTER
-                txt_obj = ft.Text(text, weight="bold", size=12, soft_wrap=True, text_align=align_txt)
-                if expand:
+                # WICHTIG: Text wird standardmäßig zentriert.
+                align_txt = ft.TextAlign.LEFT if (expand and not height) else ft.TextAlign.CENTER
+                
+                # HIER IST DER FIX: soft_wrap=True ist jetzt WIRKLICH restlos raus!
+                txt_obj = ft.Text(text, weight="bold", size=12, text_align=align_txt)
+                
+                if expand and not height: # Tour-Namen
                     inhalt.append(ft.Container(content=txt_obj, expand=True, padding=ft.padding.only(left=5)))
-                else:
+                else: # Normale Buttons
                     inhalt.append(txt_obj)
                     
-            align_row = ft.MainAxisAlignment.START if (expand and text) else ft.MainAxisAlignment.CENTER
+            align_row = ft.MainAxisAlignment.START if (expand and text and not height) else ft.MainAxisAlignment.CENTER
             return ft.ElevatedButton(
                 content=ft.Row(inhalt, alignment=align_row, spacing=5),
                 on_click=on_click, bgcolor=bgcolor, color=color, expand=expand, height=height, width=width,
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.padding.symmetric(horizontal=10, vertical=10))
             )
-
         def nav_leiste():
             return ft.Container(
                 bgcolor="#001100", padding=10, border_radius=10, 
                 content=ft.Row(alignment=ft.MainAxisAlignment.SPACE_EVENLY, controls=[
-                    # Nur Touren behält das Icon!
-                    sicherer_button("Touren", lambda e: zeige_dashboard(), "#004400", "white", bild_name="touren.png"),
-                    sicherer_button("Senden", lambda e: zeige_postausgang(), "#004400", "white"),
-                    sicherer_button("Archiv", lambda e: zeige_archiv(), "#004400", "white")
+                    # Nav-Buttons: expand=True verteilt sie gleichmäßig über die Breite
+                    sicherer_button("Touren", lambda e: zeige_dashboard(), "#004400", "white", expand=True, height=50, bild_name="touren.png"),
+                    sicherer_button("Senden", lambda e: zeige_postausgang(), "#004400", "white", expand=True, height=50),
+                    sicherer_button("Archiv", lambda e: zeige_archiv(), "#004400", "white", expand=True, height=50)
                 ])
             )
 
@@ -101,7 +104,7 @@ def main(page: ft.Page):
                         maerkte.pop(i); speichere_maerkte(maerkte); zeige_dashboard()
                     
                     btn_tour = sicherer_button(f"Tour {buchstabe}: {anzeige_text}", lambda e, i=index: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, i), "#005500", "white", expand=True, height=None)
-                    # Löschen Button auf 60px Breite, KEIN TEXT, nur Mülleimer
+                    # Löschen Button ohne Text, nur Mülleimer
                     btn_del = sicherer_button("", loesche_t, "red", "white", height=50, width=60, bild_name="löschen.png")
                     ansicht.controls.append(ft.Row([btn_tour, btn_del], vertical_alignment=ft.CrossAxisAlignment.CENTER))
                     
@@ -110,16 +113,10 @@ def main(page: ft.Page):
             ansicht.controls.append(ft.Row([btn_neu], alignment=ft.MainAxisAlignment.CENTER))
             page.update()
 
-        # HIER IST DIE SCHLAUE SUCHFUNKTION FÜR DEN DOWNLOAD-ORDNER:
         def get_erweiterte_bases():
             try: bases = get_all_rewe_bases()
             except: bases = []
-            extra_paths = [
-                "/storage/emulated/0/Download/Rewe_Monitoring",
-                "/storage/emulated/0/Download",
-                "/storage/emulated/0/Downloads",
-                "/storage/emulated/0/Documents/Rewe_Monitoring"
-            ]
+            extra_paths = ["/storage/emulated/0/Download/Rewe_Monitoring", "/storage/emulated/0/Download", "/storage/emulated/0/Downloads", "/storage/emulated/0/Documents/Rewe_Monitoring"]
             for p in extra_paths:
                 if p not in bases: bases.append(p)
             return bases
@@ -162,10 +159,7 @@ def main(page: ft.Page):
                 try:
                     p_list = []
                     for f in os.listdir(ordner):
-                        # Zeigt nur REWE Berichte an, damit keine privaten Downloads vom Nutzer auftauchen
-                        if f.lower().endswith(".pdf") and ("rewe" in f.lower() or ordner.split("/")[-1].startswith("202")):
-                            p_list.append(f)
-                    
+                        if f.lower().endswith(".pdf") and ("rewe" in f.lower() or ordner.split("/")[-1].startswith("202")): p_list.append(f)
                     if p_list:
                         ansicht.controls.append(ft.Text(f"{ordner}", color="yellow", weight="bold", size=16))
                         for pdf in p_list:
@@ -187,12 +181,10 @@ def main(page: ft.Page):
             heute_ordner = datetime.datetime.now().strftime('%Y-%m-%d')
             heute_str_de = datetime.datetime.now().strftime('%d.%m.%Y')
             pdfs_gefunden = False
-            
             such_ordner = []
             for base in get_erweiterte_bases():
                 such_ordner.append(os.path.join(base, heute_ordner))
                 such_ordner.append(base)
-                
             for ordner in list(set(such_ordner)):
                 if not os.path.exists(ordner): continue
                 try:
@@ -201,15 +193,13 @@ def main(page: ft.Page):
                         if f.lower().endswith(".pdf"):
                             if ordner.endswith(heute_ordner): p_list.append(f)
                             elif "rewe" in f.lower() and (heute_str_de in f or heute_ordner in f): p_list.append(f)
-                            
                     if p_list:
                         pdfs_gefunden = True
                         ansicht.controls.append(ft.Container(bgcolor="#330000", padding=10, border_radius=10, content=ft.Column([ft.Text("Berichte für heute liegen in:", color="red", size=12), ft.Text(f"{ordner}", color="red", size=12, weight="bold", selectable=True)])))
                         for pdf in p_list:
                             def rm(e, d=pdf, p=ordner): 
-                                os.remove(os.path.join(p, d))
-                                zeige_postausgang()
-                            # Löschen Button ohne Text, nur Mülleimer!
+                                os.remove(os.path.join(p, d)); zeige_postausgang()
+                            # Löschen Button ohne Text, nur Mülleimer
                             ansicht.controls.append(ft.Container(bgcolor="#002200", padding=10, border_radius=10, content=ft.Row([ft.Text(pdf, color="white", size=10, expand=True), sicherer_button("", rm, "red", "white", width=50, bild_name="löschen.png")])))
                 except PermissionError: pass
             if not pdfs_gefunden: ansicht.controls.append(ft.Text("Noch keine Berichte für heute erstellt.", color="grey", size=14))
@@ -217,7 +207,6 @@ def main(page: ft.Page):
 
         page.on_connect = check_permissions
         zeige_startbildschirm()
-        
     except Exception as e: zeige_fehler(e)
 
 if __name__ == "__main__": 
