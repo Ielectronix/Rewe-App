@@ -37,16 +37,18 @@ def main(page: ft.Page):
         def sicherer_button(text, on_click, bgcolor="blue", color="white", expand=False, height=None, width=None, bild_name=None):
             inhalt = []
             if bild_name:
-                icon_groesse = (height - 15) if height else 28
+                # Bildgröße dynamisch, aber ein kleines bisschen Luft lassen
+                icon_groesse = (height - 8) if height else 26
                 inhalt.append(ft.Image(src=bild_name, width=icon_groesse, height=icon_groesse, fit="contain"))
             if text:
                 inhalt.append(ft.Text(text, weight="bold", size=12))
+                
             return ft.ElevatedButton(
-                content=ft.Row(inhalt, alignment=ft.MainAxisAlignment.CENTER, spacing=5),
+                content=ft.Row(inhalt, alignment=ft.MainAxisAlignment.CENTER, spacing=6),
                 on_click=on_click, bgcolor=bgcolor, color=color, expand=expand, height=height, width=width,
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=5)
+                # HIER IST DIE LÖSUNG: horizontal=15 gibt dem Text links und rechts Platz, vertical=2 hält das Icon groß!
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.padding.symmetric(horizontal=15, vertical=2))
             )
-
         def nav_leiste():
             return ft.Container(
                 bgcolor="#001100", padding=10, border_radius=10, 
