@@ -34,11 +34,16 @@ def main(page: ft.Page):
         page.update()
 
     try:
-        def sicherer_button(text, on_click, bgcolor="blue", color="white", expand=False, height=None, width=None):
+        def sicherer_button(text, on_click, bgcolor="blue", color="white", expand=False, height=None, width=None, bild_name=None):
+            inhalt = []
+            if bild_name:
+                icon_groesse = (height - 15) if height else 28
+                inhalt.append(ft.Image(src=bild_name, width=icon_groesse, height=icon_groesse, fit="contain"))
+            if text:
+                inhalt.append(ft.Text(text, weight="bold", size=12))
             return ft.ElevatedButton(
-                content=ft.Text(text, weight="bold", size=12),
-                on_click=on_click, bgcolor=bgcolor, color=color,
-                expand=expand, height=height, width=width,
+                content=ft.Row(inhalt, alignment=ft.MainAxisAlignment.CENTER, spacing=5),
+                on_click=on_click, bgcolor=bgcolor, color=color, expand=expand, height=height, width=width,
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=5)
             )
 
@@ -46,7 +51,7 @@ def main(page: ft.Page):
             return ft.Container(
                 bgcolor="#001100", padding=10, border_radius=10, 
                 content=ft.Row(alignment=ft.MainAxisAlignment.SPACE_EVENLY, controls=[
-                    sicherer_button("Touren", lambda e: zeige_dashboard(), "#004400", "white"),
+                    sicherer_button("Touren", lambda e: zeige_dashboard(), "#004400", "white", bild_name="touren.png"),
                     sicherer_button("Senden", lambda e: zeige_postausgang(), "#004400", "white"),
                     sicherer_button("Archiv", lambda e: zeige_archiv(), "#004400", "white")
                 ])
@@ -73,7 +78,6 @@ def main(page: ft.Page):
                 ft.TextSpan("Monitoring", ft.TextStyle(color="white", weight="bold", size=32))
             ], text_align=ft.TextAlign.CENTER)
 
-            # Alles wieder zentriert in der Mitte, wie es war!
             ansicht.controls.extend([
                 ft.Container(height=50), 
                 ft.Row([header], alignment=ft.MainAxisAlignment.CENTER), 
@@ -91,8 +95,7 @@ def main(page: ft.Page):
             ansicht.controls.append(ft.Divider(color="transparent"))
             
             ansicht.controls.append(ft.Row([
-                ft.Text("Meine heutigen Touren", size=25, weight="bold", color="white"),
-                sicherer_button("Rechte prüfen", check_permissions, "#111111", "orange")
+                ft.Text("Meine heutigen Touren", size=25, weight="bold", color="white")
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN))
             
             if not maerkte:
@@ -109,15 +112,12 @@ def main(page: ft.Page):
                         speichere_maerkte(maerkte)
                         zeige_dashboard()
                     
-                    # Hier ist das abstürzende ft.icons.DELETE durch reinen Text ersetzt!
                     btn_tour = sicherer_button(f"Tour {buchstabe}: {anzeige_text}", lambda e, i=index: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, i), "#005500", "white", expand=True, height=50)
-                    btn_del = sicherer_button("X Löschen", loesche_t, "red", "white", height=50, width=90)
+                    btn_del = sicherer_button("", loesche_t, "red", "white", height=50, width=65, bild_name="löschen.png")
                     ansicht.controls.append(ft.Row([btn_tour, btn_del]))
                     
             ansicht.controls.append(ft.Divider(color="white"))
-            
-            # Hier ist das abstürzende ft.icons.ADD durch reinen Text ersetzt und wieder zentriert!
-            btn_neu = sicherer_button("+ Neue Tour", lambda e: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, None), "red", "white", height=50, width=200)
+            btn_neu = sicherer_button("Neue Tour", lambda e: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, None), "red", "white", height=50, width=200)
             ansicht.controls.append(ft.Row([btn_neu], alignment=ft.MainAxisAlignment.CENTER))
             page.update()
 
@@ -140,11 +140,24 @@ def main(page: ft.Page):
             ansicht.controls.append(nav_leiste())
             ansicht.controls.append(ft.Text("Archiv (Letzte 7 Tage)", size=25, weight="bold", color="white"))
             bereinige_archiv()
+            
+            # HIER IST DER FIX: text_style statt weight verwendet!
+            email_feld = ft.TextField(
+                value="registration-mibi.ber@tentamus.com",
+                read_only=True,
+                color="white",
+                selection_color="yellow",
+                border=ft.InputBorder.NONE,
+                content_padding=0,
+                text_style=ft.TextStyle(size=14, weight="bold")
+            )
+
             ansicht.controls.append(ft.Container(
                 bgcolor="#330000", padding=10, border_radius=10,
                 content=ft.Column([
                     ft.Text("MANUELLER E-MAIL VERSAND:", color="orange", weight="bold"),
-                    ft.Text("Empfänger: registration-mibi.ber@tentamus.com", color="yellow", size=14, weight="bold", selectable=True),
+                    ft.Text("Empfänger:", color="orange", size=14, weight="bold"),
+                    email_feld,
                     ft.Text("Betreff: REWE + Marktnummer", color="yellow", size=14, weight="bold", selectable=True),
                     ft.Text("1. E-Mail-Adresse gedrückt halten, um sie zu kopieren.\n2. In Mail-App einfügen.\n3. PDF-Datei über Büroklammer-Symbol anhängen.", color="white", size=12),
                 ])
@@ -197,7 +210,7 @@ def main(page: ft.Page):
                             def rm(e, d=pdf, p=final_dir): 
                                 os.remove(os.path.join(p, d))
                                 zeige_postausgang()
-                            ansicht.controls.append(ft.Container(bgcolor="#002200", padding=10, border_radius=10, content=ft.Row([ft.Text(pdf, color="white", size=10, expand=True), sicherer_button("X", rm, "red", "white")])))
+                            ansicht.controls.append(ft.Container(bgcolor="#002200", padding=10, border_radius=10, content=ft.Row([ft.Text(pdf, color="white", size=10, expand=True), sicherer_button("", rm, "red", "white", bild_name="löschen.png")])))
                 except PermissionError: pass
             if not pdfs_gefunden: ansicht.controls.append(ft.Text("Noch keine Berichte für heute erstellt.", color="grey", size=14))
             page.update()
