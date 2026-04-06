@@ -17,22 +17,20 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             aktuelle_daten = maerkte[markt_index]
             titel = "Tour bearbeiten"
 
-        def sicherer_button(text, on_click, bgcolor="blue", color="white", expand=False, height=None, width=None, bild_name=None):
+        def sicherer_button(text, on_click, bgcolor="blue", color="white", expand=False, height=None, width=None):
+            align_txt = ft.TextAlign.LEFT if (expand and not height) else ft.TextAlign.CENTER
+            text_size = 18 if text == "🗑️" else 12
+            txt_obj = ft.Text(text, weight="bold", size=text_size, text_align=align_txt)
+            
             inhalt = []
-            if bild_name:
-                icon_groesse = 28
-                inhalt.append(ft.Image(src=bild_name, width=icon_groesse, height=icon_groesse, fit="contain"))
-            if text:
-                align_txt = ft.TextAlign.LEFT if (expand and not height) else ft.TextAlign.CENTER
-                txt_obj = ft.Text(text, weight="bold", size=12, text_align=align_txt)
-                if expand and not height: 
-                    inhalt.append(ft.Container(content=txt_obj, expand=True, padding=ft.padding.only(left=5)))
-                else: 
-                    inhalt.append(txt_obj)
-                    
+            if expand and not height: 
+                inhalt.append(ft.Container(content=txt_obj, expand=True, padding=ft.padding.only(left=5)))
+            else: 
+                inhalt.append(txt_obj)
+                
             align_row = ft.MainAxisAlignment.START if (expand and text and not height) else ft.MainAxisAlignment.CENTER
             return ft.ElevatedButton(
-                content=ft.Row(inhalt, alignment=align_row, spacing=5),
+                content=ft.Row(inhalt, alignment=align_row, spacing=0),
                 on_click=on_click, bgcolor=bgcolor, color=color, expand=expand, height=height, width=width,
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.padding.symmetric(horizontal=10, vertical=10))
             )
@@ -259,8 +257,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             se_okz_felder.append(ft.Row([ort_dd]))
             se_okz_felder.append(ft.Row([abk_cb, tup_cb], alignment=ft.MainAxisAlignment.SPACE_AROUND))
             se_okz_felder.append(ft.Divider(color="white24"))
-
-        # --- 4. HFM - HACKFLEISCH GEMISCHT ---
+            # --- 4. HFM - HACKFLEISCH GEMISCHT ---
         hfm_hack_cb = ft.Checkbox(label="Hackfleisch gemischt", value=aktuelle_daten.get("hfm_hack_cb", False), on_change=pruefe_lims_warnung, label_style=ft.TextStyle(color="white", size=16, weight="bold"), fill_color="yellow", check_color="black")
         hfm_hack_entnahmeort_dd = erstelle_combo("Entnahmeort", aktuelle_daten.get("hfm_hack_entnahmeort", "Kühlraum"), entnahmeort_opts)
         
@@ -437,7 +434,8 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             okz_felder.append(ft.Row([ort_dd]))
             okz_felder.append(ft.Row([abk_cb, tup_cb], alignment=ft.MainAxisAlignment.SPACE_AROUND))
             okz_felder.append(ft.Divider(color="white24"))
-            # --- 10. OG (OBST/GEMÜSE) UNTERMENÜ ---
+
+        # --- 10. OG (OBST/GEMÜSE) UNTERMENÜ ---
         og_ort_opts = ["Produktionsraum", "Bedientheke", "Vorbereitungsraum", "Kühlraum", "SB-Theke", "Salatbar", "Saftpresse"]
         og_verpackung_opts = ["SB-Kunststoffverpackung", "SB-Styroporverpackung", "Kunststoffschale mit Anrollfolie", "Styroporschale mit Kunststofffolie", "steriler Probenbecher", "steriler Probenbeutel", "Transportverpackung", "Kunststoffbecher mit Anrolldeckel"]
         
@@ -517,8 +515,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             og_okz_felder.append(ft.Row([ort_dd]))
             og_okz_felder.append(ft.Row([abk_cb, tup_cb], alignment=ft.MainAxisAlignment.SPACE_AROUND))
             og_okz_felder.append(ft.Divider(color="white24"))
-
-        # --- ZUSAMMENBAU DER LAYOUT-SPALTEN ---
+            # --- ZUSAMMENBAU DER LAYOUT-SPALTEN ---
         stamm_col = ft.Column([datum_row, adr_in, nr_in, auft_in, ag_dd, name_in, typ_dd, bem_in], visible=True, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
         
         tw_col = ft.Column([
@@ -670,7 +667,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         btn_hfm_mett = sicherer_button("Mett", lambda e: switch_hfm_tab("mett"), "blue", "white", height=35)
         btn_hfm_fz_schwein = sicherer_button("FZ Schwein", lambda e: switch_hfm_tab("schwein"), "blue", "white", height=35)
         btn_hfm_fz_gefluegel = sicherer_button("FZ Geflügel", lambda e: switch_hfm_tab("gefluegel"), "blue", "white", height=35)
-        btn_hfm_bio = sicherer_button("Bio-Hack", lambda e: switch_hfm_tab("bio"), "blue", "white", height=35)
+        btn_hfm_bio = sicherer_button("🥩 Bio-Hack", lambda e: switch_hfm_tab("bio"), "blue", "white", height=35)
         btn_hfm_okz = sicherer_button("OKZ", lambda e: switch_hfm_tab("okz"), "blue", "white", height=35)
 
         hfm_main_col = ft.Column([
@@ -730,11 +727,12 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             btn_stamm.bgcolor = "blue"; btn_tw.bgcolor = "blue"; btn_se.bgcolor = "blue"; btn_hfm.bgcolor = "blue"; btn_og.bgcolor = "red"
             page.update()
 
-        btn_stamm = sicherer_button("Stammdaten", switch_tab_stamm, "red", "white", expand=True, height=50, bild_name="stamm.png")
-        btn_tw = sicherer_button("Trinkwasser", switch_tab_tw, "blue", "white", expand=True, height=50)
-        btn_se = sicherer_button("Scherbeneis", switch_tab_se, "blue", "white", expand=True, height=50)
-        btn_hfm = sicherer_button("HFM", switch_tab_hfm, "blue", "white", expand=True, height=50)
-        btn_og = sicherer_button("Convenience", switch_tab_og, "blue", "white", expand=True, height=50)
+        # HAUPT-BUTTONS (Nur noch Emojis!)
+        btn_stamm = sicherer_button("📋 Stammdaten", switch_tab_stamm, "red", "white", expand=True, height=50)
+        btn_tw = sicherer_button("💧 Trinkwasser", switch_tab_tw, "blue", "white", expand=True, height=50)
+        btn_se = sicherer_button("❄️ Scherbeneis", switch_tab_se, "blue", "white", expand=True, height=50)
+        btn_hfm = sicherer_button("🥩 HFM", switch_tab_hfm, "blue", "white", expand=True, height=50)
+        btn_og = sicherer_button("🥗 Convenience", switch_tab_og, "blue", "white", expand=True, height=50)
 
         fehler_text = ft.Text("", color="red", weight="bold", visible=False)
         status_text = ft.Text("", color="yellow", weight="bold", size=16)
@@ -816,7 +814,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 d[f"og_okz_status_{idx_str}"] = ctrls["status"].value; d[f"og_okz_objekt_{idx_str}"] = ctrls["objekt"].value; d[f"og_okz_ort_{idx_str}"] = ctrls["ort"].value; d[f"og_okz_abklatsch_{idx_str}"] = ctrls["abklatsch"].value; d[f"og_okz_tupfer_{idx_str}"] = ctrls["tupfer"].value
                 
             return d
-
         def nur_speichern(e):
             if not (nr_in.value or "").strip() or not (auft_in.value or "").strip():
                 switch_tab_stamm(None)
@@ -938,7 +935,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
         alle_vorlagen = lade_vorlagen()
         vorlagen_status = ft.Text("", weight="bold") 
-        # Hier ist der Fix: color="white" und text_style hinzugefügt!
         vl_dd = ft.Dropdown(options=[ft.dropdown.Option(k) for k in alle_vorlagen.keys()], expand=True, dense=True, content_padding=10, color="white", text_style=ft.TextStyle(color="white"))
         
         def lade_v(e):
@@ -1203,7 +1199,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             page.update()
 
         vl_load_btn = sicherer_button("Laden", lade_v, "blue", "white", height=35)
-        vl_del_btn = sicherer_button("", del_v, "red", "white", height=35, width=60, bild_name="löschen.png")
+        vl_del_btn = sicherer_button("🗑️", del_v, "red", "white", height=35, width=60)
         vl_save_btn = sicherer_button("Speichern", save_v, "orange", "black", height=35)
         
         vorlagen_container = ft.Container(
@@ -1218,9 +1214,9 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             ], spacing=5)
         )
 
-        btn_zurueck = sicherer_button("Touren", lambda e: zeige_dashboard(), "red", "white", expand=True, height=50, bild_name="touren.png")
-        btn_speichern = sicherer_button("Tour speichern", nur_speichern, "orange", "black", expand=True, height=50)
-        btn_final = sicherer_button("Bericht erstellen", save_final, "blue", "white", expand=True, height=50)
+        btn_zurueck = sicherer_button("🚚 Touren", lambda e: zeige_dashboard(), "red", "white", expand=True, height=50)
+        btn_speichern = sicherer_button("💾 Tour speichern", nur_speichern, "orange", "black", expand=True, height=50)
+        btn_final = sicherer_button("📄 Bericht erstellen", save_final, "blue", "white", expand=True, height=50)
 
         # --- ZUSAMMENBAU DES LAYOUTS ---
         ansicht.controls.extend([
