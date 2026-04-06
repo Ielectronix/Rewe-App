@@ -546,8 +546,8 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             btn_se_okz.bgcolor = "red" if tab_name == "okz" else "blue"
             page.update()
 
-        btn_se_eis = sicherer_button("Eis", lambda e: switch_se_tab("eis"), "red", "white")
-        btn_se_okz = sicherer_button("OKZ", lambda e: switch_se_tab("okz"), "blue", "white")
+        btn_se_eis = sicherer_button("❄️ Eis", lambda e: switch_se_tab("eis"), "red", "white")
+        btn_se_okz = sicherer_button("🔬 OKZ", lambda e: switch_se_tab("okz"), "blue", "white")
 
         se_eis_col = ft.Column([
             se_kalt_cb, se_zeit_in, se_zapf_dd, ft.Divider(color="white24"),
@@ -663,12 +663,12 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             btn_hfm_okz.bgcolor = "red" if tab_name == "okz" else "blue"
             page.update()
 
-        btn_hfm_hack = sicherer_button("Hack", lambda e: switch_hfm_tab("hack"), "red", "white", height=35)
-        btn_hfm_mett = sicherer_button("Mett", lambda e: switch_hfm_tab("mett"), "blue", "white", height=35)
-        btn_hfm_fz_schwein = sicherer_button("FZ Schwein", lambda e: switch_hfm_tab("schwein"), "blue", "white", height=35)
-        btn_hfm_fz_gefluegel = sicherer_button("FZ Geflügel", lambda e: switch_hfm_tab("gefluegel"), "blue", "white", height=35)
+        btn_hfm_hack = sicherer_button("🥩 Hack", lambda e: switch_hfm_tab("hack"), "red", "white", height=35)
+        btn_hfm_mett = sicherer_button("🍖 Mett", lambda e: switch_hfm_tab("mett"), "blue", "white", height=35)
+        btn_hfm_fz_schwein = sicherer_button("🐷 FZ Schwein", lambda e: switch_hfm_tab("schwein"), "blue", "white", height=35)
+        btn_hfm_fz_gefluegel = sicherer_button("🐔 FZ Geflügel", lambda e: switch_hfm_tab("gefluegel"), "blue", "white", height=35)
         btn_hfm_bio = sicherer_button("🥩 Bio-Hack", lambda e: switch_hfm_tab("bio"), "blue", "white", height=35)
-        btn_hfm_okz = sicherer_button("OKZ", lambda e: switch_hfm_tab("okz"), "blue", "white", height=35)
+        btn_hfm_okz = sicherer_button("🔬 OKZ", lambda e: switch_hfm_tab("okz"), "blue", "white", height=35)
 
         hfm_main_col = ft.Column([
             ft.Row([btn_hfm_hack, btn_hfm_mett, btn_hfm_fz_schwein, btn_hfm_fz_gefluegel, btn_hfm_bio, btn_hfm_okz], scroll=ft.ScrollMode.AUTO),
@@ -694,8 +694,8 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             btn_og_okz.bgcolor = "red" if tab_name == "okz" else "blue"
             page.update()
 
-        btn_og_teil = sicherer_button("Convenience", lambda e: switch_og_tab("teil"), "red", "white", height=35)
-        btn_og_okz = sicherer_button("OKZ", lambda e: switch_og_tab("okz"), "blue", "white", height=35)
+        btn_og_teil = sicherer_button("🥗 Convenience", lambda e: switch_og_tab("teil"), "red", "white", height=35)
+        btn_og_okz = sicherer_button("🔬 OKZ", lambda e: switch_og_tab("okz"), "blue", "white", height=35)
 
         og_main_col = ft.Column([
             ft.Row([btn_og_teil, btn_og_okz], scroll=ft.ScrollMode.AUTO),
@@ -727,7 +727,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             btn_stamm.bgcolor = "blue"; btn_tw.bgcolor = "blue"; btn_se.bgcolor = "blue"; btn_hfm.bgcolor = "blue"; btn_og.bgcolor = "red"
             page.update()
 
-        # HAUPT-BUTTONS (Nur noch Emojis!)
         btn_stamm = sicherer_button("📋 Stammdaten", switch_tab_stamm, "red", "white", expand=True, height=50)
         btn_tw = sicherer_button("💧 Trinkwasser", switch_tab_tw, "blue", "white", expand=True, height=50)
         btn_se = sicherer_button("❄️ Scherbeneis", switch_tab_se, "blue", "white", expand=True, height=50)
@@ -814,6 +813,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 d[f"og_okz_status_{idx_str}"] = ctrls["status"].value; d[f"og_okz_objekt_{idx_str}"] = ctrls["objekt"].value; d[f"og_okz_ort_{idx_str}"] = ctrls["ort"].value; d[f"og_okz_abklatsch_{idx_str}"] = ctrls["abklatsch"].value; d[f"og_okz_tupfer_{idx_str}"] = ctrls["tupfer"].value
                 
             return d
+
         def nur_speichern(e):
             if not (nr_in.value or "").strip() or not (auft_in.value or "").strip():
                 switch_tab_stamm(None)
