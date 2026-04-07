@@ -110,11 +110,12 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             for idx_str, ctrls in se_okz_controls.items():
                 if (ctrls["ort"].value or "").strip(): se_okz_hat_daten = True
 
-            hfm_hack_hat_daten = bool((hfm_hack_temp_in.value or "").strip() or (hfm_hack_mhd_s_tag_dd.value or "").strip() or (hfm_hack_mhd_r_tag_dd.value or "").strip() or hat_charge_wert(hfm_hack_charge_schwein_dd.value) or hat_charge_wert(hfm_hack_charge_rind_dd.value))
-            hfm_mett_hat_daten = bool((hfm_mett_temp_in.value or "").strip() or (hfm_mett_mhd_tag_dd.value or "").strip() or hat_charge_wert(hfm_mett_charge_dd.value))
-            hfm_fzs_hat_daten = bool((hfm_fzs_temp_in.value or "").strip() or (hfm_fzs_mhd_tag_dd.value or "").strip() or hat_charge_wert(hfm_fzs_charge_dd.value))
-            hfm_fzg_hat_daten = bool((hfm_fzg_temp_in.value or "").strip() or (hfm_fzg_mhd_tag_dd.value or "").strip() or hat_charge_wert(hfm_fzg_charge_dd.value))
-            hfm_bio_hat_daten = bool((hfm_bio_temp_in.value or "").strip() or (hfm_bio_mhd_s_tag_dd.value or "").strip() or (hfm_bio_mhd_r_tag_dd.value or "").strip() or hat_charge_wert(hfm_bio_charge_schwein_dd.value) or hat_charge_wert(hfm_bio_charge_rind_dd.value))
+            # HIER DIE ÜBERARBEITETE PRÜFUNG: Schlägt Alarm, sobald Lieferant, MHD, Charge oder Temp angerührt werden
+            hfm_hack_hat_daten = bool((hfm_hack_temp_in.value or "").strip() or (hfm_hack_mhd_s_tag_dd.value or "").strip() or (hfm_hack_mhd_r_tag_dd.value or "").strip() or hat_charge_wert(hfm_hack_charge_schwein_dd.value) or hat_charge_wert(hfm_hack_charge_rind_dd.value) or (hfm_hack_lief_schwein_in.value or "").strip() or (hfm_hack_lief_rind_in.value or "").strip())
+            hfm_mett_hat_daten = bool((hfm_mett_temp_in.value or "").strip() or (hfm_mett_mhd_tag_dd.value or "").strip() or hat_charge_wert(hfm_mett_charge_dd.value) or (hfm_mett_lief_in.value or "").strip())
+            hfm_fzs_hat_daten = bool((hfm_fzs_temp_in.value or "").strip() or (hfm_fzs_mhd_tag_dd.value or "").strip() or hat_charge_wert(hfm_fzs_charge_dd.value) or (hfm_fzs_lief_in.value or "").strip())
+            hfm_fzg_hat_daten = bool((hfm_fzg_temp_in.value or "").strip() or (hfm_fzg_mhd_tag_dd.value or "").strip() or hat_charge_wert(hfm_fzg_charge_dd.value) or (hfm_fzg_lief_in.value or "").strip())
+            hfm_bio_hat_daten = bool((hfm_bio_temp_in.value or "").strip() or (hfm_bio_mhd_s_tag_dd.value or "").strip() or (hfm_bio_mhd_r_tag_dd.value or "").strip() or hat_charge_wert(hfm_bio_charge_schwein_dd.value) or hat_charge_wert(hfm_bio_charge_rind_dd.value) or (hfm_bio_lief_schwein_in.value or "").strip() or (hfm_bio_lief_rind_in.value or "").strip())
             
             og_hat_daten = False
             for i in range(1, 6):
@@ -279,8 +280,9 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         hfm_hack_inhalt_in = ft.TextField(label="Inhalt", value=aktuelle_daten.get("hfm_hack_inhalt", "jeweils ca. 200 g"), hint_text="bitte Grammzahl angeben", hint_style=stil_hint_weiss, color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True, on_blur=format_gramm_blur)
         hfm_hack_verpackung_dd = erstelle_combo("Verpackung", aktuelle_daten.get("hfm_hack_verpackung", "steriler Probenbeutel"), verpackung_opts)
         
-        hfm_hack_lief_schwein_in = ft.TextField(label="Lieferant (Schwein)", value=aktuelle_daten.get("hfm_hack_lief_schwein", ""), color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True)
-        hfm_hack_lief_rind_in = ft.TextField(label="Lieferant (Rind)", value=aktuelle_daten.get("hfm_hack_lief_rind", ""), color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True)
+        # NEU: on_change Trigger für Lieferanten hinzugefügt
+        hfm_hack_lief_schwein_in = ft.TextField(label="Lieferant (Schwein)", value=aktuelle_daten.get("hfm_hack_lief_schwein", ""), color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True, on_change=pruefe_lims_warnung)
+        hfm_hack_lief_rind_in = ft.TextField(label="Lieferant (Rind)", value=aktuelle_daten.get("hfm_hack_lief_rind", ""), color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True, on_change=pruefe_lims_warnung)
         
         hfm_hack_charge_schwein_dd = erstelle_combo("Charge Schwein", aktuelle_daten.get("hfm_hack_charge_schwein", "Bitte eingeben"), charge_opts_s, on_change_func=pruefe_lims_warnung)
         hfm_hack_charge_rind_dd = erstelle_combo("Charge Rind", aktuelle_daten.get("hfm_hack_charge_rind", "Bitte eingeben"), charge_opts_r, on_change_func=pruefe_lims_warnung)
@@ -305,7 +307,8 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         hfm_mett_inhalt_in = ft.TextField(label="Inhalt", value=aktuelle_daten.get("hfm_mett_inhalt", "ca. 200 g"), hint_text="bitte Grammzahl angeben", hint_style=stil_hint_weiss, color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True, on_blur=format_gramm_blur)
         hfm_mett_verpackung_dd = erstelle_combo("Verpackung", aktuelle_daten.get("hfm_mett_verpackung", "steriler Probenbeutel"), verpackung_opts)
         
-        hfm_mett_lief_in = ft.TextField(label="Lieferant Rohware", value=aktuelle_daten.get("hfm_mett_lief", ""), color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True)
+        # NEU: on_change Trigger für Lieferanten
+        hfm_mett_lief_in = ft.TextField(label="Lieferant Rohware", value=aktuelle_daten.get("hfm_mett_lief", ""), color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True, on_change=pruefe_lims_warnung)
         hfm_mett_charge_dd = erstelle_combo("Charge Rohware", aktuelle_daten.get("hfm_mett_charge", "Bitte eingeben"), charge_opts_s, on_change_func=pruefe_lims_warnung)
         
         hfm_mett_temp_in = ft.TextField(label="Probenahmetemperatur", hint_text="(Soll Schwein: <+7°C)", hint_style=stil_hint_weiss, value=aktuelle_daten.get("hfm_mett_temp", ""), border_color="white", color="yellow", label_style=stil_label_weiss, on_blur=format_temp_blur, content_padding=10, text_style=stil_tf_gelb_12, expand=True)
@@ -331,7 +334,8 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         hfm_fzs_inhalt_in = ft.TextField(label="Inhalt", value=aktuelle_daten.get("hfm_fzs_inhalt", "ca. 200 g"), hint_text="bitte Grammzahl angeben", hint_style=stil_hint_weiss, color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True, on_blur=format_gramm_blur)
         hfm_fzs_verpackung_dd = erstelle_combo("Verpackung", aktuelle_daten.get("hfm_fzs_verpackung", "steriler Probenbeutel"), verpackung_opts)
         
-        hfm_fzs_lief_in = ft.TextField(label="Lieferant Rohware", value=aktuelle_daten.get("hfm_fzs_lief", ""), color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True)
+        # NEU: on_change Trigger für Lieferanten
+        hfm_fzs_lief_in = ft.TextField(label="Lieferant Rohware", value=aktuelle_daten.get("hfm_fzs_lief", ""), color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True, on_change=pruefe_lims_warnung)
         hfm_fzs_charge_dd = erstelle_combo("Charge Rohware", aktuelle_daten.get("hfm_fzs_charge", "Bitte eingeben"), charge_opts_s, on_change_func=pruefe_lims_warnung)
         
         hfm_fzs_temp_in = ft.TextField(label="Probenahmetemperatur", hint_text="(Soll Schwein: <+7°C)", hint_style=stil_hint_weiss, value=aktuelle_daten.get("hfm_fzs_temp", ""), border_color="white", color="yellow", label_style=stil_label_weiss, on_blur=format_temp_blur, content_padding=10, text_style=stil_tf_gelb_12, expand=True)
@@ -357,7 +361,8 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         hfm_fzg_inhalt_in = ft.TextField(label="Inhalt", value=aktuelle_daten.get("hfm_fzg_inhalt", "ca. 200 g"), hint_text="bitte Grammzahl angeben", hint_style=stil_hint_weiss, color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True, on_blur=format_gramm_blur)
         hfm_fzg_verpackung_dd = erstelle_combo("Verpackung", aktuelle_daten.get("hfm_fzg_verpackung", "steriler Probenbeutel"), verpackung_opts)
         
-        hfm_fzg_lief_in = ft.TextField(label="Lieferant Rohware", value=aktuelle_daten.get("hfm_fzg_lief", ""), color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True)
+        # NEU: on_change Trigger für Lieferanten
+        hfm_fzg_lief_in = ft.TextField(label="Lieferant Rohware", value=aktuelle_daten.get("hfm_fzg_lief", ""), color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True, on_change=pruefe_lims_warnung)
         hfm_fzg_charge_dd = erstelle_combo("Charge Rohware", aktuelle_daten.get("hfm_fzg_charge", "Bitte eingeben"), charge_opts_g, on_change_func=pruefe_lims_warnung)
         
         hfm_fzg_temp_in = ft.TextField(label="Probenahmetemperatur", hint_text="(Soll Geflügel: <+4°C)", hint_style=stil_hint_weiss, value=aktuelle_daten.get("hfm_fzg_temp", ""), border_color="white", color="yellow", label_style=stil_label_weiss, on_blur=format_temp_blur, content_padding=10, text_style=stil_tf_gelb_12, expand=True)
@@ -385,8 +390,9 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         hfm_bio_inhalt_in = ft.TextField(label="Inhalt", value=aktuelle_daten.get("hfm_bio_inhalt", "jeweils ca. 200 g"), hint_text="bitte Grammzahl angeben", hint_style=stil_hint_weiss, color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True, on_blur=format_gramm_blur)
         hfm_bio_verpackung_dd = erstelle_combo("Verpackung", aktuelle_daten.get("hfm_bio_verpackung", "steriler Probenbecher"), verpackung_opts)
         
-        hfm_bio_lief_schwein_in = ft.TextField(label="Lieferant (Schwein)", value=aktuelle_daten.get("hfm_bio_lief_schwein", ""), color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True)
-        hfm_bio_lief_rind_in = ft.TextField(label="Lieferant (Rind)", value=aktuelle_daten.get("hfm_bio_lief_rind", ""), color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True)
+        # NEU: on_change Trigger für Lieferanten
+        hfm_bio_lief_schwein_in = ft.TextField(label="Lieferant (Schwein)", value=aktuelle_daten.get("hfm_bio_lief_schwein", ""), color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True, on_change=pruefe_lims_warnung)
+        hfm_bio_lief_rind_in = ft.TextField(label="Lieferant (Rind)", value=aktuelle_daten.get("hfm_bio_lief_rind", ""), color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True, on_change=pruefe_lims_warnung)
         
         hfm_bio_charge_schwein_dd = erstelle_combo("Charge Schwein", aktuelle_daten.get("hfm_bio_charge_schwein", "Bitte eingeben"), charge_opts_s, on_change_func=pruefe_lims_warnung)
         hfm_bio_charge_rind_dd = erstelle_combo("Charge Rind", aktuelle_daten.get("hfm_bio_charge_rind", "Bitte eingeben"), charge_opts_r, on_change_func=pruefe_lims_warnung)
@@ -813,7 +819,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 d[f"og_okz_status_{idx_str}"] = ctrls["status"].value; d[f"og_okz_objekt_{idx_str}"] = ctrls["objekt"].value; d[f"og_okz_ort_{idx_str}"] = ctrls["ort"].value; d[f"og_okz_abklatsch_{idx_str}"] = ctrls["abklatsch"].value; d[f"og_okz_tupfer_{idx_str}"] = ctrls["tupfer"].value
                 
             return d
-
         def nur_speichern(e):
             if not (nr_in.value or "").strip() or not (auft_in.value or "").strip():
                 switch_tab_stamm(None)
@@ -841,17 +846,19 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 fehler_text.value="⚠️ PFLICHTFELDER FEHLEN: Adresse, Probenehmer, Markt- und Auftragsnummer!"
                 fehler_text.visible=True; status_text.value=""; page.update(); return
             
-            # --- Validierungen ---
+            # --- Validierungen für die Haken ---
             tw_hat_daten = bool((tw_zeit_in.value or "").strip() or (tw_temp_in.value or "").strip())
             se_hat_daten = bool((se_zeit_in.value or "").strip() or (se_temp_in.value or "").strip())
             se_okz_hat_daten = False
             for idx_str, ctrls in se_okz_controls.items():
                 if (ctrls["ort"].value or "").strip(): se_okz_hat_daten = True
-            hfm_hack_hat_daten = bool((hfm_hack_temp_in.value or "").strip() or (hfm_hack_mhd_s_tag_dd.value or "").strip() or (hfm_hack_mhd_r_tag_dd.value or "").strip() or hat_charge_wert(hfm_hack_charge_schwein_dd.value) or hat_charge_wert(hfm_hack_charge_rind_dd.value))
-            hfm_mett_hat_daten = bool((hfm_mett_temp_in.value or "").strip() or (hfm_mett_mhd_tag_dd.value or "").strip() or hat_charge_wert(hfm_mett_charge_dd.value))
-            hfm_fzs_hat_daten = bool((hfm_fzs_temp_in.value or "").strip() or (hfm_fzs_mhd_tag_dd.value or "").strip() or hat_charge_wert(hfm_fzs_charge_dd.value))
-            hfm_fzg_hat_daten = bool((hfm_fzg_temp_in.value or "").strip() or (hfm_fzg_mhd_tag_dd.value or "").strip() or hat_charge_wert(hfm_fzg_charge_dd.value))
-            hfm_bio_hat_daten = bool((hfm_bio_temp_in.value or "").strip() or (hfm_bio_mhd_s_tag_dd.value or "").strip() or (hfm_bio_mhd_r_tag_dd.value or "").strip() or hat_charge_wert(hfm_bio_charge_schwein_dd.value) or hat_charge_wert(hfm_bio_charge_rind_dd.value))
+            
+            hfm_hack_hat_daten = bool((hfm_hack_temp_in.value or "").strip() or (hfm_hack_mhd_s_tag_dd.value or "").strip() or (hfm_hack_mhd_r_tag_dd.value or "").strip() or hat_charge_wert(hfm_hack_charge_schwein_dd.value) or hat_charge_wert(hfm_hack_charge_rind_dd.value) or (hfm_hack_lief_schwein_in.value or "").strip() or (hfm_hack_lief_rind_in.value or "").strip())
+            hfm_mett_hat_daten = bool((hfm_mett_temp_in.value or "").strip() or (hfm_mett_mhd_tag_dd.value or "").strip() or hat_charge_wert(hfm_mett_charge_dd.value) or (hfm_mett_lief_in.value or "").strip())
+            hfm_fzs_hat_daten = bool((hfm_fzs_temp_in.value or "").strip() or (hfm_fzs_mhd_tag_dd.value or "").strip() or hat_charge_wert(hfm_fzs_charge_dd.value) or (hfm_fzs_lief_in.value or "").strip())
+            hfm_fzg_hat_daten = bool((hfm_fzg_temp_in.value or "").strip() or (hfm_fzg_mhd_tag_dd.value or "").strip() or hat_charge_wert(hfm_fzg_charge_dd.value) or (hfm_fzg_lief_in.value or "").strip())
+            hfm_bio_hat_daten = bool((hfm_bio_temp_in.value or "").strip() or (hfm_bio_mhd_s_tag_dd.value or "").strip() or (hfm_bio_mhd_r_tag_dd.value or "").strip() or hat_charge_wert(hfm_bio_charge_schwein_dd.value) or hat_charge_wert(hfm_bio_charge_rind_dd.value) or (hfm_bio_lief_schwein_in.value or "").strip() or (hfm_bio_lief_rind_in.value or "").strip())
+            
             og_hat_daten = False
             for i in range(1, 6):
                 if (og_controls[i]["name"].value or "").strip() or (og_controls[i]["temp"].value or "").strip() or (og_controls[i]["v_t"].value or "").strip(): og_hat_daten = True
@@ -866,6 +873,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             if hfm_bio_hat_daten and not hfm_bio_cb.value and not lims_override_cb.value: switch_tab_hfm("bio"); fehler_text.value="⚠️ AKTIVIERUNGS-HAKEN BEI BIO-HACK FEHLT!"; fehler_text.visible=True; status_text.value=""; page.update(); return
             if og_hat_daten and not og_cb.value and not lims_override_cb.value: switch_tab_og("teil"); fehler_text.value="⚠️ AKTIVIERUNGS-HAKEN BEI OG FEHLT!"; fehler_text.visible=True; status_text.value=""; page.update(); return
 
+            # --- HIER DIE NEUE PFLICHTFELD & CHARGEN-PRÜFUNG ---
             fehlende_pflicht = []
             if tw_kalt_cb.value:
                 if not (tw_zeit_in.value or "").strip(): fehlende_pflicht.append("TW: Uhrzeit")
@@ -873,26 +881,36 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             if se_kalt_cb.value:
                 if not (se_zeit_in.value or "").strip(): fehlende_pflicht.append("Eis: Uhrzeit")
                 if not (se_temp_in.value or "").strip(): fehlende_pflicht.append("Eis: Temperatur")
+                
             if hfm_hack_cb.value:
                 if not (hfm_hack_temp_in.value or "").strip(): fehlende_pflicht.append("Hack: Temperatur")
-                if not (hfm_hack_mhd_s_tag_dd.value or "").strip() and not (hfm_hack_mhd_r_tag_dd.value or "").strip(): fehlende_pflicht.append("Hack: MHD")
-                if not hat_charge_wert(hfm_hack_charge_schwein_dd.value) and not hat_charge_wert(hfm_hack_charge_rind_dd.value): fehlende_pflicht.append("Hack: Charge")
+                if (hfm_hack_mhd_s_tag_dd.value or "").strip() or (hfm_hack_lief_schwein_in.value or "").strip():
+                    if not hat_charge_wert(hfm_hack_charge_schwein_dd.value): fehlende_pflicht.append("Hack (Schwein): Charge fehlt!")
+                if (hfm_hack_mhd_r_tag_dd.value or "").strip() or (hfm_hack_lief_rind_in.value or "").strip():
+                    if not hat_charge_wert(hfm_hack_charge_rind_dd.value): fehlende_pflicht.append("Hack (Rind): Charge fehlt!")
+                    
             if hfm_mett_cb.value:
                 if not (hfm_mett_temp_in.value or "").strip(): fehlende_pflicht.append("Mett: Temperatur")
-                if not (hfm_mett_mhd_tag_dd.value or "").strip(): fehlende_pflicht.append("Mett: MHD")
-                if not hat_charge_wert(hfm_mett_charge_dd.value): fehlende_pflicht.append("Mett: Charge")
+                if (hfm_mett_mhd_tag_dd.value or "").strip() or (hfm_mett_lief_in.value or "").strip():
+                    if not hat_charge_wert(hfm_mett_charge_dd.value): fehlende_pflicht.append("Mett: Charge fehlt!")
+                    
             if hfm_fzs_cb.value:
                 if not (hfm_fzs_temp_in.value or "").strip(): fehlende_pflicht.append("FZS: Temperatur")
-                if not (hfm_fzs_mhd_tag_dd.value or "").strip(): fehlende_pflicht.append("FZS: MHD")
-                if not hat_charge_wert(hfm_fzs_charge_dd.value): fehlende_pflicht.append("FZS: Charge")
+                if (hfm_fzs_mhd_tag_dd.value or "").strip() or (hfm_fzs_lief_in.value or "").strip():
+                    if not hat_charge_wert(hfm_fzs_charge_dd.value): fehlende_pflicht.append("FZS: Charge fehlt!")
+                    
             if hfm_fzg_cb.value:
                 if not (hfm_fzg_temp_in.value or "").strip(): fehlende_pflicht.append("FZG: Temperatur")
-                if not (hfm_fzg_mhd_tag_dd.value or "").strip(): fehlende_pflicht.append("FZG: MHD")
-                if not hat_charge_wert(hfm_fzg_charge_dd.value): fehlende_pflicht.append("FZG: Charge")
+                if (hfm_fzg_mhd_tag_dd.value or "").strip() or (hfm_fzg_lief_in.value or "").strip():
+                    if not hat_charge_wert(hfm_fzg_charge_dd.value): fehlende_pflicht.append("FZG: Charge fehlt!")
+                    
             if hfm_bio_cb.value:
                 if not (hfm_bio_temp_in.value or "").strip(): fehlende_pflicht.append("Bio: Temperatur")
-                if not (hfm_bio_mhd_s_tag_dd.value or "").strip() and not (hfm_bio_mhd_r_tag_dd.value or "").strip(): fehlende_pflicht.append("Bio: MHD")
-                if not hat_charge_wert(hfm_bio_charge_schwein_dd.value) and not hat_charge_wert(hfm_bio_charge_rind_dd.value): fehlende_pflicht.append("Bio: Charge")
+                if (hfm_bio_mhd_s_tag_dd.value or "").strip() or (hfm_bio_lief_schwein_in.value or "").strip():
+                    if not hat_charge_wert(hfm_bio_charge_schwein_dd.value): fehlende_pflicht.append("Bio (Schwein): Charge fehlt!")
+                if (hfm_bio_mhd_r_tag_dd.value or "").strip() or (hfm_bio_lief_rind_in.value or "").strip():
+                    if not hat_charge_wert(hfm_bio_charge_rind_dd.value): fehlende_pflicht.append("Bio (Rind): Charge fehlt!")
+                    
             if og_cb.value:
                 og_ok = False
                 for i in range(1, 6):
@@ -937,6 +955,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         vorlagen_status = ft.Text("", weight="bold") 
         vl_dd = ft.Dropdown(options=[ft.dropdown.Option(k) for k in alle_vorlagen.keys()], expand=True, dense=True, content_padding=10, color="white", text_style=ft.TextStyle(color="white"))
         
+        # HIER WURDE LADE_V ANGEPASST: Tagesaktuelle Felder bleiben absolut leer!
         def lade_v(e):
             if not vl_dd.value: return
             v = alle_vorlagen.get(vl_dd.value, {})
@@ -950,6 +969,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 hfm_bio_herst_tag_dd.value = h_t; hfm_bio_herst_mon_dd.value = h_m; hfm_bio_herst_jahr_dd.value = h_j
             except: pass
             
+            # Alle tagesaktuellen Werte leeren
             adr_in.value = ""; nr_in.value = ""; auft_in.value = ""
             tw_kalt_cb.value = False; tw_zeit_in.value = ""; tw_temp_in.value = ""; tw_tempkonst_in.value = ""
             se_kalt_cb.value = False; se_zeit_in.value = ""; se_temp_in.value = ""
@@ -959,6 +979,10 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             hfm_fzs_cb.value = False; hfm_fzs_temp_in.value = ""; hfm_fzs_lief_in.value = ""; hfm_fzs_produkt_in.value = ""; hfm_fzs_marinade_in.value = ""; hfm_fzs_mhd_tag_dd.value = ""; hfm_fzs_mhd_mon_dd.value = ""; hfm_fzs_mhd_jahr_dd.value = ""
             hfm_fzg_cb.value = False; hfm_fzg_temp_in.value = ""; hfm_fzg_lief_in.value = ""; hfm_fzg_produkt_in.value = ""; hfm_fzg_marinade_in.value = ""; hfm_fzg_mhd_tag_dd.value = ""; hfm_fzg_mhd_mon_dd.value = ""; hfm_fzg_mhd_jahr_dd.value = ""
             hfm_bio_cb.value = False; hfm_bio_temp_in.value = ""; hfm_bio_lief_schwein_in.value = ""; hfm_bio_lief_rind_in.value = ""; hfm_bio_mhd_s_tag_dd.value = ""; hfm_bio_mhd_s_mon_dd.value = ""; hfm_bio_mhd_s_jahr_dd.value = ""; hfm_bio_mhd_r_tag_dd.value = ""; hfm_bio_mhd_r_mon_dd.value = ""; hfm_bio_mhd_r_jahr_dd.value = ""
+            
+            hfm_hack_charge_schwein_dd.value = "Bitte eingeben"; hfm_hack_charge_rind_dd.value = "Bitte eingeben"
+            hfm_mett_charge_dd.value = "Bitte eingeben"; hfm_fzs_charge_dd.value = "Bitte eingeben"; hfm_fzg_charge_dd.value = "Bitte eingeben"
+            hfm_bio_charge_schwein_dd.value = "Bitte eingeben"; hfm_bio_charge_rind_dd.value = "Bitte eingeben"
             
             se_okz_cb.value = False; se_okz_bemerkung_dd.value = "Bitte eingeben"
             for idx_str, ctrls in se_okz_controls.items(): ctrls["status"].value = "R+D"; ctrls["objekt"].value = se_okz_defaults[int(idx_str)]["obj"]; ctrls["ort"].value = ""; ctrls["abklatsch"].value = se_okz_defaults[int(idx_str)]["abk"]; ctrls["tupfer"].value = se_okz_defaults[int(idx_str)]["tup"]
@@ -973,6 +997,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             for cb in [cb_pn, cb_zwei, cb_sensor, cb_knie, cb_ein, cb_ein_g, cb_eck, cb_auff_ja, cb_auff_nein, cb_auff_perl, cb_auff_verkalk, cb_auff_verbrueh, cb_auff_durchlauf, cb_auff_unterbau, cb_auff_eck_zu, cb_auff_nichtmoeglich, cb_auff_dusche, cb_auff_handbrause, cb_auff_sonst, se_cb_eiswanne, se_cb_ozon]: cb.value = False
             tw_auff_sonstiges_in.value = ""; se_tech_sonst_in.value = ""; se_auff_sonst_in.value = ""; se_cb_fallprobe.value = True
 
+            # Nur feste Vorlagendaten laden
             if "name_in" in v: name_in.value = v["name_in"]
             if "ag_dd" in v: ag_dd.value = v["ag_dd"]
             if "typ_dd" in v: typ_dd.value = v["typ_dd"]
@@ -1002,45 +1027,31 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             if "hfm_hack_entnahmeort" in v: hfm_hack_entnahmeort_dd.value = v["hfm_hack_entnahmeort"]
             if "hfm_hack_inhalt" in v: hfm_hack_inhalt_in.value = v["hfm_hack_inhalt"]
             if "hfm_hack_verpackung" in v: hfm_hack_verpackung_dd.value = v["hfm_hack_verpackung"]
-            if "hfm_hack_charge_schwein" in v: hfm_hack_charge_schwein_dd.value = v["hfm_hack_charge_schwein"]
-            if "hfm_hack_charge_rind" in v: hfm_hack_charge_rind_dd.value = v["hfm_hack_charge_rind"]
             if "hfm_hack_bemerkung" in v: hfm_hack_bemerkung_dd.value = v["hfm_hack_bemerkung"]
-            if "hfm_hack_lief_schwein" in v: hfm_hack_lief_schwein_in.value = v["hfm_hack_lief_schwein"]
-            if "hfm_hack_lief_rind" in v: hfm_hack_lief_rind_in.value = v["hfm_hack_lief_rind"]
 
             if "hfm_mett_entnahmeort" in v: hfm_mett_entnahmeort_dd.value = v["hfm_mett_entnahmeort"]
             if "hfm_mett_inhalt" in v: hfm_mett_inhalt_in.value = v["hfm_mett_inhalt"]
             if "hfm_mett_verpackung" in v: hfm_mett_verpackung_dd.value = v["hfm_mett_verpackung"]
-            if "hfm_mett_charge" in v: hfm_mett_charge_dd.value = v["hfm_mett_charge"]
             if "hfm_mett_bemerkung" in v: hfm_mett_bemerkung_dd.value = v["hfm_mett_bemerkung"]
-            if "hfm_mett_lief" in v: hfm_mett_lief_in.value = v["hfm_mett_lief"]
 
             if "hfm_fzs_entnahmeort" in v: hfm_fzs_entnahmeort_dd.value = v["hfm_fzs_entnahmeort"]
             if "hfm_fzs_produkt" in v: hfm_fzs_produkt_in.value = v["hfm_fzs_produkt"]
             if "hfm_fzs_marinade" in v: hfm_fzs_marinade_in.value = v["hfm_fzs_marinade"]
             if "hfm_fzs_inhalt" in v: hfm_fzs_inhalt_in.value = v["hfm_fzs_inhalt"]
             if "hfm_fzs_verpackung" in v: hfm_fzs_verpackung_dd.value = v["hfm_fzs_verpackung"]
-            if "hfm_fzs_charge" in v: hfm_fzs_charge_dd.value = v["hfm_fzs_charge"]
             if "hfm_fzs_bemerkung" in v: hfm_fzs_bemerkung_dd.value = v["hfm_fzs_bemerkung"]
-            if "hfm_fzs_lief" in v: hfm_fzs_lief_in.value = v["hfm_fzs_lief"]
 
             if "hfm_fzg_entnahmeort" in v: hfm_fzg_entnahmeort_dd.value = v["hfm_fzg_entnahmeort"]
             if "hfm_fzg_produkt" in v: hfm_fzg_produkt_in.value = v["hfm_fzg_produkt"]
             if "hfm_fzg_marinade" in v: hfm_fzg_marinade_in.value = v["hfm_fzg_marinade"]
             if "hfm_fzg_inhalt" in v: hfm_fzg_inhalt_in.value = v["hfm_fzg_inhalt"]
             if "hfm_fzg_verpackung" in v: hfm_fzg_verpackung_dd.value = v["hfm_fzg_verpackung"]
-            if "hfm_fzg_charge" in v: hfm_fzg_charge_dd.value = v["hfm_fzg_charge"]
             if "hfm_fzg_bemerkung" in v: hfm_fzg_bemerkung_dd.value = v["hfm_fzg_bemerkung"]
-            if "hfm_fzg_lief" in v: hfm_fzg_lief_in.value = v["hfm_fzg_lief"]
 
             if "hfm_bio_entnahmeort" in v: hfm_bio_entnahmeort_dd.value = v["hfm_bio_entnahmeort"]
             if "hfm_bio_inhalt" in v: hfm_bio_inhalt_in.value = v["hfm_bio_inhalt"]
             if "hfm_bio_verpackung" in v: hfm_bio_verpackung_dd.value = v["hfm_bio_verpackung"]
-            if "hfm_bio_charge_schwein" in v: hfm_bio_charge_schwein_dd.value = v["hfm_bio_charge_schwein"]
-            if "hfm_bio_charge_rind" in v: hfm_bio_charge_rind_dd.value = v["hfm_bio_charge_rind"]
             if "hfm_bio_bemerkung" in v: hfm_bio_bemerkung_dd.value = v["hfm_bio_bemerkung"]
-            if "hfm_bio_lief_schwein" in v: hfm_bio_lief_schwein_in.value = v["hfm_bio_lief_schwein"]
-            if "hfm_bio_lief_rind" in v: hfm_bio_lief_rind_in.value = v["hfm_bio_lief_rind"]
             
             if "se_okz_bemerkung" in v: se_okz_bemerkung_dd.value = v["se_okz_bemerkung"]
             for idx_str, ctrls in se_okz_controls.items():
@@ -1105,23 +1116,17 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 "se_zapf_dd": se_zapf_dd.value, "se_desinf_dd": se_desinf_dd.value, "se_inhalt_in": se_inhalt_in.value,
                 "se_verpackung_dd": se_verpackung_dd.value, "se_entnahmeort_dd": se_entnahmeort_dd.value, "se_bemerkung_dd": se_bemerkung_dd.value,
                 "hfm_hack_entnahmeort": hfm_hack_entnahmeort_dd.value, "hfm_hack_inhalt": hfm_hack_inhalt_in.value,
-                "hfm_hack_verpackung": hfm_hack_verpackung_dd.value, "hfm_hack_charge_schwein": hfm_hack_charge_schwein_dd.value,
-                "hfm_hack_charge_rind": hfm_hack_charge_rind_dd.value, "hfm_hack_bemerkung": hfm_hack_bemerkung_dd.value,
-                "hfm_hack_lief_schwein": hfm_hack_lief_schwein_in.value, "hfm_hack_lief_rind": hfm_hack_lief_rind_in.value,
+                "hfm_hack_verpackung": hfm_hack_verpackung_dd.value, "hfm_hack_bemerkung": hfm_hack_bemerkung_dd.value,
                 "hfm_mett_entnahmeort": hfm_mett_entnahmeort_dd.value, "hfm_mett_inhalt": hfm_mett_inhalt_in.value,
-                "hfm_mett_verpackung": hfm_mett_verpackung_dd.value, "hfm_mett_lief": hfm_mett_lief_in.value,
-                "hfm_mett_charge": hfm_mett_charge_dd.value, "hfm_mett_bemerkung": hfm_mett_bemerkung_dd.value,
+                "hfm_mett_verpackung": hfm_mett_verpackung_dd.value, "hfm_mett_bemerkung": hfm_mett_bemerkung_dd.value,
                 "hfm_fzs_entnahmeort": hfm_fzs_entnahmeort_dd.value, "hfm_fzs_produkt": hfm_fzs_produkt_in.value,
                 "hfm_fzs_marinade": hfm_fzs_marinade_in.value, "hfm_fzs_inhalt": hfm_fzs_inhalt_in.value,
-                "hfm_fzs_verpackung": hfm_fzs_verpackung_dd.value, "hfm_fzs_lief": hfm_fzs_lief_in.value,
-                "hfm_fzs_charge": hfm_fzs_charge_dd.value, "hfm_fzs_bemerkung": hfm_fzs_bemerkung_dd.value,
+                "hfm_fzs_verpackung": hfm_fzs_verpackung_dd.value, "hfm_fzs_bemerkung": hfm_fzs_bemerkung_dd.value,
                 "hfm_fzg_entnahmeort": hfm_fzg_entnahmeort_dd.value, "hfm_fzg_produkt": hfm_fzg_produkt_in.value,
                 "hfm_fzg_marinade": hfm_fzg_marinade_in.value, "hfm_fzg_inhalt": hfm_fzg_inhalt_in.value,
-                "hfm_fzg_verpackung": hfm_fzg_verpackung_dd.value, "hfm_fzg_lief": hfm_fzg_lief_in.value,
-                "hfm_fzg_charge": hfm_fzg_charge_dd.value, "hfm_fzg_bemerkung": hfm_fzg_bemerkung_dd.value,
+                "hfm_fzg_verpackung": hfm_fzg_verpackung_dd.value, "hfm_fzg_bemerkung": hfm_fzg_bemerkung_dd.value,
                 "hfm_bio_entnahmeort": hfm_bio_entnahmeort_dd.value, "hfm_bio_inhalt": hfm_bio_inhalt_in.value,
-                "hfm_bio_verpackung": hfm_bio_verpackung_dd.value,
-                "hfm_bio_lief_schwein": hfm_bio_lief_schwein_in.value, "hfm_bio_lief_rind": hfm_bio_lief_rind_in.value,
+                "hfm_bio_verpackung": hfm_bio_verpackung_dd.value, "hfm_bio_bemerkung": hfm_bio_bemerkung_dd.value,
                 "hfm_okz_bemerkung": hfm_okz_bemerkung_dd.value,
                 "og_okz_bemerkung": og_okz_bemerkung_dd.value,
                 "og_okz_anmerkung": og_okz_anmerkung_in.value,
@@ -1164,7 +1169,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             vorlagen_status.color = "orange"
             vl_name_in.value = ""
 
-            # ALLE TAGES-FELDER AUTOMATISCH LEEREN!
             adr_in.value = ""; nr_in.value = ""; auft_in.value = ""
             try:
                 h_t, h_m, h_j = heute_str.split(".")
