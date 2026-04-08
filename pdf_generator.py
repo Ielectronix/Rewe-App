@@ -3,7 +3,7 @@ import datetime
 from pypdf import PdfReader, PdfWriter
 from pypdf.generic import NameObject, BooleanObject, create_string_object
 
-# --- BASIS-ORDNER LOGIK ---
+# --- PFAD-LOGIK ---
 def get_all_rewe_bases():
     if os.name == 'nt':
         desk = os.path.join(os.path.expanduser('~'), 'Desktop', 'Rewe_Monitoring')
@@ -18,36 +18,51 @@ def create_base_folder():
             if not os.path.exists(base): os.makedirs(base, exist_ok=True)
             return base
         except: continue
-    raise PermissionError("Keine Schreibrechte!")
+    raise PermissionError("Schreibrechte fehlen!")
 
 def get_tages_ordner():
-    tages_ordner = os.path.join(create_base_folder(), datetime.datetime.now().strftime('%Y-%m-%d'))
-    os.makedirs(tages_ordner, exist_ok=True)
-    return tages_ordner
+    t_ordner = os.path.join(create_base_folder(), datetime.datetime.now().strftime('%Y-%m-%d'))
+    os.makedirs(t_ordner, exist_ok=True)
+    return t_ordner
 
-# --- DATEN-VORBEREITUNG (IDs bleiben exakt gleich) ---
+# --- HAKEN-LOGIK FÜR OKZ (LIMS-ID SICHER) ---
 def hole_okz_werte(daten, sektion_prefix, prefix_in_pdf, anzahl):
     w = {}
     haken = NameObject('/j')
     for i in range(1, anzahl + 1):
         idx = f"{i:02d}"
+        # Nur wenn Ort oder Objekt gefüllt sind, werden die IDs generiert
         if daten.get(f"{sektion_prefix}_ort_{idx}") or daten.get(f"{sektion_prefix}_objekt_{idx}"):
             w[f"txt_{prefix_in_pdf}_{idx}_ZS-002287"] = daten.get(f"{sektion_prefix}_status_{idx}", "")
             w[f"txt_{prefix_in_pdf}_{idx}_ZS-002288"] = daten.get(f"{sektion_prefix}_objekt_{idx}", "")
             w[f"txt_{prefix_in_pdf}_{idx}_ZS-002290"] = daten.get(f"{sektion_prefix}_ort_{idx}", "")
-            if daten.get(f"{sektion_prefix}_abklatsch_{idx}"): w[f"cb_{prefix_in_pdf}_{idx}_ZS-002294"] = haken
-            if daten.get(f"{sektion_prefix}_tupfer_{idx}"): w[f"cb_{prefix_in_pdf}_{idx}_ZS-002295"] = haken
+            if daten.get(f"{sektion_prefix}_abklatsch_{idx}"): 
+                w[f"cb_{prefix_in_pdf}_{idx}_ZS-002294"] = haken
+            if daten.get(f"{sektion_prefix}_tupfer_{idx}"): 
+                w[f"cb_{prefix_in_pdf}_{idx}_ZS-002295"] = haken
     return w
 
 def bereite_daten_vor(daten):
     w = {}
-    # Stammdaten
+    # Stammdaten IDs
     w["txt_0000_00_MA-Name"] = daten.get("mitarbeiter_name", "")
     w["txt_0000_00_Datum"] = daten.get("datum", "")
     w["txt_0000_00_REWE-Adresse"] = f"{daten.get('marktnummer', '')} - {daten.get('adresse', '')}"
     w["txt_0000_00_Auftrags-Nr"] = daten.get("auftragsnummer", "")
-    
-    # HFM Hackfleisch gemischt
+    w["txt_0000_00_ZS-002286"] = daten.get("typ_probenahme", "")
+    w["txt_0000_00_ZS-002293"] = daten.get("bemerkung", "")
+
+    # Trinkwasser IDs
+    if daten.get("tw_kalt"):
+        w["cb_0001_00"] = NameObject('/Yes')
+        w["txt_0001_00_PE_ZS-1274"] = daten.get("tw_zeit", "")
+        w["txt_0001_00_PE_ZS-002304"] = daten.get("tw_temp", "")
+        w["txt_0001_00_PE_ZS-002305"] = daten.get("tw_tempkonst", "")
+        w["txt_0001_00_PE_ZS-002281"] = daten.get("tw_entnahmeort", "")
+        w["txt_0001_00_PE_ZS-002282"] = daten.get("tw_bemerkung", "")
+        if daten.get("cb_auff_unterbau"): w["cb_0001_00_PE_ZS-1268_ Unterbauspeicher [L]"] = NameObject('/Yes')
+
+    # HFM IDs
     if daten.get("hfm_hack_cb"):
         w["cb_0004_00"] = NameObject('/Yes')
         w["txt_0004_00_PE_ZS-002281"] = daten.get("hfm_hack_entnahmeort", "")
@@ -60,14 +75,14 @@ def bereite_daten_vor(daten):
         w["txt_0004_00_PE_ZS-002297"] = daten.get("hfm_hack_charge_rind", "")
         w["txt_0004_00_PE_ZS-002304"] = daten.get("hfm_hack_temp", "")
 
-    # OKZ HFM
+    # OKZ HFM IDs
     if daten.get("hfm_okz_cb"):
         w["cb_0010_00"] = NameObject('/Yes')
         w.update(hole_okz_werte(daten, "okz", "0010", 10))
-    
+
     return w
 
-# --- HAUPTFUNKTION (LIMS-Safe) ---
+# --- GENERIERUNG ---
 def erstelle_bericht(daten):
     assets_dir = "assets"
     ziel_ordner = get_tages_ordner()
@@ -79,40 +94,52 @@ def erstelle_bericht(daten):
     writer = PdfWriter()
 
     benoetigte_pdfs = []
-    if daten.get("tw_kalt"): benoetigte_pdfs.append("trinkwasser.pdf")
-    if daten.get("se_kalt"): benoetigte_pdfs.append("scherbeneis.pdf")
-    if daten.get("se_okz_cb"): benoetigte_pdfs.append("okz-eis.pdf")
-    if daten.get("hfm_hack_cb"): benoetigte_pdfs.append("hfm_hack.pdf")
-    if daten.get("hfm_mett_cb"): benoetigte_pdfs.append("hfm_mett.pdf")
-    if daten.get("hfm_fzs_cb"): benoetigte_pdfs.append("hfm_fzs.pdf")
-    if daten.get("hfm_fzg_cb"): benoetigte_pdfs.append("hfm_fzg.pdf")
-    if daten.get("hfm_bio_cb"): benoetigte_pdfs.append("hfm_bio.pdf")
-    if daten.get("hfm_okz_cb"): benoetigte_pdfs.append("okz-hfm.pdf")
-    if daten.get("og_cb"): benoetigte_pdfs.append("og.pdf")
-    if daten.get("og_okz_cb"): benoetigte_pdfs.append("okz-og.pdf")
+    # (Liste der PDFs wie gehabt...)
+    mapping_checks = [
+        ("tw_kalt", "trinkwasser.pdf"), ("se_kalt", "scherbeneis.pdf"),
+        ("se_okz_cb", "okz-eis.pdf"), ("hfm_hack_cb", "hfm_hack.pdf"),
+        ("hfm_mett_cb", "hfm_mett.pdf"), ("hfm_fzs_cb", "hfm_fzs.pdf"),
+        ("hfm_fzg_cb", "hfm_fzg.pdf"), ("hfm_bio_cb", "hfm_bio.pdf"),
+        ("hfm_okz_cb", "okz-hfm.pdf"), ("og_cb", "og.pdf"),
+        ("og_okz_cb", "okz-og.pdf")
+    ]
+    for check, name in mapping_checks:
+        if daten.get(check): benoetigte_pdfs.append(name)
 
+    if not benoetigte_pdfs: raise ValueError("Keine Proben gewählt!")
+
+    # SEITEN EINZELN VERARBEITEN (DER LANGE WEG)
     for pdf_name in benoetigte_pdfs:
         pdf_pfad = os.path.join(assets_dir, pdf_name)
         if not os.path.exists(pdf_pfad): continue
 
         reader = PdfReader(pdf_pfad)
-        # Wir fügen die Seiten hinzu
         for page in reader.pages:
+            if "/Annots" in page:
+                for annot_ref in page["/Annots"]:
+                    annot = annot_ref.get_object()
+                    if "/T" in annot:
+                        # Hier ist die ID (Name des Feldes)
+                        f_id = annot["/T"].strip("()")
+                        if f_id in werte_mapping:
+                            val = werte_mapping[f_id]
+                            # Haken setzen
+                            if isinstance(val, NameObject):
+                                annot.update({
+                                    NameObject("/V"): val,
+                                    NameObject("/AS"): val
+                                })
+                            # Text setzen
+                            else:
+                                annot.update({
+                                    NameObject("/V"): create_string_object(val)
+                                })
             writer.add_page(page)
-    
-    # WICHTIG: Die Felder nach dem Zusammenfügen befüllen, damit die IDs global im Dokument bleiben
-    writer.update_page_form_field_values(writer.pages, werte_mapping)
 
-    # LIMS-RELEVANT: NeedAppearances auf True setzen
-    # Das sorgt dafür, dass die Daten im PDF-Viewer angezeigt werden, ohne die IDs zu löschen
+    # NeedAppearances setzen (für die Sichtbarkeit im Handy)
     if "/AcroForm" not in writer.root_object:
-        writer.root_object.update({
-            NameObject("/AcroForm"): writer._add_object({})
-        })
-    
-    writer.root_object["/AcroForm"].update({
-        NameObject("/NeedAppearances"): BooleanObject(True)
-    })
+        writer.root_object.update({NameObject("/AcroForm"): writer._add_object({})})
+    writer.root_object["/AcroForm"].update({NameObject("/NeedAppearances"): BooleanObject(True)})
 
     with open(ziel_pfad, "wb") as output_file:
         writer.write(output_file)
