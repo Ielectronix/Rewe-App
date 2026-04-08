@@ -1,7 +1,8 @@
 import os
 import datetime
 from pypdf import PdfReader, PdfWriter
-from pypdf.generic import NameObject, StringObject, BooleanObject
+# NEU: create_string_object statt StringObject!
+from pypdf.generic import NameObject, BooleanObject, create_string_object
 
 # SUCHT DEN RICHTIGEN BASIS-ORDNER FÜR ANDROID ODER WINDOWS
 def get_all_rewe_bases():
@@ -268,8 +269,7 @@ def erstelle_bericht(daten):
     markt_nr = daten.get("marktnummer", "").strip() or "Ohne_Nummer"
     datum_str = daten.get("datum", "").replace(".", "_") or get_heute_str()
     
-    # NEU: Hängt die genaue Uhrzeit (Stunde, Minute, Sekunde) an den Namen!
-    # Dadurch gibt es NIEMALS die gleiche Datei zweimal, der Android-Cache wird umgangen.
+    # NEU: Hängt die genaue Uhrzeit an, um den Android-Cache auszutricksen
     uhrzeit_str = datetime.datetime.now().strftime('%H-%M-%S')
     dateiname = f"REWE_Monitoring_{markt_nr}_{datum_str}_{uhrzeit_str}.pdf"
     ziel_pfad = os.path.join(ziel_ordner, dateiname)
@@ -319,13 +319,13 @@ def erstelle_bericht(daten):
                     if field_name_str in werte_mapping:
                         val = werte_mapping[field_name_str]
                         
-                        # Wenn es ein NameObject ist (wie /j oder /Yes für Haken)
+                        # NEU: Das richtige Handling für Strings und Namen!
                         if isinstance(val, NameObject):
                             annot[NameObject("/V")] = val
                             annot[NameObject("/AS")] = val
-                        # Wenn es ganz normaler Text ist
                         else:
-                            annot[NameObject("/V")] = StringObject(val)
+                            # Das ist der Fix für "StringObject is not defined"
+                            annot[NameObject("/V")] = create_string_object(val)
 
     # 3. ZWINGT ANDROID, DEN TEXT SICHTBAR ZU MACHEN
     if "/AcroForm" in writer.root_object:
