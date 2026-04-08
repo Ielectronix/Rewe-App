@@ -1,6 +1,7 @@
 import os
 import datetime
-from pdfrw import PdfReader, PdfWriter, PdfName, PdfString, PdfDict
+from pypdf import PdfReader, PdfWriter
+from pypdf.generic import NameObject, StringObject, BooleanObject
 
 # SUCHT DEN RICHTIGEN BASIS-ORDNER FÜR ANDROID ODER WINDOWS
 def get_all_rewe_bases():
@@ -38,25 +39,9 @@ def get_tages_ordner():
     os.makedirs(tages_ordner, exist_ok=True)
     return tages_ordner
 
-def create_pdf_string(text):
-    if not text:
-        return PdfString("()")
-    # ISO-8859-1 Encoding für Umlaute im PDF
-    encoded = text.encode('iso-8859-1', 'replace').decode('iso-8859-1')
-    encoded = encoded.replace('\\', '\\\\').replace('(', '\\(').replace(')', '\\)')
-    return PdfString(f"({encoded})")
-
-def set_field_value(field, value):
-    if value is None:
-        return
-    if isinstance(value, str):
-        field.update(PdfDict(V=create_pdf_string(value)))
-    elif isinstance(value, PdfName):
-        field.update(PdfDict(AS=value, V=value))
-
 def hole_okz_werte(daten, sektion_prefix, prefix_in_pdf, anzahl, erwartet_j=True):
     # Setzt den Haken auf /j oder /Yes, je nachdem was das PDF verlangt
-    haken_wert = PdfName('/j') if erwartet_j else PdfName('/Yes')
+    haken_wert = NameObject('/j') if erwartet_j else NameObject('/Yes')
     w = {}
     for i in range(1, anzahl + 1):
         idx = f"{i:02d}"
@@ -89,34 +74,34 @@ def bereite_daten_vor(daten):
 
     # TRINKWASSER
     if daten.get("tw_kalt", False):
-        w["cb_0001_00"] = PdfName('/Yes')
+        w["cb_0001_00"] = NameObject('/Yes')
         w["txt_0001_00_PE_ZS-1274"] = daten.get("tw_zeit", "")
         w["txt_0001_00_PE_ZS-002304"] = daten.get("tw_temp", "")
         w["txt_0001_00_PE_ZS-002305"] = daten.get("tw_tempkonst", "")
         desinf = daten.get("tw_desinf", "")
-        if desinf == "Abflammen": w["cb_0001_00_PE_ZS-1262_ Abflammen"] = PdfName('/Yes')
-        elif desinf == "Sprühdesinfektion": w["cb_0001_00_PE_ZS-1262_ Sprühdesinfektion"] = PdfName('/Yes')
-        elif desinf == "ohne Desinfektion": w["cb_0001_00_PE_ZS-1262_ ohne"] = PdfName('/Yes')
+        if desinf == "Abflammen": w["cb_0001_00_PE_ZS-1262_ Abflammen"] = NameObject('/Yes')
+        elif desinf == "Sprühdesinfektion": w["cb_0001_00_PE_ZS-1262_ Sprühdesinfektion"] = NameObject('/Yes')
+        elif desinf == "ohne Desinfektion": w["cb_0001_00_PE_ZS-1262_ ohne"] = NameObject('/Yes')
         w["txt_0001_00_PE_ZS-1260"] = daten.get("tw_zapf", "")
         w["txt_0001_00_PE_ZS-1261"] = daten.get("tw_zapf_sonst", "")
         w["txt_0001_00_PE_ZS-1267"] = daten.get("tw_inaktiv", "")
         
         kurz1 = daten.get("tw_kurz1", "")
-        if "1 -" in kurz1: w["cb_0001_00_PE_ZS-1270_ 1"] = PdfName('/Yes')
-        elif "2 -" in kurz1: w["cb_0001_00_PE_ZS-1270_ 2"] = PdfName('/Yes')
-        elif "3 -" in kurz1: w["cb_0001_00_PE_ZS-1270_ 3"] = PdfName('/Yes')
+        if "1 -" in kurz1: w["cb_0001_00_PE_ZS-1270_ 1"] = NameObject('/Yes')
+        elif "2 -" in kurz1: w["cb_0001_00_PE_ZS-1270_ 2"] = NameObject('/Yes')
+        elif "3 -" in kurz1: w["cb_0001_00_PE_ZS-1270_ 3"] = NameObject('/Yes')
         kurz2 = daten.get("tw_kurz2", "")
-        if "1 -" in kurz2: w["cb_0001_00_PE_ZS-1271_ 1"] = PdfName('/Yes')
-        elif "2 -" in kurz2: w["cb_0001_00_PE_ZS-1271_ 2"] = PdfName('/Yes')
-        elif "3 -" in kurz2: w["cb_0001_00_PE_ZS-1271_ 3"] = PdfName('/Yes')
+        if "1 -" in kurz2: w["cb_0001_00_PE_ZS-1271_ 1"] = NameObject('/Yes')
+        elif "2 -" in kurz2: w["cb_0001_00_PE_ZS-1271_ 2"] = NameObject('/Yes')
+        elif "3 -" in kurz2: w["cb_0001_00_PE_ZS-1271_ 3"] = NameObject('/Yes')
         kurz3 = daten.get("tw_kurz3", "")
-        if "1 -" in kurz3: w["cb_0001_00_PE_ZS-1272_ 1"] = PdfName('/Yes')
-        elif "2 -" in kurz3: w["cb_0001_00_PE_ZS-1272_ 2"] = PdfName('/Yes')
-        elif "3 -" in kurz3: w["cb_0001_00_PE_ZS-1272_ 3"] = PdfName('/Yes')
+        if "1 -" in kurz3: w["cb_0001_00_PE_ZS-1272_ 1"] = NameObject('/Yes')
+        elif "2 -" in kurz3: w["cb_0001_00_PE_ZS-1272_ 2"] = NameObject('/Yes')
+        elif "3 -" in kurz3: w["cb_0001_00_PE_ZS-1272_ 3"] = NameObject('/Yes')
         kurz4 = daten.get("tw_kurz4", "")
-        if "1 -" in kurz4: w["cb_0001_00_PE_ZS-1273_ 1"] = PdfName('/Yes')
-        elif "2 -" in kurz4: w["cb_0001_00_PE_ZS-1273_ 2"] = PdfName('/Yes')
-        elif "3 -" in kurz4: w["cb_0001_00_PE_ZS-1273_ 3"] = PdfName('/Yes')
+        if "1 -" in kurz4: w["cb_0001_00_PE_ZS-1273_ 1"] = NameObject('/Yes')
+        elif "2 -" in kurz4: w["cb_0001_00_PE_ZS-1273_ 2"] = NameObject('/Yes')
+        elif "3 -" in kurz4: w["cb_0001_00_PE_ZS-1273_ 3"] = NameObject('/Yes')
         
         w["txt_0001_00_PE_ZS-002278"] = daten.get("tw_zweck", "")
         w["txt_0001_00_PE_ZS-002279"] = daten.get("tw_inhalt", "")
@@ -125,41 +110,41 @@ def bereite_daten_vor(daten):
         w["txt_0001_00_PE_ZS-002282"] = daten.get("tw_bemerkung", "")
         w["txt_0001_00_PE_ZS-1269"] = daten.get("tw_auff_sonstiges", "")
 
-        if daten.get("tw_cb_pn"): w["cb_0001_00_PE_ZS-002304_PN-Hahn"] = PdfName('/Yes')
-        if daten.get("tw_cb_ein"): w["cb_0001_00_PE_ZS-002304_ Einhebel-Mischarmatur"] = PdfName('/Yes')
-        if daten.get("tw_cb_zwei"): w["cb_0001_00_PE_ZS-002304_ Zweigriff-Mischarmatur"] = PdfName('/Yes')
-        if daten.get("tw_cb_ein_g"): w["cb_0001_00_PE_ZS-002304_ Eingriff-Armmatur"] = PdfName('/Yes')
-        if daten.get("tw_cb_sensor"): w["cb_0001_00_PE_ZS-002304_ Sensor-Armatur"] = PdfName('/Yes')
-        if daten.get("tw_cb_eck"): w["cb_0001_00_PE_ZS-002304_ Eckventil"] = PdfName('/Yes')
-        if daten.get("tw_cb_knie"): w["cb_0001_00_PE_ZS-002304_ Armatur mit Kniebestätigung"] = PdfName('/Yes')
-        if daten.get("cb_auff_ja"): w["cb_0001_00_PE_ZS-1268_ja"] = PdfName('/Yes')
-        if daten.get("cb_auff_nein"): w["cb_0001_00_PE_ZS-1268_ nein"] = PdfName('/Yes')
-        if daten.get("cb_auff_perl"): w["cb_0001_00_PE_ZS-1268_ Perlator nicht entfernbar"] = PdfName('/Yes')
-        if daten.get("cb_auff_verkalk"): w["cb_0001_00_PE_ZS-1268_ Starke Verkalkung"] = PdfName('/Yes')
-        if daten.get("cb_auff_verbrueh"): w["cb_0001_00_PE_ZS-1268_ Armatur mit Verbrühschutz"] = PdfName('/Yes')
-        if daten.get("cb_auff_durchlauf"): w["cb_0001_00_PE_ZS-1268_ Durchlauferhitzer"] = PdfName('/Yes')
-        if daten.get("cb_auff_unterbau"): w["cb_0001_00_PE_ZS-1268_ Unterbauspeicher [L]"] = PdfName('/Yes')
-        if daten.get("cb_auff_eck_zu"): w["cb_0001_00_PE_ZS-1268_ Eckventil warm/kalt geschlossen"] = PdfName('/Yes')
-        if daten.get("cb_auff_nichtmoeglich"): w["cb_0001_00_PE_ZS-1268_ nicht möglich"] = PdfName('/Yes')
-        if daten.get("cb_auff_dusche"): w["cb_0001_00_PE_ZS-1268_ Entnahme aus der Dusche"] = PdfName('/Yes')
-        if daten.get("cb_auff_handbrause"): w["cb_0001_00_PE_ZS-1268_ Handbrause"] = PdfName('/Yes')
-        if daten.get("cb_auff_sonst"): w["cb_0001_00_PE_ZS-1268_ Sonstiges"] = PdfName('/Yes')
+        if daten.get("tw_cb_pn"): w["cb_0001_00_PE_ZS-002304_PN-Hahn"] = NameObject('/Yes')
+        if daten.get("tw_cb_ein"): w["cb_0001_00_PE_ZS-002304_ Einhebel-Mischarmatur"] = NameObject('/Yes')
+        if daten.get("tw_cb_zwei"): w["cb_0001_00_PE_ZS-002304_ Zweigriff-Mischarmatur"] = NameObject('/Yes')
+        if daten.get("tw_cb_ein_g"): w["cb_0001_00_PE_ZS-002304_ Eingriff-Armmatur"] = NameObject('/Yes')
+        if daten.get("tw_cb_sensor"): w["cb_0001_00_PE_ZS-002304_ Sensor-Armatur"] = NameObject('/Yes')
+        if daten.get("tw_cb_eck"): w["cb_0001_00_PE_ZS-002304_ Eckventil"] = NameObject('/Yes')
+        if daten.get("tw_cb_knie"): w["cb_0001_00_PE_ZS-002304_ Armatur mit Kniebestätigung"] = NameObject('/Yes')
+        if daten.get("cb_auff_ja"): w["cb_0001_00_PE_ZS-1268_ja"] = NameObject('/Yes')
+        if daten.get("cb_auff_nein"): w["cb_0001_00_PE_ZS-1268_ nein"] = NameObject('/Yes')
+        if daten.get("cb_auff_perl"): w["cb_0001_00_PE_ZS-1268_ Perlator nicht entfernbar"] = NameObject('/Yes')
+        if daten.get("cb_auff_verkalk"): w["cb_0001_00_PE_ZS-1268_ Starke Verkalkung"] = NameObject('/Yes')
+        if daten.get("cb_auff_verbrueh"): w["cb_0001_00_PE_ZS-1268_ Armatur mit Verbrühschutz"] = NameObject('/Yes')
+        if daten.get("cb_auff_durchlauf"): w["cb_0001_00_PE_ZS-1268_ Durchlauferhitzer"] = NameObject('/Yes')
+        if daten.get("cb_auff_unterbau"): w["cb_0001_00_PE_ZS-1268_ Unterbauspeicher [L]"] = NameObject('/Yes')
+        if daten.get("cb_auff_eck_zu"): w["cb_0001_00_PE_ZS-1268_ Eckventil warm/kalt geschlossen"] = NameObject('/Yes')
+        if daten.get("cb_auff_nichtmoeglich"): w["cb_0001_00_PE_ZS-1268_ nicht möglich"] = NameObject('/Yes')
+        if daten.get("cb_auff_dusche"): w["cb_0001_00_PE_ZS-1268_ Entnahme aus der Dusche"] = NameObject('/Yes')
+        if daten.get("cb_auff_handbrause"): w["cb_0001_00_PE_ZS-1268_ Handbrause"] = NameObject('/Yes')
+        if daten.get("cb_auff_sonst"): w["cb_0001_00_PE_ZS-1268_ Sonstiges"] = NameObject('/Yes')
 
     # SCHERBENEIS
     if daten.get("se_kalt", False):
-        w["cb_0002_00"] = PdfName('/Yes')
+        w["cb_0002_00"] = NameObject('/Yes')
         w["txt_0002_00_PE_ZS-1274"] = daten.get("se_zeit", "")
         w["txt_0002_00_PE_ZS-002304"] = daten.get("se_temp", "")
         w["txt_0002_00_PE_ZS-1260"] = daten.get("se_zapf", "")
         w["txt_0002_00_PE_ZS-1269"] = daten.get("se_auff_sonst", "")
         w["txt_0002_00_PE_ZS-1261"] = daten.get("se_tech_sonst", "")
         se_desinf = daten.get("se_desinf", "")
-        if se_desinf == "Abflammen": w["cb_0002_00_PE_ZS-1262_ Abflammen"] = PdfName('/Yes')
-        elif se_desinf == "Sprühdesinfektion": w["cb_0002_00_PE_ZS-1262_ Sprühdesinfektion"] = PdfName('/Yes')
-        elif se_desinf == "ohne Desinfektion": w["cb_0002_00_PE_ZS-1262_ ohne"] = PdfName('/Yes')
-        if daten.get("se_cb_eiswanne"): w["cb_0002_00_PE_ZS-002304_ Eiswanne/Schöpfprobe"] = PdfName('/Yes')
-        if daten.get("se_cb_fallprobe"): w["cb_0002_00_PE_ZS-002304_ Fallprobe"] = PdfName('/Yes')
-        if daten.get("se_cb_ozon"): w["cb_0002_00_PE_ZS-1268_ Ozonsterilisator"] = PdfName('/Yes')
+        if se_desinf == "Abflammen": w["cb_0002_00_PE_ZS-1262_ Abflammen"] = NameObject('/Yes')
+        elif se_desinf == "Sprühdesinfektion": w["cb_0002_00_PE_ZS-1262_ Sprühdesinfektion"] = NameObject('/Yes')
+        elif se_desinf == "ohne Desinfektion": w["cb_0002_00_PE_ZS-1262_ ohne"] = NameObject('/Yes')
+        if daten.get("se_cb_eiswanne"): w["cb_0002_00_PE_ZS-002304_ Eiswanne/Schöpfprobe"] = NameObject('/Yes')
+        if daten.get("se_cb_fallprobe"): w["cb_0002_00_PE_ZS-002304_ Fallprobe"] = NameObject('/Yes')
+        if daten.get("se_cb_ozon"): w["cb_0002_00_PE_ZS-1268_ Ozonsterilisator"] = NameObject('/Yes')
         w["txt_0002_00_PE_ZS-002279"] = daten.get("se_inhalt", "")
         w["txt_0002_00_PE_ZS-002280"] = daten.get("se_verpackung", "")
         w["txt_0002_00_PE_ZS-002281"] = daten.get("se_entnahmeort", "")
@@ -167,13 +152,13 @@ def bereite_daten_vor(daten):
 
     # SCHERBENEIS - OKZ
     if daten.get("se_okz_cb", False):
-        w["cb_0003_00"] = PdfName('/Yes')
+        w["cb_0003_00"] = NameObject('/Yes')
         w["txt_0003_00_PE_ZS-002282"] = daten.get("se_okz_bemerkung", "")
         w.update(hole_okz_werte(daten, "se_okz", "0003", 3, erwartet_j=True))
 
     # HFM - HACKFLEISCH GEMISCHT
     if daten.get("hfm_hack_cb", False):
-        w["cb_0004_00"] = PdfName('/Yes')
+        w["cb_0004_00"] = NameObject('/Yes')
         w["txt_0004_00_PE_ZS-002281"] = daten.get("hfm_hack_entnahmeort", "")
         w["txt_0004_00_PE_ZS-002298"] = daten.get("hfm_hack_herstelldatum", "")
         w["txt_0004_00_PE_ZS-002279"] = daten.get("hfm_hack_inhalt", "")
@@ -189,7 +174,7 @@ def bereite_daten_vor(daten):
 
     # HFM - SCHWEINEMETT
     if daten.get("hfm_mett_cb", False):
-        w["cb_0005_00"] = PdfName('/Yes')
+        w["cb_0005_00"] = NameObject('/Yes')
         w["txt_0005_00_PE_ZS-002281"] = daten.get("hfm_mett_entnahmeort", "")
         w["txt_0005_00_PE_ZS-002298"] = daten.get("hfm_mett_herstelldatum", "")
         w["txt_0005_00_PE_ZS-002279"] = daten.get("hfm_mett_inhalt", "")
@@ -202,7 +187,7 @@ def bereite_daten_vor(daten):
 
     # HFM - FZ SCHWEIN
     if daten.get("hfm_fzs_cb", False):
-        w["cb_0006_00"] = PdfName('/Yes')
+        w["cb_0006_00"] = NameObject('/Yes')
         w["txt_0006_00_PE_ZS-002281"] = daten.get("hfm_fzs_entnahmeort", "")
         w["txt_0006_00_PE_ZS-002303"] = daten.get("hfm_fzs_produkt", "")
         w["txt_0006_00_PE_ZS-002306"] = daten.get("hfm_fzs_marinade", "")
@@ -217,7 +202,7 @@ def bereite_daten_vor(daten):
 
     # HFM - FZ GEFLÜGEL
     if daten.get("hfm_fzg_cb", False):
-        w["cb_0007_00"] = PdfName('/Yes')
+        w["cb_0007_00"] = NameObject('/Yes')
         w["txt_0007_00_PE_ZS-002281"] = daten.get("hfm_fzg_entnahmeort", "")
         w["txt_0007_00_PE_ZS-002303"] = daten.get("hfm_fzg_produkt", "")
         w["txt_0007_00_PE_ZS-002306"] = daten.get("hfm_fzg_marinade", "")
@@ -232,7 +217,7 @@ def bereite_daten_vor(daten):
 
     # HFM - BIO HACKFLEISCH
     if daten.get("hfm_bio_cb", False):
-        w["cb_0008_00"] = PdfName('/Yes')
+        w["cb_0008_00"] = NameObject('/Yes')
         w["txt_0008_00_PE_ZS-002281"] = daten.get("hfm_bio_entnahmeort", "")
         w["txt_0008_00_PE_ZS-002298"] = daten.get("hfm_bio_herstelldatum", "")
         w["txt_0008_00_PE_ZS-002279"] = daten.get("hfm_bio_inhalt", "")
@@ -248,7 +233,7 @@ def bereite_daten_vor(daten):
 
     # HFM - OKZ
     if daten.get("hfm_okz_cb", False):
-        w["cb_0010_00"] = PdfName('/Yes')
+        w["cb_0010_00"] = NameObject('/Yes')
         w["txt_0010_00_PE_ZS-002282"] = daten.get("hfm_okz_bemerkung", "")
         w.update(hole_okz_werte(daten, "okz", "0010", 10, erwartet_j=True))
 
@@ -268,21 +253,25 @@ def bereite_daten_vor(daten):
 
     # CONVENIENCE OG - OKZ
     if daten.get("og_okz_cb", False):
-        w["cb_0011_00"] = PdfName('/Yes')
+        w["cb_0011_00"] = NameObject('/Yes')
         w["txt_0011_00_PE_ZS-002282"] = daten.get("og_okz_bemerkung", "")
         w["txt_0011_00_PE_ZS-002293"] = daten.get("og_okz_anmerkung", "")
         w.update(hole_okz_werte(daten, "og_okz", "0011", 5, erwartet_j=True))
 
     return w
 
+
 def erstelle_bericht(daten):
-    # WIEDER GANZ SIMPEL: Wir vertrauen Flet, dass es den Ordner kennt!
     assets_dir = "assets"
 
     ziel_ordner = get_tages_ordner()
     markt_nr = daten.get("marktnummer", "").strip() or "Ohne_Nummer"
     datum_str = daten.get("datum", "").replace(".", "_") or get_heute_str()
-    dateiname = f"REWE_Monitoring_{markt_nr}_{datum_str}.pdf"
+    
+    # NEU: Hängt die genaue Uhrzeit (Stunde, Minute, Sekunde) an den Namen!
+    # Dadurch gibt es NIEMALS die gleiche Datei zweimal, der Android-Cache wird umgangen.
+    uhrzeit_str = datetime.datetime.now().strftime('%H-%M-%S')
+    dateiname = f"REWE_Monitoring_{markt_nr}_{datum_str}_{uhrzeit_str}.pdf"
     ziel_pfad = os.path.join(ziel_ordner, dateiname)
 
     werte_mapping = bereite_daten_vor(daten)
@@ -290,7 +279,6 @@ def erstelle_bericht(daten):
 
     benoetigte_pdfs = []
     
-    # Hier werden die Dateinamen definiert, die gesucht werden
     if daten.get("tw_kalt"): benoetigte_pdfs.append("trinkwasser.pdf")
     if daten.get("se_kalt"): benoetigte_pdfs.append("scherbeneis.pdf")
     if daten.get("se_okz_cb"): benoetigte_pdfs.append("okz-eis.pdf")
@@ -308,28 +296,43 @@ def erstelle_bericht(daten):
 
     pdfs_nicht_gefunden = []
 
+    # 1. PDFs laden und aneinanderhängen
     for pdf_name in benoetigte_pdfs:
-        # Exakt der simple Pfad, der vorher bei dir funktioniert hat!
         pdf_pfad = f"assets/{pdf_name}"
-        
         if not os.path.exists(pdf_pfad):
             pdfs_nicht_gefunden.append(pdf_name)
             continue
 
-        pdf = PdfReader(pdf_pfad)
-        
-        for page in pdf.pages:
-            annotations = page.Annots
-            if annotations:
-                for annotation in annotations:
-                    if annotation.Subtype == '/Widget' and annotation.T:
-                        field_name = annotation.T[1:-1]
-                        if field_name in werte_mapping:
-                            set_field_value(annotation, werte_mapping[field_name])
-            writer.addpages([page])
+        reader = PdfReader(pdf_pfad)
+        writer.append(reader)
 
     if pdfs_nicht_gefunden:
         raise FileNotFoundError(f"Die folgenden PDFs fehlen im 'assets' Ordner: {', '.join(pdfs_nicht_gefunden)}")
 
-    writer.write(ziel_pfad)
+    # 2. Felder im großen, zusammengefügten PDF ausfüllen
+    for page in writer.pages:
+        if "/Annots" in page:
+            for annot_ref in page["/Annots"]:
+                annot = annot_ref.get_object()
+                if annot.get("/Subtype") == "/Widget" and "/T" in annot:
+                    field_name_str = str(annot.get("/T"))
+                    if field_name_str in werte_mapping:
+                        val = werte_mapping[field_name_str]
+                        
+                        # Wenn es ein NameObject ist (wie /j oder /Yes für Haken)
+                        if isinstance(val, NameObject):
+                            annot[NameObject("/V")] = val
+                            annot[NameObject("/AS")] = val
+                        # Wenn es ganz normaler Text ist
+                        else:
+                            annot[NameObject("/V")] = StringObject(val)
+
+    # 3. ZWINGT ANDROID, DEN TEXT SICHTBAR ZU MACHEN
+    if "/AcroForm" in writer.root_object:
+        writer.root_object["/AcroForm"][NameObject("/NeedAppearances")] = BooleanObject(True)
+
+    # 4. Datei final abspeichern
+    with open(ziel_pfad, "wb") as output_file:
+        writer.write(output_file)
+
     return ziel_pfad
