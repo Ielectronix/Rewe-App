@@ -276,12 +276,8 @@ def bereite_daten_vor(daten):
     return w
 
 def erstelle_bericht(daten):
-    # --- DYNAMISCHE PFADSUCHE FÜR ANDROID & PC ---
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    assets_dir = os.path.join(script_dir, "assets")
-    
-    if not os.path.exists(assets_dir):
-        assets_dir = "assets"
+    # WIEDER GANZ SIMPEL: Wir vertrauen Flet, dass es den Ordner kennt!
+    assets_dir = "assets"
 
     ziel_ordner = get_tages_ordner()
     markt_nr = daten.get("marktnummer", "").strip() or "Ohne_Nummer"
@@ -292,16 +288,9 @@ def erstelle_bericht(daten):
     werte_mapping = bereite_daten_vor(daten)
     writer = PdfWriter()
 
-    # --- ⚠️ HIER BITTE DEINE ECHTEN DATEINAMEN EINTRAGEN ⚠️ ---
-    # Die Dateinamen rechts in den Anführungszeichen müssen exakt 
-    # mit den PDF-Namen in deinem 'assets' Ordner übereinstimmen!
-    
     benoetigte_pdfs = []
     
-    # Beispiel: Wenn du immer ein Deckblatt (Stammdaten) brauchst, 
-    # entferne das '#' vor der nächsten Zeile und trage den Namen ein:
-    # benoetigte_pdfs.append("stammdaten.pdf")
-
+    # Hier werden die Dateinamen definiert, die gesucht werden
     if daten.get("tw_kalt"): benoetigte_pdfs.append("trinkwasser.pdf")
     if daten.get("se_kalt"): benoetigte_pdfs.append("scherbeneis.pdf")
     if daten.get("se_okz_cb"): benoetigte_pdfs.append("okz-eis.pdf")
@@ -314,16 +303,14 @@ def erstelle_bericht(daten):
     if daten.get("og_cb"): benoetigte_pdfs.append("og.pdf")
     if daten.get("og_okz_cb"): benoetigte_pdfs.append("okz-og.pdf")
     
-    # ----------------------------------------------------------
-
     if not benoetigte_pdfs:
         raise ValueError("Keine Proben in der App ausgewählt (Haken gesetzt)! PDF kann nicht erstellt werden.")
 
     pdfs_nicht_gefunden = []
 
-    # PDFs laden, ausfüllen und hintereinander zusammenfügen
     for pdf_name in benoetigte_pdfs:
-        pdf_pfad = os.path.join(assets_dir, pdf_name)
+        # Exakt der simple Pfad, der vorher bei dir funktioniert hat!
+        pdf_pfad = f"assets/{pdf_name}"
         
         if not os.path.exists(pdf_pfad):
             pdfs_nicht_gefunden.append(pdf_name)
@@ -341,10 +328,8 @@ def erstelle_bericht(daten):
                             set_field_value(annotation, werte_mapping[field_name])
             writer.addpages([page])
 
-    # Wenn Dateien fehlen, wird ein Fehler auf dem Handy gezeigt
     if pdfs_nicht_gefunden:
         raise FileNotFoundError(f"Die folgenden PDFs fehlen im 'assets' Ordner: {', '.join(pdfs_nicht_gefunden)}")
 
-    # PDF abspeichern
     writer.write(ziel_pfad)
     return ziel_pfad
