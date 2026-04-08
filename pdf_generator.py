@@ -1,7 +1,8 @@
 import os
 import datetime
 from pypdf import PdfReader, PdfWriter
-from pypdf.generic import NameObject, BooleanObject, create_string_object
+# NEU: DictionaryObject hinzugefügt, um den Fehler zu beheben!
+from pypdf.generic import NameObject, BooleanObject, create_string_object, DictionaryObject
 
 # SUCHT DEN RICHTIGEN BASIS-ORDNER
 def get_all_rewe_bases():
@@ -70,8 +71,6 @@ def bereite_daten_vor(daten):
         w["txt_0001_00_PE_ZS-1274"] = daten.get("tw_zeit", "")
         w["txt_0001_00_PE_ZS-002304"] = daten.get("tw_temp", "")
         w["txt_0001_00_PE_ZS-002305"] = daten.get("tw_tempkonst", "")
-        
-        # Checkboxen Trinkwasser
         if daten.get("tw_cb_pn"): w["cb_0001_00_PE_ZS-002304_PN-Hahn"] = NameObject('/Yes')
         if daten.get("tw_cb_ein"): w["cb_0001_00_PE_ZS-002304_ Einhebel-Mischarmatur"] = NameObject('/Yes')
         if daten.get("tw_cb_zwei"): w["cb_0001_00_PE_ZS-002304_ Zweigriff-Mischarmatur"] = NameObject('/Yes')
@@ -79,18 +78,15 @@ def bereite_daten_vor(daten):
         if daten.get("tw_cb_sensor"): w["cb_0001_00_PE_ZS-002304_ Sensor-Armatur"] = NameObject('/Yes')
         if daten.get("tw_cb_eck"): w["cb_0001_00_PE_ZS-002304_ Eckventil"] = NameObject('/Yes')
         if daten.get("tw_cb_knie"): w["cb_0001_00_PE_ZS-002304_ Armatur mit Kniebestätigung"] = NameObject('/Yes')
-        
-        # Auffälligkeiten (inkl. Unterbauspeicher Fix)
         if daten.get("cb_auff_unterbau"): w["cb_0001_00_PE_ZS-1268_ Unterbauspeicher [L]"] = NameObject('/Yes')
         if daten.get("cb_auff_dusche"): w["cb_0001_00_PE_ZS-1268_ Entnahme aus der Dusche"] = NameObject('/Yes')
         if daten.get("cb_auff_handbrause"): w["cb_0001_00_PE_ZS-1268_ Handbrause"] = NameObject('/Yes')
-        
-        # Details
         w["txt_0001_00_PE_ZS-002278"] = daten.get("tw_zweck", "")
         w["txt_0001_00_PE_ZS-002279"] = daten.get("tw_inhalt", "")
         w["txt_0001_00_PE_ZS-002280"] = daten.get("tw_verpackung", "")
         w["txt_0001_00_PE_ZS-002281"] = daten.get("tw_entnahmeort", "")
         w["txt_0001_00_PE_ZS-002282"] = daten.get("tw_bemerkung", "")
+        w["txt_0001_00_PE_ZS-1269"] = daten.get("tw_auff_sonstiges", "")
 
     # HACKFLEISCH GEMISCHT (HFM)
     if daten.get("hfm_hack_cb"):
@@ -120,7 +116,7 @@ def erstelle_bericht(daten):
     assets_dir = "assets"
     ziel_ordner = get_tages_ordner()
     
-    # DATEINAME FIX: Keine Sekunden mehr -> Vorhandene Berichte derselben Tour werden überschrieben!
+    # DATEINAME: Überschreibt alte Berichte derselben Tour am selben Tag
     markt_nr = daten.get("marktnummer", "").strip() or "Ohne_Nummer"
     datum_str = daten.get("datum", "").replace(".", "_")
     dateiname = f"REWE_Monitoring_{markt_nr}_{datum_str}.pdf"
@@ -145,7 +141,6 @@ def erstelle_bericht(daten):
     if not benoetigte_pdfs:
         raise ValueError("Keine Proben ausgewählt!")
 
-    # 1. PDFs EINZELN LADEN UND AUSFÜLLEN (BEVOR SIE ZUSAMMENGEFÜGT WERDEN)
     for pdf_name in benoetigte_pdfs:
         pdf_pfad = os.path.join(assets_dir, pdf_name)
         if not os.path.exists(pdf_pfad):
@@ -153,7 +148,7 @@ def erstelle_bericht(daten):
 
         reader = PdfReader(pdf_pfad)
         
-        # Felder auf dem Reader ausfüllen
+        # NeedAppearances auf dem Reader setzen
         if "/AcroForm" in reader.trailer["/Root"]:
             reader.trailer["/Root"]["/AcroForm"].update({
                 NameObject("/NeedAppearances"): BooleanObject(True)
@@ -173,17 +168,19 @@ def erstelle_bericht(daten):
                                 annot.update({NameObject("/V"): create_string_object(val)})
             writer.add_page(page)
 
-    # 2. ZERSTÖRT DEN CACHE: NeedAppearances erzwingen
+    # --- FIX FÜR DEN SYSTEM-FEHLER (PdfDict -> DictionaryObject) ---
     if "/AcroForm" not in writer.root_object:
         writer.root_object.update({
-            NameObject("/AcroForm"): PdfDict(NeedAppearances=BooleanObject(True))
+            NameObject("/AcroForm"): DictionaryObject({
+                NameObject("/NeedAppearances"): BooleanObject(True)
+            })
         })
     else:
         writer.root_object["/AcroForm"].update({
             NameObject("/NeedAppearances"): BooleanObject(True)
         })
 
-    # 3. DATEI SPEICHERN
+    # SPEICHERN
     with open(ziel_pfad, "wb") as output_file:
         writer.write(output_file)
 
