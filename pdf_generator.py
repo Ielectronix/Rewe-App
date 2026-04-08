@@ -41,28 +41,21 @@ def get_tages_ordner():
 def create_pdf_string(text):
     if not text:
         return PdfString("()")
-    
-    # ISO-8859-1 Encoding für Umlaute im PDF (sehr wichtig für pdfrw)
+    # ISO-8859-1 Encoding für Umlaute im PDF
     encoded = text.encode('iso-8859-1', 'replace').decode('iso-8859-1')
-    
-    # Spezielle Zeichen für PDF formatieren
     encoded = encoded.replace('\\', '\\\\').replace('(', '\\(').replace(')', '\\)')
     return PdfString(f"({encoded})")
 
 def set_field_value(field, value):
     if value is None:
         return
-
     if isinstance(value, str):
-        # Textfeld setzen
         field.update(PdfDict(V=create_pdf_string(value)))
     elif isinstance(value, PdfName):
-        # Checkbox setzen (z. B. PdfName("/Yes") oder PdfName("/j"))
         field.update(PdfDict(AS=value, V=value))
 
 def hole_okz_werte(daten, sektion_prefix, prefix_in_pdf, anzahl, erwartet_j=True):
-    # Hilfsfunktion für OKZ (Abklatsch/Tupfer).
-    # erwartet_j=True bedeutet, wir nutzen /j statt /Yes für den Haken.
+    # Setzt den Haken auf /j oder /Yes, je nachdem was das PDF verlangt
     haken_wert = PdfName('/j') if erwartet_j else PdfName('/Yes')
     w = {}
     for i in range(1, anzahl + 1):
@@ -70,7 +63,6 @@ def hole_okz_werte(daten, sektion_prefix, prefix_in_pdf, anzahl, erwartet_j=True
         ort = daten.get(f"{sektion_prefix}_ort_{idx}", "")
         obj = daten.get(f"{sektion_prefix}_objekt_{idx}", "")
         
-        # Nur wenn es ein Ort oder Objekt gibt, setzen wir die Werte
         if ort or obj:
             w[f"txt_{prefix_in_pdf}_{idx}_ZS-002287"] = daten.get(f"{sektion_prefix}_status_{idx}", "")
             w[f"txt_{prefix_in_pdf}_{idx}_ZS-002288"] = obj
@@ -83,8 +75,7 @@ def hole_okz_werte(daten, sektion_prefix, prefix_in_pdf, anzahl, erwartet_j=True
     return w
 
 def bereite_daten_vor(daten):
-    # Bereitet das Dictionary für pdfrw vor (Mapping auf die internen PDF-Feldnamen)
-    
+    # Bereitet ALLE Felder als großes Wörterbuch vor
     w = {}
     
     # STAMMDATEN (ALLGEMEIN)
@@ -102,33 +93,26 @@ def bereite_daten_vor(daten):
         w["txt_0001_00_PE_ZS-1274"] = daten.get("tw_zeit", "")
         w["txt_0001_00_PE_ZS-002304"] = daten.get("tw_temp", "")
         w["txt_0001_00_PE_ZS-002305"] = daten.get("tw_tempkonst", "")
-        
-        # Desinfektion
         desinf = daten.get("tw_desinf", "")
         if desinf == "Abflammen": w["cb_0001_00_PE_ZS-1262_ Abflammen"] = PdfName('/Yes')
         elif desinf == "Sprühdesinfektion": w["cb_0001_00_PE_ZS-1262_ Sprühdesinfektion"] = PdfName('/Yes')
         elif desinf == "ohne Desinfektion": w["cb_0001_00_PE_ZS-1262_ ohne"] = PdfName('/Yes')
-        
         w["txt_0001_00_PE_ZS-1260"] = daten.get("tw_zapf", "")
         w["txt_0001_00_PE_ZS-1261"] = daten.get("tw_zapf_sonst", "")
         w["txt_0001_00_PE_ZS-1267"] = daten.get("tw_inaktiv", "")
         
-        # Kurzsensorik
         kurz1 = daten.get("tw_kurz1", "")
         if "1 -" in kurz1: w["cb_0001_00_PE_ZS-1270_ 1"] = PdfName('/Yes')
         elif "2 -" in kurz1: w["cb_0001_00_PE_ZS-1270_ 2"] = PdfName('/Yes')
         elif "3 -" in kurz1: w["cb_0001_00_PE_ZS-1270_ 3"] = PdfName('/Yes')
-        
         kurz2 = daten.get("tw_kurz2", "")
         if "1 -" in kurz2: w["cb_0001_00_PE_ZS-1271_ 1"] = PdfName('/Yes')
         elif "2 -" in kurz2: w["cb_0001_00_PE_ZS-1271_ 2"] = PdfName('/Yes')
         elif "3 -" in kurz2: w["cb_0001_00_PE_ZS-1271_ 3"] = PdfName('/Yes')
-        
         kurz3 = daten.get("tw_kurz3", "")
         if "1 -" in kurz3: w["cb_0001_00_PE_ZS-1272_ 1"] = PdfName('/Yes')
         elif "2 -" in kurz3: w["cb_0001_00_PE_ZS-1272_ 2"] = PdfName('/Yes')
         elif "3 -" in kurz3: w["cb_0001_00_PE_ZS-1272_ 3"] = PdfName('/Yes')
-        
         kurz4 = daten.get("tw_kurz4", "")
         if "1 -" in kurz4: w["cb_0001_00_PE_ZS-1273_ 1"] = PdfName('/Yes')
         elif "2 -" in kurz4: w["cb_0001_00_PE_ZS-1273_ 2"] = PdfName('/Yes')
@@ -141,7 +125,6 @@ def bereite_daten_vor(daten):
         w["txt_0001_00_PE_ZS-002282"] = daten.get("tw_bemerkung", "")
         w["txt_0001_00_PE_ZS-1269"] = daten.get("tw_auff_sonstiges", "")
 
-        # Alle Technik/Auffälligkeits-Checkboxen für Trinkwasser (nach deiner Liste /Yes)
         if daten.get("tw_cb_pn"): w["cb_0001_00_PE_ZS-002304_PN-Hahn"] = PdfName('/Yes')
         if daten.get("tw_cb_ein"): w["cb_0001_00_PE_ZS-002304_ Einhebel-Mischarmatur"] = PdfName('/Yes')
         if daten.get("tw_cb_zwei"): w["cb_0001_00_PE_ZS-002304_ Zweigriff-Mischarmatur"] = PdfName('/Yes')
@@ -149,7 +132,6 @@ def bereite_daten_vor(daten):
         if daten.get("tw_cb_sensor"): w["cb_0001_00_PE_ZS-002304_ Sensor-Armatur"] = PdfName('/Yes')
         if daten.get("tw_cb_eck"): w["cb_0001_00_PE_ZS-002304_ Eckventil"] = PdfName('/Yes')
         if daten.get("tw_cb_knie"): w["cb_0001_00_PE_ZS-002304_ Armatur mit Kniebestätigung"] = PdfName('/Yes')
-        
         if daten.get("cb_auff_ja"): w["cb_0001_00_PE_ZS-1268_ja"] = PdfName('/Yes')
         if daten.get("cb_auff_nein"): w["cb_0001_00_PE_ZS-1268_ nein"] = PdfName('/Yes')
         if daten.get("cb_auff_perl"): w["cb_0001_00_PE_ZS-1268_ Perlator nicht entfernbar"] = PdfName('/Yes')
@@ -171,22 +153,19 @@ def bereite_daten_vor(daten):
         w["txt_0002_00_PE_ZS-1260"] = daten.get("se_zapf", "")
         w["txt_0002_00_PE_ZS-1269"] = daten.get("se_auff_sonst", "")
         w["txt_0002_00_PE_ZS-1261"] = daten.get("se_tech_sonst", "")
-        
         se_desinf = daten.get("se_desinf", "")
         if se_desinf == "Abflammen": w["cb_0002_00_PE_ZS-1262_ Abflammen"] = PdfName('/Yes')
         elif se_desinf == "Sprühdesinfektion": w["cb_0002_00_PE_ZS-1262_ Sprühdesinfektion"] = PdfName('/Yes')
         elif se_desinf == "ohne Desinfektion": w["cb_0002_00_PE_ZS-1262_ ohne"] = PdfName('/Yes')
-
         if daten.get("se_cb_eiswanne"): w["cb_0002_00_PE_ZS-002304_ Eiswanne/Schöpfprobe"] = PdfName('/Yes')
         if daten.get("se_cb_fallprobe"): w["cb_0002_00_PE_ZS-002304_ Fallprobe"] = PdfName('/Yes')
         if daten.get("se_cb_ozon"): w["cb_0002_00_PE_ZS-1268_ Ozonsterilisator"] = PdfName('/Yes')
-
         w["txt_0002_00_PE_ZS-002279"] = daten.get("se_inhalt", "")
         w["txt_0002_00_PE_ZS-002280"] = daten.get("se_verpackung", "")
         w["txt_0002_00_PE_ZS-002281"] = daten.get("se_entnahmeort", "")
         w["txt_0002_00_PE_ZS-002282"] = daten.get("se_bemerkung", "")
 
-    # SCHERBENEIS - OKZ (Erwartet /j laut Liste)
+    # SCHERBENEIS - OKZ
     if daten.get("se_okz_cb", False):
         w["cb_0003_00"] = PdfName('/Yes')
         w["txt_0003_00_PE_ZS-002282"] = daten.get("se_okz_bemerkung", "")
@@ -267,13 +246,13 @@ def bereite_daten_vor(daten):
         w["txt_0008_00_PE_ZS-002304"] = daten.get("hfm_bio_temp", "")
         w["txt_0008_00_PE_ZS-002282"] = daten.get("hfm_bio_bemerkung", "")
 
-    # HFM - OKZ (Erwartet /j laut Liste)
+    # HFM - OKZ
     if daten.get("hfm_okz_cb", False):
         w["cb_0010_00"] = PdfName('/Yes')
         w["txt_0010_00_PE_ZS-002282"] = daten.get("hfm_okz_bemerkung", "")
         w.update(hole_okz_werte(daten, "okz", "0010", 10, erwartet_j=True))
 
-    # CONVENIENCE OG - TEILPROBEN
+    # CONVENIENCE OG
     if daten.get("og_cb", False):
         for i in range(1, 6):
             idx = f"{i:02d}"
@@ -287,7 +266,7 @@ def bereite_daten_vor(daten):
                 w[f"txt_0012_{idx}_ZS-002280"] = daten.get(f"og_verp_{idx}", "")
                 w[f"txt_0012_{idx}_ZS-002304"] = daten.get(f"og_temp_{idx}", "")
 
-    # CONVENIENCE OG - OKZ (Erwartet /j laut Liste für 01-05)
+    # CONVENIENCE OG - OKZ
     if daten.get("og_okz_cb", False):
         w["cb_0011_00"] = PdfName('/Yes')
         w["txt_0011_00_PE_ZS-002282"] = daten.get("og_okz_bemerkung", "")
@@ -297,33 +276,75 @@ def bereite_daten_vor(daten):
     return w
 
 def erstelle_bericht(daten):
-    basis_pdf_pfad = "assets/formular_blanko.pdf"
-    if not os.path.exists(basis_pdf_pfad):
-        raise FileNotFoundError(f"Die Datei {basis_pdf_pfad} wurde nicht im App-Ordner gefunden!")
+    # --- DYNAMISCHE PFADSUCHE FÜR ANDROID & PC ---
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    assets_dir = os.path.join(script_dir, "assets")
+    
+    if not os.path.exists(assets_dir):
+        assets_dir = "assets"
 
     ziel_ordner = get_tages_ordner()
-    
-    # Dateiname zusammenbauen: "REWE_Monitoring_MarktNr_Datum.pdf"
-    markt_nr = daten.get("marktnummer", "").strip()
-    if not markt_nr: markt_nr = "Ohne_Nummer"
-    datum_str = daten.get("datum", "").replace(".", "_")
-    if not datum_str: datum_str = get_heute_str()
-    
+    markt_nr = daten.get("marktnummer", "").strip() or "Ohne_Nummer"
+    datum_str = daten.get("datum", "").replace(".", "_") or get_heute_str()
     dateiname = f"REWE_Monitoring_{markt_nr}_{datum_str}.pdf"
     ziel_pfad = os.path.join(ziel_ordner, dateiname)
 
-    pdf = PdfReader(basis_pdf_pfad)
     werte_mapping = bereite_daten_vor(daten)
+    writer = PdfWriter()
 
-    # Durch das PDF gehen und Felder ausfüllen
-    for page in pdf.pages:
-        annotations = page.Annots
-        if annotations:
-            for annotation in annotations:
-                if annotation.Subtype == '/Widget' and annotation.T:
-                    field_name = annotation.T[1:-1]
-                    if field_name in werte_mapping:
-                        set_field_value(annotation, werte_mapping[field_name])
+    # --- ⚠️ HIER BITTE DEINE ECHTEN DATEINAMEN EINTRAGEN ⚠️ ---
+    # Die Dateinamen rechts in den Anführungszeichen müssen exakt 
+    # mit den PDF-Namen in deinem 'assets' Ordner übereinstimmen!
+    
+    benoetigte_pdfs = []
+    
+    # Beispiel: Wenn du immer ein Deckblatt (Stammdaten) brauchst, 
+    # entferne das '#' vor der nächsten Zeile und trage den Namen ein:
+    # benoetigte_pdfs.append("stammdaten.pdf")
 
-    PdfWriter().write(ziel_pfad, pdf)
+    if daten.get("tw_kalt"): benoetigte_pdfs.append("trinkwasser.pdf")
+    if daten.get("se_kalt"): benoetigte_pdfs.append("scherbeneis.pdf")
+    if daten.get("se_okz_cb"): benoetigte_pdfs.append("okz-eis.pdf")
+    if daten.get("hfm_hack_cb"): benoetigte_pdfs.append("hfm_hack.pdf")
+    if daten.get("hfm_mett_cb"): benoetigte_pdfs.append("hfm_mett.pdf")
+    if daten.get("hfm_fzs_cb"): benoetigte_pdfs.append("hfm_fzs.pdf")
+    if daten.get("hfm_fzg_cb"): benoetigte_pdfs.append("hfm_fzg.pdf")
+    if daten.get("hfm_bio_cb"): benoetigte_pdfs.append("hfm_bio.pdf")
+    if daten.get("hfm_okz_cb"): benoetigte_pdfs.append("okz-hfm.pdf")
+    if daten.get("og_cb"): benoetigte_pdfs.append("og.pdf")
+    if daten.get("og_okz_cb"): benoetigte_pdfs.append("okz-og.pdf")
+    
+    # ----------------------------------------------------------
+
+    if not benoetigte_pdfs:
+        raise ValueError("Keine Proben in der App ausgewählt (Haken gesetzt)! PDF kann nicht erstellt werden.")
+
+    pdfs_nicht_gefunden = []
+
+    # PDFs laden, ausfüllen und hintereinander zusammenfügen
+    for pdf_name in benoetigte_pdfs:
+        pdf_pfad = os.path.join(assets_dir, pdf_name)
+        
+        if not os.path.exists(pdf_pfad):
+            pdfs_nicht_gefunden.append(pdf_name)
+            continue
+
+        pdf = PdfReader(pdf_pfad)
+        
+        for page in pdf.pages:
+            annotations = page.Annots
+            if annotations:
+                for annotation in annotations:
+                    if annotation.Subtype == '/Widget' and annotation.T:
+                        field_name = annotation.T[1:-1]
+                        if field_name in werte_mapping:
+                            set_field_value(annotation, werte_mapping[field_name])
+            writer.addpages([page])
+
+    # Wenn Dateien fehlen, wird ein Fehler auf dem Handy gezeigt
+    if pdfs_nicht_gefunden:
+        raise FileNotFoundError(f"Die folgenden PDFs fehlen im 'assets' Ordner: {', '.join(pdfs_nicht_gefunden)}")
+
+    # PDF abspeichern
+    writer.write(ziel_pfad)
     return ziel_pfad
