@@ -743,6 +743,11 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         status_text = ft.Text("", color="yellow", weight="bold", size=16)
 
         def hole_aktuelle_daten():
+            # --- NEU: Schutzfunktion gegen leere ".." Daten ---
+            def safe_date(t, m, j):
+                val = get_date_str(t, m, j)
+                return "" if val == ".." else val
+
             d = {
                 "datum": f"{tag_dd.value}.{mon_dd.value}.{jahr_dd.value}", "adresse": adr_in.value, "marktnummer": nr_in.value, "auftragsnummer": auft_in.value, 
                 "mitarbeiter_name": name_in.value, "auftraggeber": ag_dd.value, "typ_probenahme": typ_dd.value, "bemerkung": bem_in.value,
@@ -766,43 +771,47 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 "se_temp": se_temp_in.value, "se_bemerkung": se_bemerkung_dd.value,
                 "se_okz_cb": se_okz_cb.value, "se_okz_bemerkung": se_okz_bemerkung_dd.value,
                 "hfm_hack_cb": hfm_hack_cb.value, "hfm_hack_entnahmeort": hfm_hack_entnahmeort_dd.value,
-                "hfm_hack_herstelldatum": get_date_str(hfm_hack_herst_tag_dd.value, hfm_hack_herst_mon_dd.value, hfm_hack_herst_jahr_dd.value), 
+                "hfm_hack_herstelldatum": safe_date(hfm_hack_herst_tag_dd.value, hfm_hack_herst_mon_dd.value, hfm_hack_herst_jahr_dd.value), 
                 "hfm_hack_inhalt": hfm_hack_inhalt_in.value, "hfm_hack_verpackung": hfm_hack_verpackung_dd.value, 
                 "hfm_hack_lief_schwein": hfm_hack_lief_schwein_in.value, "hfm_hack_lief_rind": hfm_hack_lief_rind_in.value, 
-                "hfm_hack_mhd_schwein": get_date_str(hfm_hack_mhd_s_tag_dd.value, hfm_hack_mhd_s_mon_dd.value, hfm_hack_mhd_s_jahr_dd.value),
-                "hfm_hack_mhd_rind": get_date_str(hfm_hack_mhd_r_tag_dd.value, hfm_hack_mhd_r_mon_dd.value, hfm_hack_mhd_r_jahr_dd.value), 
+                "hfm_hack_mhd_schwein": safe_date(hfm_hack_mhd_s_tag_dd.value, hfm_hack_mhd_s_mon_dd.value, hfm_hack_mhd_s_jahr_dd.value),
+                "hfm_hack_mhd_rind": safe_date(hfm_hack_mhd_r_tag_dd.value, hfm_hack_mhd_r_mon_dd.value, hfm_hack_mhd_r_jahr_dd.value), 
                 "hfm_hack_charge_schwein": hfm_hack_charge_schwein_dd.value, "hfm_hack_charge_rind": hfm_hack_charge_rind_dd.value, 
                 "hfm_hack_temp": hfm_hack_temp_in.value, "hfm_hack_bemerkung": hfm_hack_bemerkung_dd.value,
                 "hfm_mett_cb": hfm_mett_cb.value, "hfm_mett_entnahmeort": hfm_mett_entnahmeort_dd.value,
-                "hfm_mett_herstelldatum": get_date_str(hfm_mett_herst_tag_dd.value, hfm_mett_herst_mon_dd.value, hfm_mett_herst_jahr_dd.value),
+                "hfm_mett_herstelldatum": safe_date(hfm_mett_herst_tag_dd.value, hfm_mett_herst_mon_dd.value, hfm_mett_herst_jahr_dd.value),
                 "hfm_mett_inhalt": hfm_mett_inhalt_in.value, "hfm_mett_verpackung": hfm_mett_verpackung_dd.value,
                 "hfm_mett_lief": hfm_mett_lief_in.value, 
-                "hfm_mett_mhd": get_date_str(hfm_mett_mhd_tag_dd.value, hfm_mett_mhd_mon_dd.value, hfm_mett_mhd_jahr_dd.value),
+                "hfm_mett_mhd": safe_date(hfm_mett_mhd_tag_dd.value, hfm_mett_mhd_mon_dd.value, hfm_mett_mhd_jahr_dd.value),
                 "hfm_mett_charge": hfm_mett_charge_dd.value, "hfm_mett_temp": hfm_mett_temp_in.value,
                 "hfm_mett_bemerkung": hfm_mett_bemerkung_dd.value,
                 "hfm_fzs_cb": hfm_fzs_cb.value, "hfm_fzs_entnahmeort": hfm_fzs_entnahmeort_dd.value,
                 "hfm_fzs_produkt": hfm_fzs_produkt_in.value, "hfm_fzs_marinade": hfm_fzs_marinade_in.value,
-                "hfm_fzs_herstelldatum": get_date_str(hfm_fzs_herst_tag_dd.value, hfm_fzs_herst_mon_dd.value, hfm_fzs_herst_jahr_dd.value),
+                "hfm_fzs_herstelldatum": safe_date(hfm_fzs_herst_tag_dd.value, hfm_fzs_herst_mon_dd.value, hfm_fzs_herst_jahr_dd.value),
                 "hfm_fzs_inhalt": hfm_fzs_inhalt_in.value, "hfm_fzs_verpackung": hfm_fzs_verpackung_dd.value,
                 "hfm_fzs_lief": hfm_fzs_lief_in.value, 
-                "hfm_fzs_mhd": get_date_str(hfm_fzs_mhd_tag_dd.value, hfm_fzs_mhd_mon_dd.value, hfm_fzs_mhd_jahr_dd.value),
+                "hfm_fzs_mhd": safe_date(hfm_fzs_mhd_tag_dd.value, hfm_fzs_mhd_mon_dd.value, hfm_fzs_mhd_jahr_dd.value),
                 "hfm_fzs_charge": hfm_fzs_charge_dd.value, "hfm_fzs_temp": hfm_fzs_temp_in.value,
                 "hfm_fzs_bemerkung": hfm_fzs_bemerkung_dd.value,
                 "hfm_fzg_cb": hfm_fzg_cb.value, "hfm_fzg_entnahmeort": hfm_fzg_entnahmeort_dd.value,
                 "hfm_fzg_produkt": hfm_fzg_produkt_in.value, "hfm_fzg_marinade": hfm_fzg_marinade_in.value,
-                "hfm_fzg_herstelldatum": get_date_str(hfm_fzg_herst_tag_dd.value, hfm_fzg_herst_mon_dd.value, hfm_fzg_herst_jahr_dd.value),
+                "hfm_fzg_herstelldatum": safe_date(hfm_fzg_herst_tag_dd.value, hfm_fzg_herst_mon_dd.value, hfm_fzg_herst_jahr_dd.value),
                 "hfm_fzg_inhalt": hfm_fzg_inhalt_in.value, "hfm_fzg_verpackung": hfm_fzg_verpackung_dd.value,
                 "hfm_fzg_lief": hfm_fzg_lief_in.value, 
-                "hfm_fzg_mhd": get_date_str(hfm_fzg_mhd_tag_dd.value, hfm_fzg_mhd_mon_dd.value, hfm_fzg_mhd_jahr_dd.value),
+                "hfm_fzg_mhd": safe_date(hfm_fzg_mhd_tag_dd.value, hfm_fzg_mhd_mon_dd.value, hfm_fzg_mhd_jahr_dd.value),
                 "hfm_fzg_charge": hfm_fzg_charge_dd.value, "hfm_fzg_temp": hfm_fzg_temp_in.value,
                 "hfm_fzg_bemerkung": hfm_fzg_bemerkung_dd.value,
+                
+                # --- HIER FEHLTE DER HAKEN FÜR BIO (JETZT DRIN!) ---
+                "hfm_bio_cb": hfm_bio_cb.value, 
                 "hfm_bio_entnahmeort": hfm_bio_entnahmeort_dd.value, "hfm_bio_inhalt": hfm_bio_inhalt_in.value,
                 "hfm_bio_verpackung": hfm_bio_verpackung_dd.value,
                 "hfm_bio_lief_schwein": hfm_bio_lief_schwein_in.value, "hfm_bio_lief_rind": hfm_bio_lief_rind_in.value,
-                "hfm_bio_mhd_schwein": get_date_str(hfm_bio_mhd_s_tag_dd.value, hfm_bio_mhd_s_mon_dd.value, hfm_bio_mhd_s_jahr_dd.value),
-                "hfm_bio_mhd_rind": get_date_str(hfm_bio_mhd_r_tag_dd.value, hfm_bio_mhd_r_mon_dd.value, hfm_bio_mhd_r_jahr_dd.value),
+                "hfm_bio_mhd_schwein": safe_date(hfm_bio_mhd_s_tag_dd.value, hfm_bio_mhd_s_mon_dd.value, hfm_bio_mhd_s_jahr_dd.value),
+                "hfm_bio_mhd_rind": safe_date(hfm_bio_mhd_r_tag_dd.value, hfm_bio_mhd_r_mon_dd.value, hfm_bio_mhd_r_jahr_dd.value),
                 "hfm_bio_charge_schwein": hfm_bio_charge_schwein_dd.value, "hfm_bio_charge_rind": hfm_bio_charge_rind_dd.value,
                 "hfm_bio_temp": hfm_bio_temp_in.value, "hfm_bio_bemerkung": hfm_bio_bemerkung_dd.value,
+                
                 "hfm_okz_cb": hfm_okz_cb.value, "hfm_okz_bemerkung": hfm_okz_bemerkung_dd.value,
                 "og_cb": og_cb.value, "og_okz_cb": og_okz_cb.value, "og_okz_bemerkung": og_okz_bemerkung_dd.value,
                 "og_okz_anmerkung": og_okz_anmerkung_in.value
@@ -814,7 +823,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 d[f"okz_status_{idx_str}"] = ctrls["status"].value; d[f"okz_objekt_{idx_str}"] = ctrls["objekt"].value; d[f"okz_ort_{idx_str}"] = ctrls["ort"].value; d[f"okz_abklatsch_{idx_str}"] = ctrls["abklatsch"].value; d[f"okz_tupfer_{idx_str}"] = ctrls["tupfer"].value
             for i in range(1, 6):
                 idx = f"{i:02d}"; ctrls = og_controls[i]
-                d[f"og_name_{idx}"] = ctrls["name"].value; d[f"og_ort_{idx}"] = ctrls["ort"].value; d[f"og_herst_{idx}"] = get_date_str(ctrls["h_t"].value, ctrls["h_m"].value, ctrls["h_j"].value); d[f"og_verb_{idx}"] = get_date_str(ctrls["v_t"].value, ctrls["v_m"].value, ctrls["v_j"].value); d[f"og_inhalt_{idx}"] = ctrls["inhalt"].value; d[f"og_verp_{idx}"] = ctrls["verpackung"].value; d[f"og_temp_{idx}"] = ctrls["temp"].value
+                d[f"og_name_{idx}"] = ctrls["name"].value; d[f"og_ort_{idx}"] = ctrls["ort"].value; d[f"og_herst_{idx}"] = safe_date(ctrls["h_t"].value, ctrls["h_m"].value, ctrls["h_j"].value); d[f"og_verb_{idx}"] = safe_date(ctrls["v_t"].value, ctrls["v_m"].value, ctrls["v_j"].value); d[f"og_inhalt_{idx}"] = ctrls["inhalt"].value; d[f"og_verp_{idx}"] = ctrls["verpackung"].value; d[f"og_temp_{idx}"] = ctrls["temp"].value
             for idx_str, ctrls in og_okz_controls.items():
                 d[f"og_okz_status_{idx_str}"] = ctrls["status"].value; d[f"og_okz_objekt_{idx_str}"] = ctrls["objekt"].value; d[f"og_okz_ort_{idx_str}"] = ctrls["ort"].value; d[f"og_okz_abklatsch_{idx_str}"] = ctrls["abklatsch"].value; d[f"og_okz_tupfer_{idx_str}"] = ctrls["tupfer"].value
                 
