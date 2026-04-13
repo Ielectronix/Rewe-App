@@ -44,9 +44,9 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         mon_opts = [""] + [f"{i:02d}" for i in range(1, 13)]
         jahr_opts = [""] + [str(i) for i in range(2024, 2035)]
         
-        charge_opts_s = ["z. Z. nicht vorrätig", "keine Eigenproduktion", "Bitte eingeben", "Kein Schweinehackfleisch"]
-        charge_opts_r = ["z. Z. nicht vorrätig", "keine Eigenproduktion", "Bitte eingeben", "Kein Rinderhackfleisch"]
-        charge_opts_g = ["z. Z. nicht vorrätig", "keine Eigenproduktion", "Bitte eingeben", "Kein Geflügel"]
+        charge_opts_s = ["z. Z. nicht vorrätig", "keine Eigenproduktion", "", "Kein Schweinehackfleisch"]
+        charge_opts_r = ["z. Z. nicht vorrätig", "keine Eigenproduktion", "", "Kein Rinderhackfleisch"]
+        charge_opts_g = ["z. Z. nicht vorrätig", "keine Eigenproduktion", "", "Kein Geflügel"]
         entnahmeort_opts = ["Fischabteilung", "Produktionsraum", "Bedientheke", "Vorbereitungsraum", "Metzgerei", "Kühlraum", "SB-Theke"]
         verpackung_opts = ["steriler Probenbecher", "steriler Probenbeutel", "Transportverpackung", "Kunststoffbecher mit Anrolldeckel u. etikett", "Pappschale mit Kunststofffolie umwickelt", "tiefgezogene Kunststoffschale mit Anrollfolie", "Styroporschale mit Kunststofffolie umwickelt", "SB-Kunststoffverpackung"]
 
@@ -62,9 +62,15 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             return f"{t}.{m}.{j}"
 
         def erstelle_combo(label_text, wert, optionen, groesse=12, ausdehnbar=1, breite=None, on_change_func=None):
+    # Diese innere Funktion muss eingerückt sein!
             def on_txt_change(e):
                 if on_change_func: on_change_func(e)
-            combo = ft.TextField(label=label_text, value=wert, color="yellow", text_style=ft.TextStyle(size=groesse, color="yellow"), label_style=stil_label_weiss, border_color="white", expand=ausdehnbar if breite is None else False, width=breite, content_padding=5, on_change=on_txt_change)
+        
+    # Auch das combo-Feld muss eingerückt sein!
+            combo = ft.TextField(label=label_text, value=wert, hint_text="Bitte eingeben", color="yellow", text_style=ft.TextStyle(size=groesse, color="yellow"), label_style=stil_label_weiss, border_color="white", dense=True, content_padding=10, expand=ausdehnbar, width=breite, on_change=on_txt_change)
+    
+    # ... der restliche Code dieser Funktion (wie die for-Schleife) 
+    # muss auf genau derselben Höhe eingerückt sein wie 'combo = ...'
             items = []
             for opt in optionen:
                 def erstelle_klick(txt):
@@ -78,7 +84,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             return combo
 
         def hat_charge_wert(val):
-            return bool(val and val != "Bitte eingeben")
+            return bool(val and val != "")
 
         def cb_row(links, rechts):
             return ft.Row([ft.Container(links, expand=1), ft.Container(rechts, expand=1)], vertical_alignment=ft.CrossAxisAlignment.CENTER)
@@ -179,7 +185,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         tw_zweck_dd = erstelle_combo("Zweck", aktuelle_daten.get("tw_zweck", "Zweck B"), ["Zweck A", "Zweck B", "Zweck C"])
         tw_verpackung_dd = erstelle_combo("Verpackung", aktuelle_daten.get("tw_verpackung", "500ml Kunststoff-Flasche mit Natriumthiosulfat"), ["500ml Kunststoff-Flasche mit Natriumthiosulfat"])
         tw_entnahmeort_dd = erstelle_combo("Entnahmeort", aktuelle_daten.get("tw_entnahmeort", "Metzgerei"), ["Produktionsraum", "Bedientheke", "Vorbereitungsraum", "Metzgerei", "Kühlraum", "SB-Theke", "Salatbar", "Convenience Küche"])
-        tw_bemerkung_dd = erstelle_combo("TW Bemerkung", aktuelle_daten.get("tw_bemerkung", "Bitte eingeben"), ["Bitte eingeben", "Keine Besonderheiten"])
+        tw_bemerkung_dd = erstelle_combo("TW Bemerkung", aktuelle_daten.get("tw_bemerkung", ""), ["", "Keine Besonderheiten"])
 
         cb_pn = ft.Checkbox(label="PN-Hahn", value=aktuelle_daten.get("tw_cb_pn", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
         cb_zwei = ft.Checkbox(label="Zweigriff", value=aktuelle_daten.get("tw_cb_zwei", False), label_style=stil_cb_weiss, fill_color="yellow", check_color="black")
@@ -223,11 +229,11 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         se_verpackung_dd = erstelle_combo("Verpackung", aktuelle_daten.get("se_verpackung", "steriler Probenbeutel"), ["steriler Probenbeutel"])
         se_entnahmeort_dd = erstelle_combo("Entnahmeort", aktuelle_daten.get("se_entnahmeort", "Fischabteilung-Eismaschine"), ["Fischabteilung-Eismaschine", "Metzgerei", "Produktionsraum"])
         se_temp_in = ft.TextField(label="Probenahmetemperatur", value=aktuelle_daten.get("se_temp"), border_color="white", color="yellow", label_style=stil_label_weiss, on_blur=format_temp_blur, content_padding=10, text_style=stil_tf_gelb_12, expand=True)
-        se_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("se_bemerkung", "Bitte eingeben"), ["Bitte eingeben", "Keine Besonderheiten"])
+        se_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("se_bemerkung", ""), ["", "Keine Besonderheiten"])
 
         # --- 3b. SCHERBENEIS - OKZ ---
         se_okz_cb = ft.Checkbox(label="Abklatschproben Scherbeneis", value=aktuelle_daten.get("se_okz_cb", False), on_change=pruefe_lims_warnung, label_style=ft.TextStyle(color="white", size=16, weight="bold"), fill_color="yellow", check_color="black")
-        se_okz_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("se_okz_bemerkung", "Bitte eingeben"), ["Bitte eingeben", "Keine Besonderheiten"])
+        se_okz_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("se_okz_bemerkung", ""), ["", "Keine Besonderheiten"])
         
         se_okz_status_opts = ["R+D", "R", "P", "-"]
         se_okz_objekt_opts = ["Eiswanne innen rechts", "Eiswanne innen links", "Auswurfrohr", "Eisschaufel", "Eiswanne", "Eismaschine innen", "Klappe/Deckel", "Sonstiges"]
@@ -284,11 +290,11 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         hfm_hack_lief_schwein_in = ft.TextField(label="Lieferant (Schwein)", value=aktuelle_daten.get("hfm_hack_lief_schwein", ""), color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True, on_change=pruefe_lims_warnung)
         hfm_hack_lief_rind_in = ft.TextField(label="Lieferant (Rind)", value=aktuelle_daten.get("hfm_hack_lief_rind", ""), color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True, on_change=pruefe_lims_warnung)
         
-        hfm_hack_charge_schwein_dd = erstelle_combo("Charge Schwein", aktuelle_daten.get("hfm_hack_charge_schwein", "Bitte eingeben"), charge_opts_s, on_change_func=pruefe_lims_warnung)
-        hfm_hack_charge_rind_dd = erstelle_combo("Charge Rind", aktuelle_daten.get("hfm_hack_charge_rind", "Bitte eingeben"), charge_opts_r, on_change_func=pruefe_lims_warnung)
+        hfm_hack_charge_schwein_dd = erstelle_combo("Charge Schwein", aktuelle_daten.get("hfm_hack_charge_schwein", ""), charge_opts_s, on_change_func=pruefe_lims_warnung)
+        hfm_hack_charge_rind_dd = erstelle_combo("Charge Rind", aktuelle_daten.get("hfm_hack_charge_rind", ""), charge_opts_r, on_change_func=pruefe_lims_warnung)
         
         hfm_hack_temp_in = ft.TextField(label="Probenahmetemperatur", hint_text="(Soll Schwein/Rind: <+7°C)", hint_style=stil_hint_weiss, value=aktuelle_daten.get("hfm_hack_temp", ""), border_color="white", color="yellow", label_style=stil_label_weiss, on_blur=format_temp_blur, content_padding=10, text_style=stil_tf_gelb_12, expand=True)
-        hfm_hack_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("hfm_hack_bemerkung", "Bitte eingeben"), ["Bitte eingeben", "Keine Besonderheiten"])
+        hfm_hack_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("hfm_hack_bemerkung", ""), ["", "Keine Besonderheiten"])
 
         # --- 5. HFM - GEWÜRZTES SCHWEINEMETT ---
         hfm_mett_cb = ft.Checkbox(label="Gewürztes Schweinemett", value=aktuelle_daten.get("hfm_mett_cb", False), on_change=pruefe_lims_warnung, label_style=ft.TextStyle(color="white", size=16, weight="bold"), fill_color="yellow", check_color="black")
@@ -309,10 +315,10 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         
         # NEU: on_change Trigger für Lieferanten
         hfm_mett_lief_in = ft.TextField(label="Lieferant Rohware", value=aktuelle_daten.get("hfm_mett_lief", ""), color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True, on_change=pruefe_lims_warnung)
-        hfm_mett_charge_dd = erstelle_combo("Charge Rohware", aktuelle_daten.get("hfm_mett_charge", "Bitte eingeben"), charge_opts_s, on_change_func=pruefe_lims_warnung)
+        hfm_mett_charge_dd = erstelle_combo("Charge Rohware", aktuelle_daten.get("hfm_mett_charge", ""), charge_opts_s, on_change_func=pruefe_lims_warnung)
         
         hfm_mett_temp_in = ft.TextField(label="Probenahmetemperatur", hint_text="(Soll Schwein: <+7°C)", hint_style=stil_hint_weiss, value=aktuelle_daten.get("hfm_mett_temp", ""), border_color="white", color="yellow", label_style=stil_label_weiss, on_blur=format_temp_blur, content_padding=10, text_style=stil_tf_gelb_12, expand=True)
-        hfm_mett_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("hfm_mett_bemerkung", "Bitte eingeben"), ["Bitte eingeben", "Keine Besonderheiten"])
+        hfm_mett_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("hfm_mett_bemerkung", ""), ["", "Keine Besonderheiten"])
 
         # --- 6. HFM - FZ SCHWEIN ---
         hfm_fzs_cb = ft.Checkbox(label="Fleischzubereitung Schwein", value=aktuelle_daten.get("hfm_fzs_cb", False), on_change=pruefe_lims_warnung, label_style=ft.TextStyle(color="white", size=16, weight="bold"), fill_color="yellow", check_color="black")
@@ -336,10 +342,10 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         
         # NEU: on_change Trigger für Lieferanten
         hfm_fzs_lief_in = ft.TextField(label="Lieferant Rohware", value=aktuelle_daten.get("hfm_fzs_lief", ""), color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True, on_change=pruefe_lims_warnung)
-        hfm_fzs_charge_dd = erstelle_combo("Charge Rohware", aktuelle_daten.get("hfm_fzs_charge", "Bitte eingeben"), charge_opts_s, on_change_func=pruefe_lims_warnung)
+        hfm_fzs_charge_dd = erstelle_combo("Charge Rohware", aktuelle_daten.get("hfm_fzs_charge", ""), charge_opts_s, on_change_func=pruefe_lims_warnung)
         
         hfm_fzs_temp_in = ft.TextField(label="Probenahmetemperatur", hint_text="(Soll Schwein: <+7°C)", hint_style=stil_hint_weiss, value=aktuelle_daten.get("hfm_fzs_temp", ""), border_color="white", color="yellow", label_style=stil_label_weiss, on_blur=format_temp_blur, content_padding=10, text_style=stil_tf_gelb_12, expand=True)
-        hfm_fzs_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("hfm_fzs_bemerkung", "Bitte eingeben"), ["Bitte eingeben", "Keine Besonderheiten"])
+        hfm_fzs_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("hfm_fzs_bemerkung", ""), ["", "Keine Besonderheiten"])
 
         # --- 7. HFM - FZ GEFLÜGEL ---
         hfm_fzg_cb = ft.Checkbox(label="Fleischzubereitung Geflügel", value=aktuelle_daten.get("hfm_fzg_cb", False), on_change=pruefe_lims_warnung, label_style=ft.TextStyle(color="white", size=16, weight="bold"), fill_color="yellow", check_color="black")
@@ -363,10 +369,10 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         
         # NEU: on_change Trigger für Lieferanten
         hfm_fzg_lief_in = ft.TextField(label="Lieferant Rohware", value=aktuelle_daten.get("hfm_fzg_lief", ""), color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True, on_change=pruefe_lims_warnung)
-        hfm_fzg_charge_dd = erstelle_combo("Charge Rohware", aktuelle_daten.get("hfm_fzg_charge", "Bitte eingeben"), charge_opts_g, on_change_func=pruefe_lims_warnung)
+        hfm_fzg_charge_dd = erstelle_combo("Charge Rohware", aktuelle_daten.get("hfm_fzg_charge", ""), charge_opts_g, on_change_func=pruefe_lims_warnung)
         
         hfm_fzg_temp_in = ft.TextField(label="Probenahmetemperatur", hint_text="(Soll Geflügel: <+4°C)", hint_style=stil_hint_weiss, value=aktuelle_daten.get("hfm_fzg_temp", ""), border_color="white", color="yellow", label_style=stil_label_weiss, on_blur=format_temp_blur, content_padding=10, text_style=stil_tf_gelb_12, expand=True)
-        hfm_fzg_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("hfm_fzg_bemerkung", "Bitte eingeben"), ["Bitte eingeben", "Keine Besonderheiten"])
+        hfm_fzg_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("hfm_fzg_bemerkung", ""), ["", "Keine Besonderheiten"])
 
         # --- 8. HFM - BIO HACK ---
         hfm_bio_cb = ft.Checkbox(label="Bio-Hackfleisch", value=aktuelle_daten.get("hfm_bio_cb", False), on_change=pruefe_lims_warnung, label_style=ft.TextStyle(color="white", size=16, weight="bold"), fill_color="yellow", check_color="black")
@@ -394,15 +400,15 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         hfm_bio_lief_schwein_in = ft.TextField(label="Lieferant (Schwein)", value=aktuelle_daten.get("hfm_bio_lief_schwein", ""), color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True, on_change=pruefe_lims_warnung)
         hfm_bio_lief_rind_in = ft.TextField(label="Lieferant (Rind)", value=aktuelle_daten.get("hfm_bio_lief_rind", ""), color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True, on_change=pruefe_lims_warnung)
         
-        hfm_bio_charge_schwein_dd = erstelle_combo("Charge Schwein", aktuelle_daten.get("hfm_bio_charge_schwein", "Bitte eingeben"), charge_opts_s, on_change_func=pruefe_lims_warnung)
-        hfm_bio_charge_rind_dd = erstelle_combo("Charge Rind", aktuelle_daten.get("hfm_bio_charge_rind", "Bitte eingeben"), charge_opts_r, on_change_func=pruefe_lims_warnung)
+        hfm_bio_charge_schwein_dd = erstelle_combo("Charge Schwein", aktuelle_daten.get("hfm_bio_charge_schwein", ""), charge_opts_s, on_change_func=pruefe_lims_warnung)
+        hfm_bio_charge_rind_dd = erstelle_combo("Charge Rind", aktuelle_daten.get("hfm_bio_charge_rind", ""), charge_opts_r, on_change_func=pruefe_lims_warnung)
         
         hfm_bio_temp_in = ft.TextField(label="Probenahmetemperatur", hint_text="(Soll Schwein/Rind: <+7°C)", hint_style=stil_hint_weiss, value=aktuelle_daten.get("hfm_bio_temp", ""), border_color="white", color="yellow", label_style=stil_label_weiss, on_blur=format_temp_blur, content_padding=10, text_style=stil_tf_gelb_12, expand=True)
-        hfm_bio_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("hfm_bio_bemerkung", "Bitte eingeben"), ["Bitte eingeben", "Keine Besonderheiten"])
+        hfm_bio_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("hfm_bio_bemerkung", ""), ["", "Keine Besonderheiten"])
 
         # --- 9. HFM - OKZ ---
         hfm_okz_cb = ft.Checkbox(label="Abklatschproben HFM", value=aktuelle_daten.get("hfm_okz_cb", False), on_change=pruefe_lims_warnung, label_style=ft.TextStyle(color="white", size=16, weight="bold"), fill_color="yellow", check_color="black")
-        hfm_okz_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("hfm_okz_bemerkung", "Bitte eingeben"), ["Bitte eingeben", "Keine Besonderheiten"])
+        hfm_okz_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("hfm_okz_bemerkung", ""), ["", "Keine Besonderheiten"])
         
         okz_status_opts = ["R+D", "R", "P", "-"]
         okz_objekt_opts = ["Fleischwolf-Auflage", "Fleischwolf-Lochscheibe", "Fleischwolf-Auswurf", "Fleischwolf-Spirale", "Wand am Fleischwolf", "Hackstecher", "Schaufel", "Thekenschale", "Messer", "Schneidebrett", "Auflage Knochensäge", "Tisch", "Flesichwanne", "Kühlhausgriff", "Schüssel", "Seifenspender"]
@@ -487,7 +493,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
         # --- 11. OG - OKZ ---
         og_okz_cb = ft.Checkbox(label="Abklatschproben Convenience", value=aktuelle_daten.get("og_okz_cb", False), on_change=pruefe_lims_warnung, label_style=ft.TextStyle(color="white", size=16, weight="bold"), fill_color="yellow", check_color="black")
-        og_okz_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("og_okz_bemerkung", "Bitte eingeben"), ["Bitte eingeben", "Keine Besonderheiten"])
+        og_okz_bemerkung_dd = erstelle_combo("Bemerkungen", aktuelle_daten.get("og_okz_bemerkung", ""), ["", "Keine Besonderheiten"])
         og_okz_anmerkung_in = ft.TextField(label="Anmerkung", value=aktuelle_daten.get("og_okz_anmerkung", ""), color="yellow", label_style=stil_label_weiss, border_color="white", content_padding=10, text_style=stil_tf_gelb_12, expand=True)
         
         og_okz_status_opts = ["R+D", "R", "P", "-"]
@@ -829,25 +835,106 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 
             return d
         def nur_speichern(e):
-            if not (nr_in.value or "").strip() or not (auft_in.value or "").strip():
+            # 1. Einzige Mini-Prüfung: Ohne Marktnummer können wir die Tour nicht zuordnen!
+            if not (nr_in.value or "").strip():
                 switch_tab_stamm(None)
-                fehler_text.value="⚠️ MARKTNUMMER UND AUFTRAGSNUMMER FEHLEN!"
+                fehler_text.value="⚠️ MARKTNUMMER FEHLT! (Wird als Name für die Tour benötigt)"
                 fehler_text.visible=True; status_text.value=""; page.update(); return
 
             try:
                 fehler_text.visible = False
-                status_text.value = "⏳ Speichere in Touren-Liste..."
+                status_text.value = "⏳ Speichere Tour..."
                 status_text.color = "yellow"; page.update()
 
+                # Daten laden und aktuelles Formular auslesen
                 maerkte = lade_maerkte()
                 d = hole_aktuelle_daten()
-                if markt_index is None: maerkte.append(d)
-                else: maerkte[markt_index] = d
+                
+                # 2. ÜBERSCHREIBEN-LOGIK: Suchen, ob die Marktnummer schon existiert
+                tour_aktualisiert = False
+                for i, tour in enumerate(maerkte):
+                    if tour.get("marktnummer") == nr_in.value:
+                        maerkte[i] = d  # Alte Tour mit dem neuen Stand überschreiben
+                        tour_aktualisiert = True
+                        break
+                
+                # Wenn es eine neue Marktnummer ist, wird sie hinten angehängt
+                if not tour_aktualisiert:
+                    maerkte.append(d)
+
+                # In die Datei/Datenbank schreiben
                 speichere_maerkte(maerkte)
 
-                status_text.value = "✅ Tour gespeichert!"; status_text.color = "orange"; page.update()
+                # 3. WICHTIG: HIER KOMMT KEIN RESET-CODE REIN!
+                # Wir leeren keine Felder. Alles bleibt auf dem Bildschirm erhalten.
+                status_text.value = "✅ Tour erfolgreich gespeichert!"; status_text.color = "orange"; page.update()
+                
             except Exception as ex: 
                 status_text.value = "❌ Fehler"; status_text.color = "red"; zeige_fehler(ex)
+        
+        def reset_alles(e):
+            # 1. Stammdaten leeren
+            adr_in.value = ""; nr_in.value = ""; auft_in.value = ""
+            
+            # 2. Datum auf Heute zurücksetzen
+            try:
+                h_t, h_m, h_j = heute_str.split(".")
+                tag_dd.value = h_t; mon_dd.value = h_m; jahr_dd.value = h_j
+                hfm_hack_herst_tag_dd.value = h_t; hfm_hack_herst_mon_dd.value = h_m; hfm_hack_herst_jahr_dd.value = h_j
+                hfm_mett_herst_tag_dd.value = h_t; hfm_mett_herst_mon_dd.value = h_m; hfm_mett_herst_jahr_dd.value = h_j
+                hfm_fzs_herst_tag_dd.value = h_t; hfm_fzs_herst_mon_dd.value = h_m; hfm_fzs_herst_jahr_dd.value = h_j
+                hfm_fzg_herst_tag_dd.value = h_t; hfm_fzg_herst_mon_dd.value = h_m; hfm_fzg_herst_jahr_dd.value = h_j
+                hfm_bio_herst_tag_dd.value = h_t; hfm_bio_herst_mon_dd.value = h_m; hfm_bio_herst_jahr_dd.value = h_j
+            except: pass
+            
+            # 3. Alle Haken und Textfelder leeren
+            tw_kalt_cb.value = False; tw_zeit_in.value = ""; tw_temp_in.value = ""; tw_tempkonst_in.value = ""
+            se_kalt_cb.value = False; se_zeit_in.value = ""; se_temp_in.value = ""
+            
+            hfm_hack_cb.value = False; hfm_hack_temp_in.value = ""; hfm_hack_lief_schwein_in.value = ""; hfm_hack_lief_rind_in.value = ""
+            hfm_hack_mhd_s_tag_dd.value = ""; hfm_hack_mhd_s_mon_dd.value = ""; hfm_hack_mhd_s_jahr_dd.value = ""
+            hfm_hack_mhd_r_tag_dd.value = ""; hfm_hack_mhd_r_mon_dd.value = ""; hfm_hack_mhd_r_jahr_dd.value = ""
+            hfm_hack_charge_schwein_dd.value = ""; hfm_hack_charge_rind_dd.value = ""
+            
+            hfm_mett_cb.value = False; hfm_mett_temp_in.value = ""; hfm_mett_lief_in.value = ""
+            hfm_mett_mhd_tag_dd.value = ""; hfm_mett_mhd_mon_dd.value = ""; hfm_mett_mhd_jahr_dd.value = ""
+            hfm_mett_charge_dd.value = ""
+            
+            hfm_fzs_cb.value = False; hfm_fzs_temp_in.value = ""; hfm_fzs_lief_in.value = ""; hfm_fzs_produkt_in.value = ""; hfm_fzs_marinade_in.value = ""
+            hfm_fzs_mhd_tag_dd.value = ""; hfm_fzs_mhd_mon_dd.value = ""; hfm_fzs_mhd_jahr_dd.value = ""
+            hfm_fzs_charge_dd.value = ""
+            
+            hfm_fzg_cb.value = False; hfm_fzg_temp_in.value = ""; hfm_fzg_lief_in.value = ""; hfm_fzg_produkt_in.value = ""; hfm_fzg_marinade_in.value = ""
+            hfm_fzg_mhd_tag_dd.value = ""; hfm_fzg_mhd_mon_dd.value = ""; hfm_fzg_mhd_jahr_dd.value = ""
+            hfm_fzg_charge_dd.value = ""
+            
+            hfm_bio_cb.value = False; hfm_bio_temp_in.value = ""; hfm_bio_lief_schwein_in.value = ""; hfm_bio_lief_rind_in.value = ""
+            hfm_bio_mhd_s_tag_dd.value = ""; hfm_bio_mhd_s_mon_dd.value = ""; hfm_bio_mhd_s_jahr_dd.value = ""
+            hfm_bio_mhd_r_tag_dd.value = ""; hfm_bio_mhd_r_mon_dd.value = ""; hfm_bio_mhd_r_jahr_dd.value = ""
+            hfm_bio_charge_schwein_dd.value = ""; hfm_bio_charge_rind_dd.value = ""
+            
+            # 4. OKZ und OG zurücksetzen
+            se_okz_cb.value = False; se_okz_bemerkung_dd.value = ""
+            for idx_str, ctrls in se_okz_controls.items(): ctrls["status"].value = "R+D"; ctrls["objekt"].value = se_okz_defaults[int(idx_str)]["obj"]; ctrls["ort"].value = ""; ctrls["abklatsch"].value = se_okz_defaults[int(idx_str)]["abk"]; ctrls["tupfer"].value = se_okz_defaults[int(idx_str)]["tup"]
+            
+            hfm_okz_cb.value = False; hfm_okz_bemerkung_dd.value = ""
+            for idx_str, ctrls in okz_controls.items(): ctrls["status"].value = "R+D"; ctrls["objekt"].value = okz_defaults[int(idx_str)]["obj"]; ctrls["ort"].value = ""; ctrls["abklatsch"].value = okz_defaults[int(idx_str)]["abk"]; ctrls["tupfer"].value = okz_defaults[int(idx_str)]["tup"]
+            
+            og_cb.value = False
+            for i in range(1, 6): ctrls = og_controls[i]; ctrls["name"].value = ""; ctrls["ort"].value = ""; ctrls["h_t"].value = ""; ctrls["h_m"].value = ""; ctrls["h_j"].value = ""; ctrls["v_t"].value = ""; ctrls["v_m"].value = ""; ctrls["v_j"].value = ""; ctrls["temp"].value = ""
+            
+            og_okz_cb.value = False; og_okz_bemerkung_dd.value = ""; og_okz_anmerkung_in.value = ""
+            for idx_str, ctrls in og_okz_controls.items(): ctrls["status"].value = "R+D"; ctrls["objekt"].value = og_okz_defaults[int(idx_str)]["obj"]; ctrls["ort"].value = ""; ctrls["abklatsch"].value = og_okz_defaults[int(idx_str)]["abk"]; ctrls["tupfer"].value = og_okz_defaults[int(idx_str)]["tup"]
+            
+            # 5. Restliche Haken
+            for cb in [cb_pn, cb_zwei, cb_sensor, cb_knie, cb_ein, cb_ein_g, cb_eck, cb_auff_ja, cb_auff_nein, cb_auff_perl, cb_auff_verkalk, cb_auff_verbrueh, cb_auff_durchlauf, cb_auff_unterbau, cb_auff_eck_zu, cb_auff_nichtmoeglich, cb_auff_dusche, cb_auff_handbrause, cb_auff_sonst, se_cb_eiswanne, se_cb_ozon]: cb.value = False
+            
+            tw_auff_sonstiges_in.value = ""; se_tech_sonst_in.value = ""; se_auff_sonst_in.value = ""; se_cb_fallprobe.value = True
+            lims_override_cb.value = False
+            
+            status_text.value = "🧹 Alles auf Standard zurückgesetzt!"
+            status_text.color = "blue"
+            page.update()
 
         def save_final(e):
             if not (nr_in.value or "").strip() or not (auft_in.value or "").strip() or not (adr_in.value or "").strip() or not (name_in.value or "").strip():
@@ -923,8 +1010,9 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             if og_cb.value:
                 og_ok = False
                 for i in range(1, 6):
-                    if (og_controls[i]["temp"].value or "").strip() and (og_controls[i]["v_t"].value or "").strip(): og_ok = True
-                if not og_ok: fehlende_pflicht.append("OG: Mind. 1x Temp & Verbrauchsdatum")
+                    # Die v_t (Verbrauchsdatum) Abfrage wurde hier gelöscht!
+                    if (og_controls[i]["temp"].value or "").strip(): og_ok = True
+                if not og_ok: fehlende_pflicht.append("OG: Mind. 1x Temperatur")
                     
             if fehlende_pflicht:
                 fehler_text.value = f"⚠️ PFLICHTFELDER FEHLEN:\n{', '.join(fehlende_pflicht)}"
@@ -962,7 +1050,17 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
         alle_vorlagen = lade_vorlagen()
         vorlagen_status = ft.Text("", weight="bold") 
-        vl_dd = ft.Dropdown(options=[ft.dropdown.Option(k) for k in alle_vorlagen.keys()], expand=True, dense=True, content_padding=10, color="white", text_style=ft.TextStyle(color="white"))
+        # --- NEUES, DEUTLICHERES VORLAGEN-DROPDOWN (KORRIGIERT) ---
+        vl_dd = ft.Dropdown(
+            options=[ft.dropdown.Option(k) for k in alle_vorlagen.keys()], 
+            hint_text="⬇️ Hier Vorlage auswählen...",  # Der Info-Text
+            expand=True, 
+            dense=True, 
+            content_padding=10, 
+            color="yellow",                           # Textfarbe
+            text_style=ft.TextStyle(color="yellow", weight="bold", size=14), # Dickere Schrift
+            border_color="white"                      # Weißer Rahmen
+        )
         
         # HIER WURDE LADE_V ANGEPASST: Tagesaktuelle Felder bleiben absolut leer!
         def lade_v(e):
@@ -989,18 +1087,18 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             hfm_fzg_cb.value = False; hfm_fzg_temp_in.value = ""; hfm_fzg_lief_in.value = ""; hfm_fzg_produkt_in.value = ""; hfm_fzg_marinade_in.value = ""; hfm_fzg_mhd_tag_dd.value = ""; hfm_fzg_mhd_mon_dd.value = ""; hfm_fzg_mhd_jahr_dd.value = ""
             hfm_bio_cb.value = False; hfm_bio_temp_in.value = ""; hfm_bio_lief_schwein_in.value = ""; hfm_bio_lief_rind_in.value = ""; hfm_bio_mhd_s_tag_dd.value = ""; hfm_bio_mhd_s_mon_dd.value = ""; hfm_bio_mhd_s_jahr_dd.value = ""; hfm_bio_mhd_r_tag_dd.value = ""; hfm_bio_mhd_r_mon_dd.value = ""; hfm_bio_mhd_r_jahr_dd.value = ""
             
-            hfm_hack_charge_schwein_dd.value = "Bitte eingeben"; hfm_hack_charge_rind_dd.value = "Bitte eingeben"
-            hfm_mett_charge_dd.value = "Bitte eingeben"; hfm_fzs_charge_dd.value = "Bitte eingeben"; hfm_fzg_charge_dd.value = "Bitte eingeben"
-            hfm_bio_charge_schwein_dd.value = "Bitte eingeben"; hfm_bio_charge_rind_dd.value = "Bitte eingeben"
+            hfm_hack_charge_schwein_dd.value = ""; hfm_hack_charge_rind_dd.value = ""
+            hfm_mett_charge_dd.value = ""; hfm_fzs_charge_dd.value = ""; hfm_fzg_charge_dd.value = ""
+            hfm_bio_charge_schwein_dd.value = ""; hfm_bio_charge_rind_dd.value = ""
             
-            se_okz_cb.value = False; se_okz_bemerkung_dd.value = "Bitte eingeben"
+            se_okz_cb.value = False; se_okz_bemerkung_dd.value = ""
             for idx_str, ctrls in se_okz_controls.items(): ctrls["status"].value = "R+D"; ctrls["objekt"].value = se_okz_defaults[int(idx_str)]["obj"]; ctrls["ort"].value = ""; ctrls["abklatsch"].value = se_okz_defaults[int(idx_str)]["abk"]; ctrls["tupfer"].value = se_okz_defaults[int(idx_str)]["tup"]
-            hfm_okz_cb.value = False; hfm_okz_bemerkung_dd.value = "Bitte eingeben"
+            hfm_okz_cb.value = False; hfm_okz_bemerkung_dd.value = ""
             for idx_str, ctrls in okz_controls.items(): ctrls["status"].value = "R+D"; ctrls["objekt"].value = okz_defaults[int(idx_str)]["obj"]; ctrls["ort"].value = ""; ctrls["abklatsch"].value = okz_defaults[int(idx_str)]["abk"]; ctrls["tupfer"].value = okz_defaults[int(idx_str)]["tup"]
                 
             og_cb.value = False
             for i in range(1, 6): ctrls = og_controls[i]; ctrls["name"].value = ""; ctrls["ort"].value = ""; ctrls["h_t"].value = ""; ctrls["h_m"].value = ""; ctrls["h_j"].value = ""; ctrls["v_t"].value = ""; ctrls["v_m"].value = ""; ctrls["v_j"].value = ""; ctrls["temp"].value = ""
-            og_okz_cb.value = False; og_okz_bemerkung_dd.value = "Bitte eingeben"; og_okz_anmerkung_in.value = ""
+            og_okz_cb.value = False; og_okz_bemerkung_dd.value = ""; og_okz_anmerkung_in.value = ""
             for idx_str, ctrls in og_okz_controls.items(): ctrls["status"].value = "R+D"; ctrls["objekt"].value = og_okz_defaults[int(idx_str)]["obj"]; ctrls["ort"].value = ""; ctrls["abklatsch"].value = og_okz_defaults[int(idx_str)]["abk"]; ctrls["tupfer"].value = og_okz_defaults[int(idx_str)]["tup"]
             
             for cb in [cb_pn, cb_zwei, cb_sensor, cb_knie, cb_ein, cb_ein_g, cb_eck, cb_auff_ja, cb_auff_nein, cb_auff_perl, cb_auff_verkalk, cb_auff_verbrueh, cb_auff_durchlauf, cb_auff_unterbau, cb_auff_eck_zu, cb_auff_nichtmoeglich, cb_auff_dusche, cb_auff_handbrause, cb_auff_sonst, se_cb_eiswanne, se_cb_ozon]: cb.value = False
@@ -1178,37 +1276,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             vorlagen_status.color = "orange"
             vl_name_in.value = ""
 
-            adr_in.value = ""; nr_in.value = ""; auft_in.value = ""
-            try:
-                h_t, h_m, h_j = heute_str.split(".")
-                tag_dd.value = h_t; mon_dd.value = h_m; jahr_dd.value = h_j
-                hfm_hack_herst_tag_dd.value = h_t; hfm_hack_herst_mon_dd.value = h_m; hfm_hack_herst_jahr_dd.value = h_j
-                hfm_mett_herst_tag_dd.value = h_t; hfm_mett_herst_mon_dd.value = h_m; hfm_mett_herst_jahr_dd.value = h_j
-                hfm_fzs_herst_tag_dd.value = h_t; hfm_fzs_herst_mon_dd.value = h_m; hfm_fzs_herst_jahr_dd.value = h_j
-                hfm_fzg_herst_tag_dd.value = h_t; hfm_fzg_herst_mon_dd.value = h_m; hfm_fzg_herst_jahr_dd.value = h_j
-                hfm_bio_herst_tag_dd.value = h_t; hfm_bio_herst_mon_dd.value = h_m; hfm_bio_herst_jahr_dd.value = h_j
-            except: pass
-            
-            tw_zeit_in.value = ""; tw_temp_in.value = ""; tw_tempkonst_in.value = ""
-            se_zeit_in.value = ""; se_temp_in.value = ""
-            hfm_hack_temp_in.value = ""; hfm_mett_temp_in.value = ""; hfm_fzs_temp_in.value = ""; hfm_fzg_temp_in.value = ""; hfm_bio_temp_in.value = ""
-            hfm_hack_mhd_s_tag_dd.value = ""; hfm_hack_mhd_s_mon_dd.value = ""; hfm_hack_mhd_s_jahr_dd.value = ""
-            hfm_hack_mhd_r_tag_dd.value = ""; hfm_hack_mhd_r_mon_dd.value = ""; hfm_hack_mhd_r_jahr_dd.value = ""
-            hfm_mett_mhd_tag_dd.value = ""; hfm_mett_mhd_mon_dd.value = ""; hfm_mett_mhd_jahr_dd.value = ""
-            hfm_fzs_mhd_tag_dd.value = ""; hfm_fzs_mhd_mon_dd.value = ""; hfm_fzs_mhd_jahr_dd.value = ""
-            hfm_fzg_mhd_tag_dd.value = ""; hfm_fzg_mhd_mon_dd.value = ""; hfm_fzg_mhd_jahr_dd.value = ""
-            hfm_bio_mhd_s_tag_dd.value = ""; hfm_bio_mhd_s_mon_dd.value = ""; hfm_bio_mhd_s_jahr_dd.value = ""
-            hfm_bio_mhd_r_tag_dd.value = ""; hfm_bio_mhd_r_mon_dd.value = ""
-            hfm_hack_charge_schwein_dd.value = "Bitte eingeben"; hfm_hack_charge_rind_dd.value = "Bitte eingeben"
-            hfm_mett_charge_dd.value = "Bitte eingeben"
-            hfm_fzs_charge_dd.value = "Bitte eingeben"; hfm_fzg_charge_dd.value = "Bitte eingeben"
-            hfm_bio_charge_schwein_dd.value = "Bitte eingeben"; hfm_bio_charge_rind_dd.value = "Bitte eingeben"
-            
-            for idx_str, ctrls in se_okz_controls.items(): ctrls["status"].value = "R+D"; ctrls["objekt"].value = se_okz_defaults[int(idx_str)]["obj"]; ctrls["ort"].value = ""; ctrls["abklatsch"].value = se_okz_defaults[int(idx_str)]["abk"]; ctrls["tupfer"].value = se_okz_defaults[int(idx_str)]["tup"]
-            for idx_str, ctrls in okz_controls.items(): ctrls["status"].value = "R+D"; ctrls["objekt"].value = okz_defaults[int(idx_str)]["obj"]; ctrls["ort"].value = ""; ctrls["abklatsch"].value = okz_defaults[int(idx_str)]["abk"]; ctrls["tupfer"].value = okz_defaults[int(idx_str)]["tup"]
-            for i in range(1, 6): ctrls = og_controls[i]; ctrls["name"].value = ""; ctrls["ort"].value = ""; ctrls["h_t"].value = ""; ctrls["h_m"].value = ""; ctrls["h_j"].value = ""; ctrls["v_t"].value = ""; ctrls["v_m"].value = ""; ctrls["v_j"].value = ""; ctrls["temp"].value = ""
-            for idx_str, ctrls in og_okz_controls.items(): ctrls["status"].value = "R+D"; ctrls["objekt"].value = og_okz_defaults[int(idx_str)]["obj"]; ctrls["ort"].value = ""; ctrls["abklatsch"].value = og_okz_defaults[int(idx_str)]["abk"]; ctrls["tupfer"].value = og_okz_defaults[int(idx_str)]["tup"]
-            
             page.update()
 
         vl_load_btn = sicherer_button("Laden", lade_v, "blue", "white", height=35)
@@ -1230,7 +1297,9 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         btn_zurueck = sicherer_button("🚚 Touren", lambda e: zeige_dashboard(), "red", "white", expand=True, height=50)
         btn_speichern = sicherer_button("💾 Tour speichern", nur_speichern, "orange", "black", expand=True, height=50)
         btn_final = sicherer_button("📄 Bericht erstellen", save_final, "blue", "white", expand=True, height=50)
+        btn_reset = sicherer_button("🧹 Alles leeren", reset_alles, "grey", "white", expand=True, height=50)
 
+        # --- ZUSAMMENBAU DES LAYOUTS ---
         # --- ZUSAMMENBAU DES LAYOUTS ---
         ansicht.controls.extend([
             ft.Row([btn_stamm, btn_tw, btn_se, btn_hfm, btn_og], scroll=ft.ScrollMode.AUTO),
@@ -1240,7 +1309,10 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             stamm_col, tw_col, se_main_col, hfm_main_col, og_main_col,
             ft.Container(height=20),
             fehler_text, status_text,
-            ft.Row([btn_zurueck, btn_speichern]),
+            
+            # HIER KOMMT DER NEUE BUTTON DAZU (z.B. in der Mitte):
+            ft.Row([btn_zurueck, btn_reset, btn_speichern]),
+            
             ft.Row([btn_final])
         ])
         page.update()
