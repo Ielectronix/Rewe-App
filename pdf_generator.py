@@ -79,7 +79,7 @@ def sammle_alle_daten(daten):
         if daten.get("se_cb_eiswanne"): w["cb_0002_00_PE_ZS-002304_Eiswanne"] = h_yes
         if daten.get("se_cb_fallprobe"): w["cb_0002_00_PE_ZS-002304_ Fallprobe"] = h_yes
 
-    # HACKFLEISCH (Seite 6)
+    # HACKFLEISCH
     if daten.get("hfm_hack_cb"):
         w["cb_0004_00"] = h_yes
         w["cal_0004_00_ZS-001810"] = daten.get("hfm_hack_herstelldatum", "")
@@ -104,7 +104,7 @@ def sammle_alle_daten(daten):
         m_s = daten.get("hfm_hack_mhd_schwein", "").strip()
         if m_s and m_s != "..": w["tf_0004_00_ZS-001835_Schweinefleisch: XXX"] = f"Schweinefleisch: {m_s}"
 
-    # METT & ZUBEREITUNG (Seite 7-9)
+    # METT & ZUBEREITUNG
     if daten.get("hfm_mett_cb"):
         w["cb_0006_00"] = h_yes
         w["cal_0006_00_ZS-001810"] = daten.get("hfm_mett_herstelldatum", "")
@@ -169,6 +169,8 @@ def sammle_alle_daten(daten):
 
 # --- HAUPT-FUNKTION ---
 
+# --- HAUPT-FUNKTION ---
+
 def erstelle_bericht(daten):
     master_pfad = os.path.join("assets", "Rewe_PDF.pdf")
     neu_pfad = os.path.join("assets", "hfm_neu.pdf")
@@ -184,21 +186,21 @@ def erstelle_bericht(daten):
     writer = PdfWriter()
     
     # ==================================================
-    # DER CHIRURGISCHE EINGRIFF: PDFs ZUSAMMENFÜGEN
+    # DER CHIRURGISCHE EINGRIFF: FIX FÜR DIE FEHLENDEN SEITEN
     # ==================================================
     
-    # 1. Seiten 1 bis 5 aus der alten Datei laden
-    writer.append(reader_master, pages=(0, 5))
+    # 1. Seiten 1 bis 5 (Indices 0, 1, 2, 3, 4) als exakte Liste übergeben
+    writer.append(reader_master, pages=list(range(0, 5)))
     
-    # 2. Die 4 neuen, heilen Seiten (Hack, Mett, FZS, FZG) einfügen
+    # 2. Die neuen Seiten aus hfm_neu.pdf einfügen
     writer.append(reader_neu)
     
-    # 3. Den Rest ab Seite 10 aus der alten Datei wieder anhängen
-    writer.append(reader_master, pages=(9, len(reader_master.pages)))
+    # 3. Den KOMPLETTEN Rest ab Seite 10 (Index 9) lückenlos anhängen!
+    writer.append(reader_master, pages=list(range(9, len(reader_master.pages))))
     
     # ==================================================
     
-    # WICHTIG: Das Formularverzeichnis VOR dem Beschreiben kopieren/erstellen
+    # Formularstruktur kopieren (wichtig für AcroForm Erhalt!)
     if "/AcroForm" not in writer.root_object:
         if "/AcroForm" in reader_master.trailer["/Root"]:
             writer.root_object.update({NameObject("/AcroForm"): reader_master.trailer["/Root"]["/AcroForm"]})
@@ -210,20 +212,25 @@ def erstelle_bericht(daten):
     mapping = sammle_alle_daten(daten)
     text_mapping = {k: str(v) for k, v in mapping.items() if not isinstance(v, NameObject)}
 
-    # Felder sicher befüllen
     for page in writer.pages:
-        # Die native Routine füllt Textfelder sanft aus
+        # Sicheres Beschreiben der Textfelder
         writer.update_page_form_field_values(page, text_mapping)
 
-        # Checkboxen separat verarbeiten
+        # Checkbox-Behandlung inkl. Fix für die Geister-Haken
         if "/Annots" in page:
             for annot_ref in page["/Annots"]:
                 annot = annot_ref.get_object()
                 if "/T" in annot:
                     f_id = clean_id(str(annot["/T"]).strip("()"))
+                    is_checkbox = f_id.startswith("cb_") or f_id.startswith("Check Box")
+
                     if f_id in mapping and isinstance(mapping[f_id], NameObject):
+                        # Wenn Haken in unseren Daten ist -> Setzen!
                         val = mapping[f_id]
                         annot.update({NameObject("/V"): val, NameObject("/AS"): val})
+                    elif is_checkbox:
+                        # FIX: Alle nicht gewollten Haken zwingend auf AUS setzen!
+                        annot.update({NameObject("/V"): NameObject("/Off"), NameObject("/AS"): NameObject("/Off")})
 
     with open(ziel_pfad, "wb") as f: writer.write(f)
     print(f"✅ Perfekter Kombi-Bericht erstellt: {ziel_pfad}")
