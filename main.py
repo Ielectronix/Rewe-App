@@ -21,6 +21,11 @@ def main(page: ft.Page):
     ansicht = ft.Column(expand=True, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
     page.add(ansicht)
 
+    # --- TEILEN-MODUL FÜR ANDROID (Versteckt den roten Kasten am PC) ---
+    share = ft.Share()
+    if page.platform in [ft.PagePlatform.ANDROID, ft.PagePlatform.IOS]:
+        page.overlay.append(share)
+
     def zeige_fehler(e):
         ansicht.controls.clear()
         page.bgcolor = "black"
@@ -37,7 +42,8 @@ def main(page: ft.Page):
 
         def sicherer_button(text, on_click, bgcolor="blue", color="white", expand=False, height=None, width=None):
             align_txt = ft.TextAlign.LEFT if (expand and not height) else ft.TextAlign.CENTER
-            text_size = 18 if text == "🗑️" else 12
+            # Emoji-Buttons (Teilen & Löschen) bekommen eine größere Schrift
+            text_size = 18 if text in ["🗑️", "📤"] else 12 
             txt_obj = ft.Text(text, weight="bold", size=text_size, text_align=align_txt)
             
             inhalt = []
@@ -188,10 +194,38 @@ def main(page: ft.Page):
                     if p_list:
                         pdfs_gefunden = True
                         ansicht.controls.append(ft.Container(bgcolor="#330000", padding=10, border_radius=10, content=ft.Column([ft.Text("Berichte für heute liegen in:", color="red", size=12), ft.Text(f"{ordner}", color="red", size=12, weight="bold", selectable=True)])))
+                        
                         for pdf in p_list:
-                            def rm(e, d=pdf, p=ordner): 
-                                os.remove(os.path.join(p, d)); zeige_postausgang()
-                            ansicht.controls.append(ft.Container(bgcolor="#002200", padding=10, border_radius=10, content=ft.Row([ft.Text(pdf, color="white", size=10, expand=True), sicherer_button("🗑️", rm, "red", "white", width=50)])))
+                            pdf_komplett = os.path.join(ordner, pdf) 
+                            
+                            # WICHTIG: pfad=pdf_komplett und name=pdf "binden" die Werte fest an DIESEN einen Button.
+                            async def teilen_klick(e, pfad=pdf_komplett):
+                                if page.platform in [ft.PagePlatform.ANDROID, ft.PagePlatform.IOS]:
+                                    await share.share_files([ft.ShareFile.from_path(pfad)], text="Hier ist der neue REWE-Prüfbericht.")
+                                else:
+                                    print(f"Teilen am PC nicht möglich. PDF-Pfad wäre: {pfad}")
+                                    
+                            def rm_klick(e, pfad=pdf_komplett):
+                                if os.path.exists(pfad):
+                                    os.remove(pfad)
+                                zeige_postausgang()
+                            
+                            # Sicherer Emoji-Button (Stürzt garantiert nicht ab!)
+                            btn_share = sicherer_button("📤", teilen_klick, "blue", "white", width=50)
+                            btn_del = sicherer_button("🗑️", rm_klick, "red", "white", width=50)
+                            
+                            ansicht.controls.append(
+                                ft.Container(
+                                    bgcolor="#002200", 
+                                    padding=10, 
+                                    border_radius=10, 
+                                    content=ft.Row([
+                                        ft.Text(pdf, color="white", size=10, expand=True), 
+                                        btn_share, 
+                                        btn_del
+                                    ])
+                                )
+                            )
                 except PermissionError: pass
             if not pdfs_gefunden: ansicht.controls.append(ft.Text("Noch keine Berichte für heute erstellt.", color="grey", size=14))
             page.update()
