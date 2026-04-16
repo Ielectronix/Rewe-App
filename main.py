@@ -1,68 +1,64 @@
 import flet as ft
-import os
 import traceback
+import os
 
 def main(page: ft.Page):
-    # --- GRUND-EINSTELLUNGEN (Sofort laden!) ---
-    page.title = "REWE Monitoring"
+    # 1. Sofortige Grund-Ansicht
     page.bgcolor = "#003300"
-    page.theme_mode = ft.ThemeMode.DARK
+    page.title = "REWE App Debug"
     page.vertical_alignment = ft.MainAxisAlignment.CENTER
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
-
-    # Wir definieren die Werkzeuge, aber fassen sie noch nicht an!
-    ph = ft.PermissionHandler()
-    share = ft.Share()
-    page.overlay.extend([ph, share])
-
-    # Das ist unser Haupt-Container
-    container = ft.Column(horizontal_alignment=ft.CrossAxisAlignment.CENTER)
-    page.add(container)
-
-    def zeige_fehler(msg):
-        container.controls.append(ft.Text(f"FEHLER: {msg}", color="red"))
-        page.update()
-
-    def check_rights(e):
-        try:
-            # Das öffnet die EINSTELLUNGEN der App direkt
-            # Hier müssen die Mitarbeiter die 3 Punkte drücken
-            ph.open_app_settings()
-        except Exception as ex:
-            zeige_fehler(str(ex))
-
-    # --- UI AUFBAU ---
-    container.controls.extend([
-        ft.Text("REWE Monitoring", size=32, weight="bold", color="red"),
-        ft.Text("SYSTEM-CHECK", size=20, color="white"),
-        ft.Container(height=20),
-        ft.Text("Falls das Speichern nicht geht:", color="yellow"),
-        ft.ElevatedButton(
-            "1. Berechtigungen freischalten", 
-            icon=ft.icons.SETTINGS, 
-            on_click=check_rights,
-            bgcolor="orange",
-            color="black"
-        ),
-        ft.Container(height=20),
-        ft.ElevatedButton(
-            "2. App starten", 
-            on_click=lambda _: starte_app_logik(), 
-            bgcolor="green", 
-            color="white",
-            height=50,
-            width=200
-        )
-    ])
-
-    def starte_app_logik():
-        # Hier kommt dein eigentlicher Code rein (Dashboard etc.)
-        container.controls.clear()
-        container.controls.append(ft.Text("App läuft! Viel Erfolg.", color="green", size=20))
-        # Hier rufst du dein zeige_dashboard() auf
-        page.update()
-
+    
+    # Ein einfacher Text, der IMMER kommen muss
+    debug_text = ft.Text("App gestartet... lade Module...", color="white", size=16)
+    page.add(debug_text)
     page.update()
+
+    try:
+        # Wir testen die Importe einzeln
+        debug_text.value = "Lade Datenverwaltung..."
+        page.update()
+        import datenverwaltung
+        
+        debug_text.value = "Lade PDF-Generator..."
+        page.update()
+        import pdf_generator
+        
+        debug_text.value = "Lade Formular..."
+        page.update()
+        import formular
+
+        # Wenn wir hier ankommen, löschen wir den Debug-Text und zeigen den Start-Button
+        page.controls.clear()
+        
+        def starte_tag(e):
+            # Hier rufen wir die Rechte ab, wenn man drückt
+            ph = ft.PermissionHandler()
+            page.overlay.append(ph)
+            page.update()
+            try:
+                ph.request_permission(ft.PermissionType.STORAGE)
+            except:
+                pass
+            # Hier zeigst du dein normales Menü
+            page.add(ft.Text("Erfolg! Dashboard wird geladen...", color="green"))
+            page.update()
+
+        page.add(
+            ft.Text("REWE MONITORING", size=30, weight="bold", color="red"),
+            ft.ElevatedButton("Neuen Tag starten", on_click=starte_tag, bgcolor="white", color="black")
+        )
+        page.update()
+
+    except Exception as e:
+        # Wenn es knallt, zeigt uns die App jetzt den Fehler auf dem grünen Schirm!
+        fehler_stack = traceback.format_exc()
+        page.add(
+            ft.Text("LADEFEHLER:", color="red", weight="bold", size=20),
+            ft.Text(str(e), color="yellow", size=14),
+            ft.Text(fehler_stack, color="white", size=10, selectable=True)
+        )
+        page.update()
 
 if __name__ == "__main__":
     ft.app(target=main)
