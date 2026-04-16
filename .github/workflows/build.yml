@@ -1,5 +1,4 @@
 name: Flet APK Build
-
 on:
   push:
     branches: [ "main" ]
@@ -7,24 +6,19 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Python einrichten
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
-      - name: Installiere Pakete
-        run: pip install flet pypdf flet-permission-handler
-
-      - name: APK bauen (Sicherer Modus)
-        run: yes | flet build apk --project "rewe_app" --org "com.rewe.app" --android-permissions "android.permission.READ_EXTERNAL_STORAGE=true" --android-permissions "android.permission.WRITE_EXTERNAL_STORAGE=true"
-
-      - name: APK hochladen
-        uses: actions/upload-artifact@v4
+      - run: pip install flet pypdf flet-permission-handler
+      - name: APK bauen
+        run: |
+          yes | flet build apk \
+          --android-permissions "android.permission.READ_EXTERNAL_STORAGE=true" \
+          --android-permissions "android.permission.WRITE_EXTERNAL_STORAGE=true" \
+          --android-permissions "android.permission.MANAGE_EXTERNAL_STORAGE=true"
+      - uses: actions/upload-artifact@v4
         with:
           name: LIMS-App-APK
           path: build/apk/*.apk
