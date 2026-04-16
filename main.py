@@ -1,58 +1,67 @@
 import flet as ft
 import os
+import traceback
 
 def main(page: ft.Page):
+    # --- GRUND-EINSTELLUNGEN (Sofort laden!) ---
     page.title = "REWE Monitoring"
     page.bgcolor = "#003300"
     page.theme_mode = ft.ThemeMode.DARK
-    
-    # Module vorbereiten
+    page.vertical_alignment = ft.MainAxisAlignment.CENTER
+    page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
+
+    # Wir definieren die Werkzeuge, aber fassen sie noch nicht an!
     ph = ft.PermissionHandler()
     share = ft.Share()
     page.overlay.extend([ph, share])
 
-    # Funktion, um die Systemeinstellungen direkt zu öffnen
-    def oeffne_einstellungen(e):
-        # Das schickt den Nutzer direkt in das App-Info Menü
-        ph.open_app_settings()
+    # Das ist unser Haupt-Container
+    container = ft.Column(horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+    page.add(container)
 
-    # Die Ansicht
-    status_text = ft.Text("Prüfe Berechtigungen...", color="white")
-    
-    # Button, der nur erscheint, wenn der Zugriff blockiert ist
-    settings_btn = ft.ElevatedButton(
-        "System-Einstellungen öffnen", 
-        icon=ft.icons.SETTINGS,
-        on_click=oeffne_einstellungen,
-        visible=False,
-        bgcolor="orange",
-        color="black"
-    )
+    def zeige_fehler(msg):
+        container.controls.append(ft.Text(f"FEHLER: {msg}", color="red"))
+        page.update()
 
-    def check_initial_perms():
-        # Wir prüfen nur leise, ob wir schreiben dürfen
-        # Falls nicht, zeigen wir den Button für die Einstellungen
-        if page.platform == ft.PagePlatform.ANDROID:
-            status_text.value = "Hinweis: Vollzugriff auf Speicher wird benötigt."
-            settings_btn.visible = True
-            page.update()
+    def check_rights(e):
+        try:
+            # Das öffnet die EINSTELLUNGEN der App direkt
+            # Hier müssen die Mitarbeiter die 3 Punkte drücken
+            ph.open_app_settings()
+        except Exception as ex:
+            zeige_fehler(str(ex))
 
-    # UI Aufbau
-    page.add(
-        ft.Column([
-            ft.Container(height=50),
-            ft.Row([ft.Text("REWE ", size=32, color="red", weight="bold"), 
-                    ft.Text("Monitoring", size=32, color="white", weight="bold")], 
-                   alignment=ft.MainAxisAlignment.CENTER),
-            ft.Container(height=20),
-            ft.Row([status_text], alignment=ft.MainAxisAlignment.CENTER),
-            ft.Row([settings_btn], alignment=ft.MainAxisAlignment.CENTER),
-            ft.ElevatedButton("Tag starten", on_click=lambda _: page.update(), bgcolor="red", color="white")
-        ], horizontal_alignment=ft.CrossAxisAlignment.CENTER)
-    )
+    # --- UI AUFBAU ---
+    container.controls.extend([
+        ft.Text("REWE Monitoring", size=32, weight="bold", color="red"),
+        ft.Text("SYSTEM-CHECK", size=20, color="white"),
+        ft.Container(height=20),
+        ft.Text("Falls das Speichern nicht geht:", color="yellow"),
+        ft.ElevatedButton(
+            "1. Berechtigungen freischalten", 
+            icon=ft.icons.SETTINGS, 
+            on_click=check_rights,
+            bgcolor="orange",
+            color="black"
+        ),
+        ft.Container(height=20),
+        ft.ElevatedButton(
+            "2. App starten", 
+            on_click=lambda _: starte_app_logik(), 
+            bgcolor="green", 
+            color="white",
+            height=50,
+            width=200
+        )
+    ])
 
-    # Nach dem Laden kurz prüfen
-    page.on_connect = lambda _: check_initial_perms()
+    def starte_app_logik():
+        # Hier kommt dein eigentlicher Code rein (Dashboard etc.)
+        container.controls.clear()
+        container.controls.append(ft.Text("App läuft! Viel Erfolg.", color="green", size=20))
+        # Hier rufst du dein zeige_dashboard() auf
+        page.update()
+
     page.update()
 
 if __name__ == "__main__":
