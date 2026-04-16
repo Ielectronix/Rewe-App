@@ -1,2 +1,3 @@
 flet
 pypdf
+flet-permission-handler
