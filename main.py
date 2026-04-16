@@ -6,11 +6,12 @@ import shutil
 import urllib.parse
 
 def main(page: ft.Page):
-    # --- MODULE IN DEN HINTERGRUND ---
-    # Wir laden KEINEN PermissionHandler, um Abstürze zu vermeiden.
-    # Das Share-Modul kommt in das Overlay (verhindert den roten Balken).
+    # --- MODULE VORBEREITEN ---
+    ph = ft.PermissionHandler()
     share = ft.Share()
-    page.overlay.append(share)
+    
+    # NUR ph in den Hintergrund. share darf NICHT rein!
+    page.overlay.append(ph)
     
     page.title = "Rewe Monitoring System"
     page.bgcolor = "#003300"
@@ -59,6 +60,10 @@ def main(page: ft.Page):
             v_in = ft.TextField(label="Vorname", value=v, color="yellow", border_color="white")
             z_in = ft.TextField(label="Nachname", value=z, color="yellow", border_color="white")
             
+            def oeffne_zugriff(e):
+                try: ph.open_app_settings()
+                except: pass
+
             def start_klick(e):
                 speichere_benutzer(v_in.value, z_in.value)
                 zeige_dashboard()
@@ -66,9 +71,12 @@ def main(page: ft.Page):
             ansicht.controls.extend([
                 ft.Container(height=40),
                 ft.Row([ft.Text("REWE MONITORING", size=32, weight="bold", color="red")], alignment=ft.MainAxisAlignment.CENTER),
-                ft.Container(height=40),
+                ft.Container(height=20),
+                ft.Text("WICHTIG: Vor dem ersten Start 'Speziellen Zugriff' erlauben!", color="orange", text_align=ft.TextAlign.CENTER),
+                ft.Row([sicherer_button("SPEZIELLER ZUGRIFF", oeffne_zugriff, "orange", "black", height=50)], alignment=ft.MainAxisAlignment.CENTER),
+                ft.Container(height=20),
                 v_in, z_in,
-                ft.Container(height=40),
+                ft.Container(height=20),
                 ft.Row([sicherer_button("TAG STARTEN", start_klick, "red", "white", height=60, width=250)], alignment=ft.MainAxisAlignment.CENTER)
             ])
             page.update()
@@ -77,7 +85,7 @@ def main(page: ft.Page):
             ansicht.controls.clear()
             maerkte = lade_maerkte()
             ansicht.controls.append(nav_leiste())
-            ansicht.controls.append(ft.Text("Meine heutigen Touren", size=25, weight="bold", color="white"))
+            ansicht.controls.append(ft.Text("Heutige Touren", size=25, weight="bold", color="white"))
             
             for index, markt in enumerate(maerkte):
                 mnr = markt.get("marktnummer", "Unbenannt")
@@ -96,7 +104,11 @@ def main(page: ft.Page):
             ansicht.controls.clear()
             ansicht.controls.append(nav_leiste())
             ansicht.controls.append(ft.Text("Senden (Heute)", size=25, weight="bold", color="white"))
-            # Hier PDFs suchen und mit share.share_files([ft.ShareFile.from_path(pfad)]) senden
+            
+            # Hier kannst du später deine PDF-Logik einfügen.
+            # Teilen würde dann so funktionieren: await share.share_files([ft.ShareFile.from_path(pfad)])
+            ansicht.controls.append(ft.Text("Hier landen deine PDFs zum Senden.", color="grey"))
+            
             page.update()
 
         def zeige_archiv():
