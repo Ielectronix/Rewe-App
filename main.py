@@ -7,9 +7,12 @@ import urllib.parse
 
 def main(page: ft.Page):
     # --- AUTOMATISCHES RECHTE-POPUP FÜR MITARBEITER ---
-    ph = page.get_permission_handler()
+        # --- AUTOMATISCHES RECHTE-POPUP FÜR MITARBEITER ---
+    ph = ft.PermissionHandler()
+    page.overlay.append(ph)
+    page.update()
     ph.request_permission(ft.PermissionType.STORAGE)
-    
+
     # ... hier geht dein normaler Code weiter ...
     page.title = "Rewe Monitoring System"
     page.bgcolor = "#003300" 
