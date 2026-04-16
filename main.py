@@ -3,62 +3,81 @@ import traceback
 import os
 
 def main(page: ft.Page):
-    # 1. Sofortige Grund-Ansicht
+    # --- GRUND-SETUP ---
     page.bgcolor = "#003300"
-    page.title = "REWE App Debug"
+    page.title = "REWE Monitoring"
+    page.theme_mode = ft.ThemeMode.DARK
     page.vertical_alignment = ft.MainAxisAlignment.CENTER
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
     
-    # Ein einfacher Text, der IMMER kommen muss
-    debug_text = ft.Text("App gestartet... lade Module...", color="white", size=16)
-    page.add(debug_text)
-    page.update()
+    # Module für später im Hintergrund bereitstellen
+    ph = ft.PermissionHandler()
+    share = ft.Share()
+    page.overlay.extend([ph, share])
 
-    try:
-        # Wir testen die Importe einzeln
-        debug_text.value = "Lade Datenverwaltung..."
-        page.update()
-        import datenverwaltung
-        
-        debug_text.value = "Lade PDF-Generator..."
-        page.update()
-        import pdf_generator
-        
-        debug_text.value = "Lade Formular..."
-        page.update()
-        import formular
+    # Haupt-Container
+    ansicht = ft.Column(horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+    page.add(ansicht)
 
-        # Wenn wir hier ankommen, löschen wir den Debug-Text und zeigen den Start-Button
-        page.controls.clear()
-        
-        def starte_tag(e):
-            # Hier rufen wir die Rechte ab, wenn man drückt
-            ph = ft.PermissionHandler()
-            page.overlay.append(ph)
-            page.update()
-            try:
-                ph.request_permission(ft.PermissionType.STORAGE)
-            except:
-                pass
-            # Hier zeigst du dein normales Menü
-            page.add(ft.Text("Erfolg! Dashboard wird geladen...", color="green"))
-            page.update()
+    # --- DIE LOGIK FÜR DEN BUTTON ---
+    def start_klick(e):
+        # 1. Visuelles Feedback: Button zeigt, dass er arbeitet
+        btn_start.disabled = True
+        btn_start.text = "Lade Dashboard..."
+        page.update()
 
-        page.add(
-            ft.Text("REWE MONITORING", size=30, weight="bold", color="red"),
-            ft.ElevatedButton("Neuen Tag starten", on_click=starte_tag, bgcolor="white", color="black")
+        # 2. Versuch der Rechte-Abfrage (ohne die App zu blockieren)
+        try:
+            ph.request_permission(ft.PermissionType.STORAGE)
+        except:
+            pass # Falls Android blockt, ignorieren wir es hier einfach
+
+        # 3. WEITER GEHT'S: Wir laden jetzt dein echtes Menü!
+        # Hier rufen wir jetzt deine Dashboard-Funktion auf
+        zeige_dashboard()
+
+    # --- DEIN ECHTES DASHBOARD (Hier kommt dein Menü rein) ---
+    def zeige_dashboard():
+        ansicht.controls.clear()
+        ansicht.controls.append(ft.Text("MEINE TOUREN", size=25, weight="bold", color="white"))
+        
+        # Beispiel-Tour-Button (Hier kannst du deine echte Touren-Schleife einbauen)
+        ansicht.controls.append(
+            ft.Container(
+                bgcolor="#005500",
+                padding=10,
+                border_radius=10,
+                content=ft.Text("🚚 Tour A: REWE Markt 123", color="white")
+            )
+        )
+        
+        ansicht.controls.append(
+            ft.ElevatedButton("Zurück zum Start", on_click=lambda _: zeige_start())
         )
         page.update()
 
-    except Exception as e:
-        # Wenn es knallt, zeigt uns die App jetzt den Fehler auf dem grünen Schirm!
-        fehler_stack = traceback.format_exc()
-        page.add(
-            ft.Text("LADEFEHLER:", color="red", weight="bold", size=20),
-            ft.Text(str(e), color="yellow", size=14),
-            ft.Text(fehler_stack, color="white", size=10, selectable=True)
-        )
+    # --- DER STARTBILDSCHIRM (Das, was du auf dem Foto siehst) ---
+    def zeige_start():
+        ansicht.controls.clear()
+        ansicht.controls.extend([
+            ft.Text("REWE MONITORING", size=32, weight="bold", color="red"),
+            ft.Container(height=20),
+            btn_start
+        ])
         page.update()
+
+    # Den Button einmal global definieren
+    btn_start = ft.ElevatedButton(
+        "Neuen Tag starten", 
+        on_click=start_klick, 
+        bgcolor="white", 
+        color="black",
+        width=250,
+        height=50
+    )
+
+    # App mit dem Startbildschirm öffnen
+    zeige_start()
 
 if __name__ == "__main__":
     ft.app(target=main)
