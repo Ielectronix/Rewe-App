@@ -6,37 +6,35 @@ import shutil
 import urllib.parse
 
 def main(page: ft.Page):
-    # --- MODULE NUR VORBEREITEN (Nicht sofort abfragen!) ---
+    # --- MODULE VORBEREITEN ---
     ph = ft.PermissionHandler()
     share = ft.Share()
-    page.overlay.extend([ph, share]) # Beides gleichzeitig in den Hintergrund legen
+    # Wir legen die Module in das Overlay, aber fragen noch nicht ab!
+    page.overlay.extend([ph, share])
     
-    # Ab hier kommt dein normaler Code (Titel, Farbe etc.)
+    # Seiteneinstellungen
     page.title = "Rewe Monitoring System"
     page.bgcolor = "#003300"
     page.padding = ft.padding.only(left=10, top=55, right=10, bottom=10)
     page.scroll = ft.ScrollMode.AUTO
 
-    def check_permissions(e=None):
-        page.request_permission(ft.PermissionType.WRITE_EXTERNAL_STORAGE)
-        page.request_permission(ft.PermissionType.MANAGE_EXTERNAL_STORAGE)
-    
-    try: page.window.icon = "icon.png"
-    except: pass
+    try: 
+        page.window.icon = "icon.png"
+    except: 
+        pass
 
     ansicht = ft.Column(expand=True, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
     page.add(ansicht)
-
-    # --- TEILEN-MODUL FÜR ANDROID (Versteckt den roten Kasten am PC) ---
-    share = ft.Share()
 
     def zeige_fehler(e):
         ansicht.controls.clear()
         page.bgcolor = "black"
         ansicht.controls.append(ft.Text("SYSTEM-FEHLER:", color="red", size=30, weight="bold"))
         ansicht.controls.append(ft.Text(str(e), color="yellow", size=20))
-        try: ansicht.controls.append(ft.Text(traceback.format_exc(), color="white", size=12))
-        except: pass
+        try: 
+            ansicht.controls.append(ft.Text(traceback.format_exc(), color="white", size=12))
+        except: 
+            pass
         page.update()
 
     try:
@@ -46,7 +44,6 @@ def main(page: ft.Page):
 
         def sicherer_button(text, on_click, bgcolor="blue", color="white", expand=False, height=None, width=None):
             align_txt = ft.TextAlign.LEFT if (expand and not height) else ft.TextAlign.CENTER
-            # Emoji-Buttons (Teilen & Löschen) bekommen eine größere Schrift
             text_size = 18 if text in ["🗑️", "📤"] else 12 
             txt_obj = ft.Text(text, weight="bold", size=text_size, text_align=align_txt)
             
@@ -78,14 +75,30 @@ def main(page: ft.Page):
             v, z = lade_benutzer()
             stil_label_weiss = ft.TextStyle(color="white")
             stil_hint_weiss = ft.TextStyle(color="white54", size=12)
+            
             v_in = ft.TextField(label="Vorname", hint_text="Dein Vorname", hint_style=stil_hint_weiss, value=v, color="yellow", border_color="white", text_align=ft.TextAlign.CENTER, label_style=stil_label_weiss, width=300)
             z_in = ft.TextField(label="Nachname", hint_text="Dein Nachname", hint_style=stil_hint_weiss, value=z, color="yellow", border_color="white", text_align=ft.TextAlign.CENTER, label_style=stil_label_weiss, width=300)
+            
             def start_klick(e):
+                # JETZT fragen wir nach den Rechten, wenn der User den Button drückt!
+                try:
+                    ph.request_permission(ft.PermissionType.STORAGE)
+                except:
+                    pass
                 speichere_benutzer(v_in.value, z_in.value)
                 zeige_dashboard()
+
             btn_start = sicherer_button("Neuen Tag starten", start_klick, "red", "white", height=60, width=250)
             header = ft.Text(spans=[ft.TextSpan("REWE ", ft.TextStyle(color="red", weight="bold", size=32)), ft.TextSpan("Monitoring", ft.TextStyle(color="white", weight="bold", size=32))], text_align=ft.TextAlign.CENTER)
-            ansicht.controls.extend([ft.Container(height=50), ft.Row([header], alignment=ft.MainAxisAlignment.CENTER), ft.Container(height=40), ft.Column([v_in, z_in], horizontal_alignment=ft.CrossAxisAlignment.CENTER), ft.Container(height=40), ft.Row([btn_start], alignment=ft.MainAxisAlignment.CENTER)])
+            
+            ansicht.controls.extend([
+                ft.Container(height=50), 
+                ft.Row([header], alignment=ft.MainAxisAlignment.CENTER), 
+                ft.Container(height=40), 
+                ft.Column([v_in, z_in], horizontal_alignment=ft.CrossAxisAlignment.CENTER), 
+                ft.Container(height=40), 
+                ft.Row([btn_start], alignment=ft.MainAxisAlignment.CENTER)
+            ])
             page.update()
 
         def zeige_dashboard():
@@ -103,8 +116,11 @@ def main(page: ft.Page):
                     mnr = (markt.get("marktnummer") or "").strip()
                     anzeige_text = f"{mnr} - {adr}" if mnr and adr else (mnr or adr or "Unbenannte Tour")
                     buchstabe = chr(65 + index) if index < 26 else str(index)
+                    
                     def loesche_t(e, i=index): 
-                        maerkte.pop(i); speichere_maerkte(maerkte); zeige_dashboard()
+                        maerkte.pop(i)
+                        speichere_maerkte(maerkte)
+                        zeige_dashboard()
                     
                     btn_tour = sicherer_button(f"🚚 Tour {buchstabe}: {anzeige_text}", lambda e, i=index: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, i), "#005500", "white", expand=True, height=None)
                     btn_del = sicherer_button("🗑️", loesche_t, "red", "white", height=50, width=60)
@@ -116,8 +132,10 @@ def main(page: ft.Page):
             page.update()
 
         def get_erweiterte_bases():
-            try: bases = get_all_rewe_bases()
-            except: bases = []
+            try: 
+                bases = get_all_rewe_bases()
+            except: 
+                bases = []
             extra_paths = ["/storage/emulated/0/Download/Rewe_Monitoring", "/storage/emulated/0/Download", "/storage/emulated/0/Downloads", "/storage/emulated/0/Documents/Rewe_Monitoring"]
             for p in extra_paths:
                 if p not in bases: bases.append(p)
@@ -202,19 +220,20 @@ def main(page: ft.Page):
                         for pdf in p_list:
                             pdf_komplett = os.path.join(ordner, pdf) 
                             
-                            # WICHTIG: pfad=pdf_komplett und name=pdf "binden" die Werte fest an DIESEN einen Button.
                             async def teilen_klick(e, pfad=pdf_komplett):
-                                if page.platform in [ft.PagePlatform.ANDROID, ft.PagePlatform.IOS]:
-                                    await share.share_files([ft.ShareFile.from_path(pfad)], text="Hier ist der neue REWE-Prüfbericht.")
-                                else:
-                                    print(f"Teilen am PC nicht möglich. PDF-Pfad wäre: {pfad}")
+                                try:
+                                    if page.platform in [ft.PagePlatform.ANDROID, ft.PagePlatform.IOS]:
+                                        await share.share_files([ft.ShareFile.from_path(pfad)], text="Hier ist der neue REWE-Prüfbericht.")
+                                    else:
+                                        print(f"Teilen am PC nicht möglich: {pfad}")
+                                except Exception as ex:
+                                    zeige_fehler(f"Teilen fehlgeschlagen: {str(ex)}")
                                     
                             def rm_klick(e, pfad=pdf_komplett):
                                 if os.path.exists(pfad):
                                     os.remove(pfad)
                                 zeige_postausgang()
                             
-                            # Sicherer Emoji-Button (Stürzt garantiert nicht ab!)
                             btn_share = sicherer_button("📤", teilen_klick, "blue", "white", width=50)
                             btn_del = sicherer_button("🗑️", rm_klick, "red", "white", width=50)
                             
@@ -234,9 +253,11 @@ def main(page: ft.Page):
             if not pdfs_gefunden: ansicht.controls.append(ft.Text("Noch keine Berichte für heute erstellt.", color="grey", size=14))
             page.update()
 
-        page.on_connect = check_permissions
+        # Startbildschirm laden
         zeige_startbildschirm()
-    except Exception as e: zeige_fehler(e)
+        
+    except Exception as e: 
+        zeige_fehler(e)
 
 if __name__ == "__main__": 
     ft.app(target=main, assets_dir="assets")
