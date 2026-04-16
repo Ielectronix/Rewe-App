@@ -6,16 +6,14 @@ import shutil
 import urllib.parse
 
 def main(page: ft.Page):
-    # --- AUTOMATISCHES RECHTE-POPUP FÜR MITARBEITER ---
-        # --- AUTOMATISCHES RECHTE-POPUP FÜR MITARBEITER ---
+    # --- MODULE NUR VORBEREITEN (Nicht sofort abfragen!) ---
     ph = ft.PermissionHandler()
-    page.overlay.append(ph)
-    page.update()
-    ph.request_permission(ft.PermissionType.STORAGE)
-
-    # ... hier geht dein normaler Code weiter ...
+    share = ft.Share()
+    page.overlay.extend([ph, share]) # Beides gleichzeitig in den Hintergrund legen
+    
+    # Ab hier kommt dein normaler Code (Titel, Farbe etc.)
     page.title = "Rewe Monitoring System"
-    page.bgcolor = "#003300" 
+    page.bgcolor = "#003300"
     page.padding = ft.padding.only(left=10, top=55, right=10, bottom=10)
     page.scroll = ft.ScrollMode.AUTO
 
