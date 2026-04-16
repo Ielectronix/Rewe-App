@@ -6,7 +6,6 @@ import shutil
 import urllib.parse
 
 def main(page: ft.Page):
-def main(page: ft.Page):
     # --- AUTOMATISCHES RECHTE-POPUP FÜR MITARBEITER ---
     ph = page.get_permission_handler()
     ph.request_permission(ft.PermissionType.STORAGE)
