@@ -23,8 +23,6 @@ def main(page: ft.Page):
 
     # --- TEILEN-MODUL FÜR ANDROID (Versteckt den roten Kasten am PC) ---
     share = ft.Share()
-    if page.platform in [ft.PagePlatform.ANDROID, ft.PagePlatform.IOS]:
-        page.overlay.append(share)
 
     def zeige_fehler(e):
         ansicht.controls.clear()
