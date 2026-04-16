@@ -6,6 +6,12 @@ import shutil
 import urllib.parse
 
 def main(page: ft.Page):
+def main(page: ft.Page):
+    # --- AUTOMATISCHES RECHTE-POPUP FÜR MITARBEITER ---
+    ph = page.get_permission_handler()
+    ph.request_permission(ft.PermissionType.STORAGE)
+    
+    # ... hier geht dein normaler Code weiter ...
     page.title = "Rewe Monitoring System"
     page.bgcolor = "#003300" 
     page.padding = ft.padding.only(left=10, top=55, right=10, bottom=10)
