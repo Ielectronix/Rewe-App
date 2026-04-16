@@ -17,11 +17,11 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Installiere Flet und PDF-Tool
+      - name: Installiere Pakete
         run: pip install flet pypdf flet-permission-handler
 
-      - name: APK bauen (vollautomatisch)
-        run: yes | flet build apk --project "rewe_app" --org "com.rewe.app" --android-permissions "android.permission.READ_EXTERNAL_STORAGE=true" --android-permissions "android.permission.WRITE_EXTERNAL_STORAGE=true" --android-permissions "android.permission.MANAGE_EXTERNAL_STORAGE=true"
+      - name: APK bauen (Sicherer Modus)
+        run: yes | flet build apk --project "rewe_app" --org "com.rewe.app" --android-permissions "android.permission.READ_EXTERNAL_STORAGE=true" --android-permissions "android.permission.WRITE_EXTERNAL_STORAGE=true"
 
       - name: APK hochladen
         uses: actions/upload-artifact@v4
