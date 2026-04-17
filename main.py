@@ -1,113 +1,200 @@
 import flet as ft
+import os
+import glob
 import traceback
 
 def main(page: ft.Page):
-    # 1. Grundzustand herstellen 
+    # --- 1. GRUND-DESIGN (Exakt nach deinen Screenshots) ---
     page.title = "Rewe Monitoring System"
-    page.bgcolor = "#003300"
+    page.bgcolor = "#002200" # Ein tiefes, dunkles REWE-Grün
     page.theme_mode = ft.ThemeMode.DARK
-    page.padding = ft.padding.only(left=10, top=55, right=10, bottom=10)
+    page.padding = ft.padding.only(left=15, top=50, right=15, bottom=15)
     page.scroll = ft.ScrollMode.AUTO
 
-    # DEN FEHLER BEHOBEN: Wir hängen das Teilen-Modul NICHT mehr an den Bildschirm an!
-    # Das verhindert den roten "Unknown control"-Balken.
+    # Das Teilen-Modul (unsichtbar im Hintergrund)
     share = ft.Share()
+    page.overlay.append(share)
 
-    # Haupt-Container
-    ansicht = ft.Column(expand=True, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
+    # Haupt-Container (Zentriert die Elemente)
+    ansicht = ft.Column(expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
     page.add(ansicht)
 
-    # Einfache Fehleranzeige
     def zeige_fehler(e):
-        ansicht.controls.clear()
-        ansicht.controls.append(ft.Text(f"Systemfehler: {e}", color="yellow", size=16))
+        page.snack_bar = ft.SnackBar(ft.Text(f"Fehler: {e}", color="white"), bgcolor="red")
+        page.snack_bar.open = True
         page.update()
 
     try:
-        # Import deiner eigenen Dateien
+        # Import deiner Logik-Dateien
         from datenverwaltung import lade_maerkte, speichere_maerkte, lade_benutzer, speichere_benutzer
         from formular import zeige_maske_ui
 
-        def sicherer_button(text, on_click, bgcolor="blue", color="white", expand=False, height=None, width=None):
-            return ft.ElevatedButton(
-                content=ft.Text(text, weight="bold"),
-                on_click=on_click, bgcolor=bgcolor, color=color, 
-                expand=expand, height=height, width=width
-            )
-
+        # --- NAVIGATION (Die schicke Leiste oben) ---
         def nav_leiste():
             return ft.Container(
-                bgcolor="#001100", padding=10, border_radius=10, 
-                content=ft.Row(alignment=ft.MainAxisAlignment.SPACE_EVENLY, controls=[
-                    sicherer_button("🚚 Touren", lambda e: zeige_dashboard(), "#004400", "white", expand=True, height=50),
-                    sicherer_button("📤 Senden", lambda e: zeige_postausgang(), "#004400", "white", expand=True, height=50),
-                    sicherer_button("🗄️ Archiv", lambda e: zeige_archiv(), "#004400", "white", expand=True, height=50)
-                ])
+                bgcolor="#001100", 
+                padding=10, 
+                border_radius=20, 
+                content=ft.Row(
+                    alignment=ft.MainAxisAlignment.SPACE_EVENLY, 
+                    controls=[
+                        ft.ElevatedButton("🚚\nTouren", on_click=lambda _: zeige_dashboard(), bgcolor="#003300", color="white", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10))),
+                        ft.ElevatedButton("📤\nSenden", on_click=lambda _: zeige_postausgang(), bgcolor="#003300", color="white", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10))),
+                        ft.ElevatedButton("🗄️\nArchiv", on_click=lambda _: zeige_archiv(), bgcolor="#003300", color="white", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)))
+                    ]
+                )
             )
 
+        # --- STARTBILDSCHIRM ---
         def zeige_startbildschirm():
             ansicht.controls.clear()
             v, z = lade_benutzer()
-            v_in = ft.TextField(label="Vorname", value=v)
-            z_in = ft.TextField(label="Nachname", value=z)
+            
+            v_in = ft.TextField(label="Vorname", value=v, width=300, border_color="#005500", bgcolor="#001100")
+            z_in = ft.TextField(label="Nachname", value=z, width=300, border_color="#005500", bgcolor="#001100")
             
             def start_klick(e):
                 speichere_benutzer(v_in.value, z_in.value)
                 zeige_dashboard()
 
             ansicht.controls.extend([
-                ft.Container(height=30),
-                
-                # --- HIER IST DEIN NEUES DESIGN ---
+                ft.Container(height=40),
+                # REWE Rot, MONITORING Weiß (Zentriert)
                 ft.Row([
-                    ft.Text("REWE", size=30, weight="bold", color="red"),
-                    ft.Text("MONITORING", size=30, weight="bold", color="white")
+                    ft.Text("REWE", size=32, weight="bold", color="#ff4444"),
+                    ft.Text("MONITORING", size=32, weight="bold", color="white")
                 ], alignment=ft.MainAxisAlignment.CENTER),
-                # ----------------------------------
-                
-                ft.Container(height=30),
-                v_in, z_in,
-                ft.Container(height=30),
-                ft.Row([sicherer_button("TAG STARTEN", start_klick, "red", "white", height=60, width=250)], alignment=ft.MainAxisAlignment.CENTER)
+                ft.Container(height=40),
+                v_in, 
+                z_in,
+                ft.Container(height=40),
+                # Großer roter Button
+                ft.ElevatedButton(
+                    "TAG STARTEN", 
+                    on_click=start_klick, 
+                    bgcolor="#ff4444", 
+                    color="white", 
+                    height=60, 
+                    width=250,
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=30))
+                )
             ])
             page.update()
 
+        # --- DASHBOARD (MEINE TOUREN) ---
         def zeige_dashboard():
             ansicht.controls.clear()
             ansicht.controls.append(nav_leiste())
-            ansicht.controls.append(ft.Text("Meine Touren", size=20, weight="bold", color="white"))
+            ansicht.controls.append(ft.Container(height=10))
+            
+            # Überschrift linksbündig (wie auf deinem Bild)
+            ansicht.controls.append(
+                ft.Row([ft.Text("Meine Touren", size=24, weight="bold", color="white")], alignment=ft.MainAxisAlignment.START)
+            )
             
             maerkte = lade_maerkte()
             for index, markt in enumerate(maerkte):
-                btn = sicherer_button(f"Tour: {markt.get('marktnummer')}", lambda e, i=index: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, i), "#005500")
+                # Hier wird jetzt Nummer UND Adresse angezeigt!
+                markt_nr = markt.get('marktnummer', 'Unbekannt')
+                adresse = markt.get('adresse', '')
+                anzeige_text = f"Tour: {markt_nr} - {adresse}" if adresse else f"Tour: {markt_nr}"
+
+                btn = ft.ElevatedButton(
+                    text=anzeige_text, 
+                    on_click=lambda e, i=index: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, i), 
+                    bgcolor="#004400", 
+                    color="white",
+                    height=50,
+                    width=350,
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=15))
+                )
                 ansicht.controls.append(btn)
             
-            btn_neu = sicherer_button("➕ Neue Tour", lambda e: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, None), "red")
-            ansicht.controls.append(ft.Row([btn_neu], alignment=ft.MainAxisAlignment.CENTER))
+            ansicht.controls.append(ft.Container(height=10))
+            btn_neu = ft.ElevatedButton(
+                "➕ Neue Tour", 
+                on_click=lambda _: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, None), 
+                bgcolor="#ff4444", 
+                color="white",
+                height=40,
+                width=200,
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=20))
+            )
+            ansicht.controls.append(btn_neu)
             page.update()
 
+        # --- SENDEN (POSTAUSGANG) ---
         def zeige_postausgang():
             ansicht.controls.clear()
             ansicht.controls.append(nav_leiste())
-            ansicht.controls.append(ft.Text("Senden", size=25, color="white"))
+            ansicht.controls.append(ft.Container(height=10))
             
-            async def teilen_klick(e):
-                pass
+            ansicht.controls.append(
+                ft.Row([ft.Text("Senden", size=24, weight="bold", color="white")], alignment=ft.MainAxisAlignment.START)
+            )
+            
+            # --- PDF SUCH-LOGIK ---
+            # Sucht im Standard-Download-Ordner von Android nach PDFs
+            download_ordner = "/storage/emulated/0/Download"
+            gefundene_pdfs = []
+            
+            if os.path.exists(download_ordner):
+                # Sucht nach allen PDFs, die mit "REWE" anfangen (passe das ggf. an deinen Dateinamen an)
+                gefundene_pdfs = glob.glob(os.path.join(download_ordner, "*.pdf"))
 
-            ansicht.controls.append(sicherer_button("📤 PDF TEILEN", teilen_klick, "blue", height=60))
+            if not gefundene_pdfs:
+                ansicht.controls.append(ft.Container(height=30))
+                ansicht.controls.append(ft.Text("Keine PDFs zum Senden gefunden.", color="grey", size=16))
+                ansicht.controls.append(ft.Text(f"Gesucht in: {download_ordner}", color="white30", size=10))
+            else:
+                for pdf_pfad in gefundene_pdfs:
+                    dateiname = os.path.basename(pdf_pfad)
+                    
+                    async def teilen_klick(e, pfad=pdf_pfad):
+                        try:
+                            # Der echte Teilen-Befehl!
+                            await share.share_files([ft.ShareFile.from_path(pfad)])
+                        except Exception as ex:
+                            zeige_fehler(f"Fehler beim Teilen: {ex}")
+
+                    ansicht.controls.append(
+                        ft.Container(
+                            padding=10,
+                            bgcolor="#003300",
+                            border_radius=10,
+                            content=ft.Column([
+                                ft.Text(dateiname, color="white", weight="bold"),
+                                ft.ElevatedButton(
+                                    "📤 PDF TEILEN", 
+                                    on_click=teilen_klick, 
+                                    bgcolor="#2196F3", # Das Blau aus deinem Screenshot
+                                    color="white", 
+                                    width=350,
+                                    height=50,
+                                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=15))
+                                )
+                            ])
+                        )
+                    )
             page.update()
 
+        # --- ARCHIV ---
         def zeige_archiv():
             ansicht.controls.clear()
             ansicht.controls.append(nav_leiste())
-            ansicht.controls.append(ft.Text("Archiv", size=25, color="white"))
+            ansicht.controls.append(ft.Container(height=10))
+            ansicht.controls.append(
+                ft.Row([ft.Text("Archiv", size=24, weight="bold", color="white")], alignment=ft.MainAxisAlignment.START)
+            )
             page.update()
 
-        # Start
+        # --- APP STARTEN ---
         zeige_startbildschirm()
 
     except Exception as e:
-        zeige_fehler(e)
+        zeige_fehler(str(e))
+        ansicht.controls.append(ft.Text(traceback.format_exc(), color="white30", size=10))
+        page.update()
 
 if __name__ == "__main__":
     ft.app(target=main)
