@@ -2,17 +2,16 @@ import flet as ft
 import traceback
 
 def main(page: ft.Page):
-    # 1. Grundzustand herstellen (Verhindert weißen Bildschirm)
+    # 1. Grundzustand herstellen 
     page.title = "Rewe Monitoring System"
     page.bgcolor = "#003300"
     page.theme_mode = ft.ThemeMode.DARK
     page.padding = ft.padding.only(left=10, top=55, right=10, bottom=10)
     page.scroll = ft.ScrollMode.AUTO
 
-    # 2. Teilen-Funktion für den Senden-Button laden
-    # (Im Overlay, damit kein roter Balken erscheint!)
+    # DEN FEHLER BEHOBEN: Wir hängen das Teilen-Modul NICHT mehr an den Bildschirm an!
+    # Das verhindert den roten "Unknown control"-Balken.
     share = ft.Share()
-    page.overlay.append(share)
 
     # Haupt-Container
     ansicht = ft.Column(expand=True, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
@@ -58,7 +57,14 @@ def main(page: ft.Page):
 
             ansicht.controls.extend([
                 ft.Container(height=30),
-                ft.Row([ft.Text("REWE MONITORING", size=30, weight="bold", color="red")], alignment=ft.MainAxisAlignment.CENTER),
+                
+                # --- HIER IST DEIN NEUES DESIGN ---
+                ft.Row([
+                    ft.Text("REWE", size=30, weight="bold", color="red"),
+                    ft.Text("MONITORING", size=30, weight="bold", color="white")
+                ], alignment=ft.MainAxisAlignment.CENTER),
+                # ----------------------------------
+                
                 ft.Container(height=30),
                 v_in, z_in,
                 ft.Container(height=30),
@@ -85,10 +91,7 @@ def main(page: ft.Page):
             ansicht.controls.append(nav_leiste())
             ansicht.controls.append(ft.Text("Senden", size=25, color="white"))
             
-            # Hier ist dein Knopf zum Teilen (ohne Automatik-Schnickschnack)
             async def teilen_klick(e):
-                # Wenn dein PDF-Code wieder drin ist, nutzt du hier:
-                # await share.share_files([ft.ShareFile.from_path("dein_pfad.pdf")])
                 pass
 
             ansicht.controls.append(sicherer_button("📤 PDF TEILEN", teilen_klick, "blue", height=60))
