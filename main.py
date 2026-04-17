@@ -4,16 +4,16 @@ import glob
 import traceback
 
 def main(page: ft.Page):
-    # --- 1. GRUND-DESIGN (Exakt nach deinen Screenshots) ---
+    # --- 1. GRUND-DESIGN ---
     page.title = "Rewe Monitoring System"
-    page.bgcolor = "#002200" # Ein tiefes, dunkles REWE-Grün
+    page.bgcolor = "#002200" # Das schöne dunkle REWE-Grün
     page.theme_mode = ft.ThemeMode.DARK
     page.padding = ft.padding.only(left=15, top=50, right=15, bottom=15)
     page.scroll = ft.ScrollMode.AUTO
 
-    # Das Teilen-Modul (unsichtbar im Hintergrund)
+    # WICHTIG: Das Modul wird nur geladen, aber NICHT mehr ans Display gehängt!
+    # Das bedeutet: GARANTIERT KEIN ROTER BALKEN MEHR.
     share = ft.Share()
-    page.overlay.append(share)
 
     # Haupt-Container (Zentriert die Elemente)
     ansicht = ft.Column(expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
@@ -29,7 +29,7 @@ def main(page: ft.Page):
         from datenverwaltung import lade_maerkte, speichere_maerkte, lade_benutzer, speichere_benutzer
         from formular import zeige_maske_ui
 
-        # --- NAVIGATION (Die schicke Leiste oben) ---
+        # --- NAVIGATION (Die schicke runde Leiste oben) ---
         def nav_leiste():
             return ft.Container(
                 bgcolor="#001100", 
@@ -59,7 +59,7 @@ def main(page: ft.Page):
 
             ansicht.controls.extend([
                 ft.Container(height=40),
-                # REWE Rot, MONITORING Weiß (Zentriert)
+                # REWE Rot, MONITORING Weiß (Perfekt zentriert)
                 ft.Row([
                     ft.Text("REWE", size=32, weight="bold", color="#ff4444"),
                     ft.Text("MONITORING", size=32, weight="bold", color="white")
@@ -68,7 +68,6 @@ def main(page: ft.Page):
                 v_in, 
                 z_in,
                 ft.Container(height=40),
-                # Großer roter Button
                 ft.ElevatedButton(
                     "TAG STARTEN", 
                     on_click=start_klick, 
@@ -87,14 +86,13 @@ def main(page: ft.Page):
             ansicht.controls.append(nav_leiste())
             ansicht.controls.append(ft.Container(height=10))
             
-            # Überschrift linksbündig (wie auf deinem Bild)
             ansicht.controls.append(
                 ft.Row([ft.Text("Meine Touren", size=24, weight="bold", color="white")], alignment=ft.MainAxisAlignment.START)
             )
             
             maerkte = lade_maerkte()
             for index, markt in enumerate(maerkte):
-                # Hier wird jetzt Nummer UND Adresse angezeigt!
+                # Hier ist die Adressen-Anzeige wieder da!
                 markt_nr = markt.get('marktnummer', 'Unbekannt')
                 adresse = markt.get('adresse', '')
                 anzeige_text = f"Tour: {markt_nr} - {adresse}" if adresse else f"Tour: {markt_nr}"
@@ -133,29 +131,26 @@ def main(page: ft.Page):
                 ft.Row([ft.Text("Senden", size=24, weight="bold", color="white")], alignment=ft.MainAxisAlignment.START)
             )
             
-            # --- PDF SUCH-LOGIK ---
-            # Sucht im Standard-Download-Ordner von Android nach PDFs
+            # Sucht die PDFs im Download-Ordner
             download_ordner = "/storage/emulated/0/Download"
             gefundene_pdfs = []
             
             if os.path.exists(download_ordner):
-                # Sucht nach allen PDFs, die mit "REWE" anfangen (passe das ggf. an deinen Dateinamen an)
                 gefundene_pdfs = glob.glob(os.path.join(download_ordner, "*.pdf"))
 
             if not gefundene_pdfs:
                 ansicht.controls.append(ft.Container(height=30))
                 ansicht.controls.append(ft.Text("Keine PDFs zum Senden gefunden.", color="grey", size=16))
-                ansicht.controls.append(ft.Text(f"Gesucht in: {download_ordner}", color="white30", size=10))
             else:
                 for pdf_pfad in gefundene_pdfs:
                     dateiname = os.path.basename(pdf_pfad)
                     
                     async def teilen_klick(e, pfad=pdf_pfad):
                         try:
-                            # Der echte Teilen-Befehl!
+                            # Teilt das PDF an WhatsApp, Mail, etc.
                             await share.share_files([ft.ShareFile.from_path(pfad)])
                         except Exception as ex:
-                            zeige_fehler(f"Fehler beim Teilen: {ex}")
+                            zeige_fehler(f"Teilen fehlgeschlagen: {ex}")
 
                     ansicht.controls.append(
                         ft.Container(
@@ -167,7 +162,7 @@ def main(page: ft.Page):
                                 ft.ElevatedButton(
                                     "📤 PDF TEILEN", 
                                     on_click=teilen_klick, 
-                                    bgcolor="#2196F3", # Das Blau aus deinem Screenshot
+                                    bgcolor="#2196F3",
                                     color="white", 
                                     width=350,
                                     height=50,
