@@ -18,9 +18,19 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             titel = "Tour bearbeiten"
 
         def sicherer_button(text, on_click, bgcolor="blue", color="white", expand=False, height=None, width=None):
-            align_txt = ft.TextAlign.LEFT if (expand and not height) else ft.TextAlign.CENTER
-            text_size = 18 if text == "🗑️" else 12
-            txt_obj = ft.Text(text, weight="bold", size=text_size, text_align=align_txt)
+            return ft.ElevatedButton(
+                content=ft.Text(text, text_align=ft.TextAlign.CENTER, size=14, weight="bold"),
+                on_click=on_click, 
+                bgcolor=bgcolor, 
+                color=color, 
+                expand=expand, 
+                height=height, 
+                width=width,
+                style=ft.ButtonStyle(
+                    shape=ft.RoundedRectangleBorder(radius=8),
+                    padding=5
+                )
+            )
             
             inhalt = []
             if expand and not height: 
