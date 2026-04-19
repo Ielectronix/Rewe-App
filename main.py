@@ -22,6 +22,7 @@ def main(page: ft.Page):
     try: page.window.icon = "icon.png"
     except: pass
 
+    # Grauer Kasten weg: Kein expand=True
     ansicht = ft.Column(horizontal_alignment=ft.CrossAxisAlignment.CENTER)
     page.add(ansicht)
 
@@ -39,20 +40,22 @@ def main(page: ft.Page):
         from pdf_generator import get_all_rewe_bases
         from formular import zeige_maske_ui
 
-        # SCHNELLER BUTTON: Keine Ladeverzögerung, stürzt nicht ab!
-        def sicherer_button(text, on_click, bgcolor="blue", color="white", expand=False, height=None, width=None):
+        # DER NEUE BUTTON: Kein Schnickschnack, 100% kompatibel, fängt Abstürze ab!
+        def sicherer_button(btn_text, on_click, bgcolor="blue", color="white", expand=False, height=None, width=None):
+            def safe_click(e):
+                try:
+                    on_click(e)
+                except Exception as ex:
+                    zeige_fehler(ex)
+                    
             return ft.ElevatedButton(
-                content=ft.Text(text, text_align=ft.TextAlign.CENTER, size=14, weight="bold"),
-                on_click=on_click, 
+                str(btn_text), # Text direkt als erstes Argument übergeben (altes Flet mag das)
+                on_click=safe_click, 
                 bgcolor=bgcolor, 
                 color=color, 
                 expand=expand, 
                 height=height, 
-                width=width,
-                style=ft.ButtonStyle(
-                    shape=ft.RoundedRectangleBorder(radius=10),
-                    padding=5
-                )
+                width=width
             )
 
         def nav_leiste():
@@ -114,7 +117,13 @@ def main(page: ft.Page):
                         maerkte.pop(i); speichere_maerkte(maerkte); zeige_dashboard()
                     
                     btn_tour = sicherer_button(f"🚚 Tour {buchstabe}:\n{anzeige_text}", lambda e, i=index: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, i), "#005500", "white", expand=True)
-                    btn_del = ft.IconButton(icon=ft.icons.DELETE, icon_color="white", bgcolor="red", on_click=loesche_t)
+                    
+                    # Fehlerfreies Mülltonnen-Icon
+                    def safe_del(e, f=loesche_t):
+                        try: f(e)
+                        except Exception as ex: zeige_fehler(ex)
+
+                    btn_del = ft.IconButton(icon=ft.icons.DELETE, icon_color="white", bgcolor="red", on_click=safe_del)
                     
                     ansicht.controls.append(ft.Row([btn_tour, btn_del], vertical_alignment=ft.CrossAxisAlignment.CENTER))
                     
@@ -187,7 +196,11 @@ def main(page: ft.Page):
                                 betreff = urllib.parse.quote(f"REWE Monitoring Bericht: {d}")
                                 page.launch_url(f"mailto:registration-mibi.ber@tentamus.com?subject={betreff}")
 
-                            btn_teilen = ft.IconButton(icon=ft.icons.SHARE, icon_color="white", bgcolor="blue", on_click=mail_klick_archiv)
+                            def safe_mail_archiv(e, f=mail_klick_archiv):
+                                try: f(e)
+                                except Exception as ex: zeige_fehler(ex)
+
+                            btn_teilen = ft.IconButton(icon=ft.icons.SHARE, icon_color="white", bgcolor="blue", on_click=safe_mail_archiv)
 
                             ansicht.controls.append(
                                 ft.Container(bgcolor="#002200", padding=10, border_radius=10, 
@@ -234,8 +247,16 @@ def main(page: ft.Page):
                                 betreff = urllib.parse.quote(f"REWE Monitoring Bericht: {d}")
                                 page.launch_url(f"mailto:registration-mibi.ber@tentamus.com?subject={betreff}")
 
-                            btn_teilen = ft.IconButton(icon=ft.icons.SHARE, icon_color="white", bgcolor="blue", on_click=mail_klick_post)
-                            btn_del = ft.IconButton(icon=ft.icons.DELETE, icon_color="white", bgcolor="red", on_click=rm_klick)
+                            def safe_rm(e, f=rm_klick):
+                                try: f(e)
+                                except Exception as ex: zeige_fehler(ex)
+
+                            def safe_mail_post(e, f=mail_klick_post):
+                                try: f(e)
+                                except Exception as ex: zeige_fehler(ex)
+
+                            btn_teilen = ft.IconButton(icon=ft.icons.SHARE, icon_color="white", bgcolor="blue", on_click=safe_mail_post)
+                            btn_del = ft.IconButton(icon=ft.icons.DELETE, icon_color="white", bgcolor="red", on_click=safe_rm)
 
                             ansicht.controls.append(
                                 ft.Container(bgcolor="#003300", padding=10, border_radius=10, 
