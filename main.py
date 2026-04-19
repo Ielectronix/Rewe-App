@@ -3,7 +3,6 @@ import traceback
 import os
 import datetime
 import shutil
-import urllib.parse
 
 def main(page: ft.Page):
     page.title = "Rewe Monitoring System"
@@ -22,7 +21,10 @@ def main(page: ft.Page):
     try: page.window.icon = "icon.png"
     except: pass
 
-    # Kein expand=True, verhindert Layout-Fehler (Grauer Kasten)
+    # HIER IST DEIN TEILEN-MODUL WIEDER AKTIV
+    share_modul = ft.Share()
+    page.overlay.append(share_modul)
+
     ansicht = ft.Column(horizontal_alignment=ft.CrossAxisAlignment.CENTER)
     page.add(ansicht)
 
@@ -40,16 +42,13 @@ def main(page: ft.Page):
         from pdf_generator import get_all_rewe_bases
         from formular import zeige_maske_ui
 
-        # DER NEUE BUTTON: Nutzt Emojis als Icons, absolut kompatibel!
         def sicherer_button(btn_text, on_click, bgcolor="blue", color="white", expand=False, height=None, width=None):
             def safe_click(e):
-                try:
-                    on_click(e)
-                except Exception as ex:
-                    zeige_fehler(ex)
+                try: on_click(e)
+                except Exception as ex: zeige_fehler(ex)
                     
             return ft.ElevatedButton(
-                str(btn_text), 
+                text=str(btn_text), 
                 on_click=safe_click, 
                 bgcolor=bgcolor, 
                 color=color, 
@@ -118,12 +117,12 @@ def main(page: ft.Page):
                     
                     btn_tour = sicherer_button(f"🚚 Tour {buchstabe}:\n{anzeige_text}", lambda e, i=index: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, i), "#005500", "white", expand=True)
                     
-                    # Fehlerfreier Mülltonnen-Emoji-Button
+                    # ABSTURZSICHERES ICON (als String)
                     def safe_del(e, f=loesche_t):
                         try: f(e)
                         except Exception as ex: zeige_fehler(ex)
 
-                    btn_del = sicherer_button("🗑️", safe_del, "red", "white", height=55, width=60)
+                    btn_del = ft.IconButton(icon="delete", icon_color="white", bgcolor="red", on_click=safe_del)
                     
                     ansicht.controls.append(ft.Row([btn_tour, btn_del], vertical_alignment=ft.CrossAxisAlignment.CENTER))
                     
@@ -161,15 +160,6 @@ def main(page: ft.Page):
             ansicht.controls.append(ft.Text("Archiv (Letzte 7 Tage)", size=22, weight="bold", color="white"))
             bereinige_archiv()
             
-            email_feld = ft.TextField(value="registration-mibi.ber@tentamus.com", read_only=True, color="white", border=ft.InputBorder.NONE, content_padding=0, text_style=ft.TextStyle(size=14, weight="bold"), text_align=ft.TextAlign.CENTER)
-            ansicht.controls.append(
-                ft.Container(bgcolor="#330000", padding=10, border_radius=10, content=ft.Column([
-                    ft.Text("📧 MANUELLER E-MAIL VERSAND:", color="orange", weight="bold"), 
-                    email_feld, 
-                    ft.Text("1. Adresse gedrückt halten & kopieren.\n2. Auf das 📧 Icon drücken.\n3. PDF über die Büroklammer anhängen.", color="white", size=12)
-                ]))
-            )
-            
             pdfs_gefunden = False
             such_ordner = []
             for base in get_erweiterte_bases():
@@ -192,16 +182,14 @@ def main(page: ft.Page):
                         for pdf in p_list:
                             pdfs_gefunden = True
                             
-                            def mail_klick_archiv(e, d=pdf):
-                                betreff = urllib.parse.quote(f"REWE Monitoring Bericht: {d}")
-                                page.launch_url(f"mailto:registration-mibi.ber@tentamus.com?subject={betreff}")
+                            def teilen_archiv_klick(e, pfad=os.path.join(ordner, pdf)):
+                                try:
+                                    share_modul.share_files([ft.ShareFile(pfad)])
+                                except Exception as ex:
+                                    zeige_fehler(ex)
 
-                            def safe_mail_archiv(e, f=mail_klick_archiv):
-                                try: f(e)
-                                except Exception as ex: zeige_fehler(ex)
-
-                            # Fehlerfreier 📧 Emoji-Button
-                            btn_teilen = sicherer_button("📧", safe_mail_archiv, "blue", "white", width=60, height=50)
+                            # ABSTURZSICHERES ICON (als String)
+                            btn_teilen = ft.IconButton(icon="share", icon_color="white", bgcolor="blue", on_click=teilen_archiv_klick)
 
                             ansicht.controls.append(
                                 ft.Container(bgcolor="#002200", padding=10, border_radius=10, 
@@ -244,21 +232,15 @@ def main(page: ft.Page):
                                 if os.path.exists(pfad): os.remove(pfad)
                                 zeige_postausgang()
                             
-                            def mail_klick_post(e, d=pdf):
-                                betreff = urllib.parse.quote(f"REWE Monitoring Bericht: {d}")
-                                page.launch_url(f"mailto:registration-mibi.ber@tentamus.com?subject={betreff}")
+                            def teilen_post_klick(e, pfad=pdf_komplett):
+                                try:
+                                    share_modul.share_files([ft.ShareFile(pfad)])
+                                except Exception as ex:
+                                    zeige_fehler(ex)
 
-                            def safe_rm(e, f=rm_klick):
-                                try: f(e)
-                                except Exception as ex: zeige_fehler(ex)
-
-                            def safe_mail_post(e, f=mail_klick_post):
-                                try: f(e)
-                                except Exception as ex: zeige_fehler(ex)
-
-                            # Fehlerfreie Emoji-Buttons!
-                            btn_teilen = sicherer_button("📧", safe_mail_post, "blue", "white", width=60, height=50)
-                            btn_del = sicherer_button("🗑️", safe_rm, "red", "white", width=60, height=50)
+                            # ABSTURZSICHERE ICONS (als String)
+                            btn_teilen = ft.IconButton(icon="share", icon_color="white", bgcolor="blue", on_click=teilen_post_klick)
+                            btn_del = ft.IconButton(icon="delete", icon_color="white", bgcolor="red", on_click=rm_klick)
 
                             ansicht.controls.append(
                                 ft.Container(bgcolor="#003300", padding=10, border_radius=10, 
