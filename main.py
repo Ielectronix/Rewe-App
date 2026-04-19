@@ -23,7 +23,8 @@ def main(page: ft.Page):
     try: page.window.icon = "icon.png"
     except: pass
 
-    ansicht = ft.Column(expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+    # GRAUER KASTEN BEHOBEN (expand=True wurde entfernt)
+    ansicht = ft.Column(horizontal_alignment=ft.CrossAxisAlignment.CENTER)
     page.add(ansicht)
 
     def zeige_fehler(e):
@@ -40,13 +41,12 @@ def main(page: ft.Page):
         from pdf_generator import get_all_rewe_bases
         from formular import zeige_maske_ui
 
-        # --- REPARIERTER BUTTON (Absolut absturzsicher für alte & neue Flet-Versionen) ---
+        # BUTTON-FEHLER BEHOBEN: Kein Absturz mehr, Text bleibt im Button (overflow)
         def sicherer_button(text, on_click, bgcolor="blue", color="white", expand=False, height=None, width=None):
-            text_size = 18 if text in ["🗑️", "📤", "📧"] else 13 
+            text_size = 18 if text in ["🗑️", "📤", "📧 E-Mail"] else 13 
             return ft.ElevatedButton(
-                # Wir nutzen hier ft.Row zum Zentrieren, das kennt absolut JEDE Flet-Version!
                 content=ft.Row(
-                    [ft.Text(text, text_align=ft.TextAlign.CENTER, size=text_size, weight="bold")], 
+                    [ft.Text(text, text_align=ft.TextAlign.CENTER, size=text_size, weight="bold", overflow=ft.TextOverflow.ELLIPSIS)], 
                     alignment=ft.MainAxisAlignment.CENTER
                 ),
                 on_click=on_click, 
@@ -75,7 +75,6 @@ def main(page: ft.Page):
             ansicht.controls.clear()
             v, z = lade_benutzer()
             stil_label_weiss = ft.TextStyle(color="white")
-            stil_hint_weiss = ft.TextStyle(color="white54", size=12)
             
             v_in = ft.TextField(label="Vorname", value=v, color="yellow", border_color="white", text_align=ft.TextAlign.CENTER, label_style=stil_label_weiss, width=300)
             z_in = ft.TextField(label="Nachname", value=z, color="yellow", border_color="white", text_align=ft.TextAlign.CENTER, label_style=stil_label_weiss, width=300)
@@ -161,9 +160,9 @@ def main(page: ft.Page):
             email_feld = ft.TextField(value="registration-mibi.ber@tentamus.com", read_only=True, color="white", border=ft.InputBorder.NONE, content_padding=0, text_style=ft.TextStyle(size=14, weight="bold"), text_align=ft.TextAlign.CENTER)
             ansicht.controls.append(
                 ft.Container(bgcolor="#330000", padding=10, border_radius=10, content=ft.Column([
-                    ft.Text("📧 MANUELLER E-MAIL VERSAND:", color="orange", weight="bold"), 
+                    ft.Text("📧 E-MAIL VERSAND:", color="orange", weight="bold"), 
                     email_feld, 
-                    ft.Text("1. E-Mail-Adresse gedrückt halten & kopieren.\n2. Auf 'Mail' drücken.\n3. PDF über Büroklammer anhängen.", color="white", size=12)
+                    ft.Text("1. E-Mail-Adresse gedrückt halten & kopieren.\n2. Auf 'E-Mail' drücken.\n3. PDF manuell über die Büroklammer anhängen.", color="white", size=12)
                 ]))
             )
             
@@ -188,14 +187,13 @@ def main(page: ft.Page):
                         ansicht.controls.append(ft.Text(f"{ordner}", color="yellow", weight="bold", size=14))
                         for pdf in p_list:
                             pdfs_gefunden = True
-                            pdf_komplett = os.path.join(ordner, pdf)
                             
-                            def mail_klick(e, d=pdf):
+                            def mail_klick_archiv(e, d=pdf):
                                 betreff = urllib.parse.quote(f"REWE Monitoring Bericht: {d}")
-                                body = urllib.parse.quote("Hallo,\n\nbitte den Bericht im Anhang finden.\n\nViele Grüße")
+                                body = urllib.parse.quote("Hallo,\n\nbitte den Bericht im Anhang finden.\n(WICHTIG: PDF NOCH ANHÄNGEN!)\n\nViele Grüße")
                                 page.launch_url(f"mailto:registration-mibi.ber@tentamus.com?subject={betreff}&body={body}")
 
-                            ansicht.controls.append(ft.Container(bgcolor="#002200", padding=10, border_radius=10, content=ft.Row([ft.Text(pdf, color="white", size=12, expand=True, selectable=True), sicherer_button("📧 Mail", mail_klick, "blue", "white", height=40)])))
+                            ansicht.controls.append(ft.Container(bgcolor="#002200", padding=10, border_radius=10, content=ft.Row([ft.Text(pdf, color="white", size=12, expand=True, selectable=True), sicherer_button("📧 E-Mail", mail_klick_archiv, "blue", "white", width=95, height=40)])))
                         ansicht.controls.append(ft.Divider(color="white24"))
                 except PermissionError: pass
             if not pdfs_gefunden: ansicht.controls.append(ft.Container(padding=20, content=ft.Text("Keine Berichte im Archiv.", color="grey", size=14)))
@@ -229,15 +227,16 @@ def main(page: ft.Page):
                                 if os.path.exists(pfad): os.remove(pfad)
                                 zeige_postausgang()
                             
-                            def mail_klick_p(e, d=pdf):
-                                betreff = urllib.parse.quote(f"REWE Bericht: {d}")
-                                page.launch_url(f"mailto:registration-mibi.ber@tentamus.com?subject={betreff}")
+                            def mail_klick_post(e, d=pdf):
+                                betreff = urllib.parse.quote(f"REWE Monitoring Bericht: {d}")
+                                body = urllib.parse.quote("Hallo,\n\nbitte den Bericht im Anhang finden.\n(WICHTIG: PDF NOCH ANHÄNGEN!)\n\nViele Grüße")
+                                page.launch_url(f"mailto:registration-mibi.ber@tentamus.com?subject={betreff}&body={body}")
 
                             ansicht.controls.append(
                                 ft.Container(bgcolor="#003300", padding=10, border_radius=10, 
                                     content=ft.Row([
-                                        ft.Text(pdf, color="white", size=12, expand=True, weight="bold"), 
-                                        sicherer_button("📧", mail_klick_p, "blue", "white", width=55, height=50),
+                                        ft.Text(pdf, color="white", size=12, expand=True, weight="bold", overflow=ft.TextOverflow.ELLIPSIS), 
+                                        sicherer_button("📧 E-Mail", mail_klick_post, "blue", "white", width=95, height=50),
                                         sicherer_button("🗑️", rm_klick, "red", "white", width=55, height=50)
                                     ])
                                 )
