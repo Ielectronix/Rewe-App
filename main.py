@@ -22,7 +22,7 @@ def main(page: ft.Page):
     try: page.window.icon = "icon.png"
     except: pass
 
-    # Grauer Kasten weg: Kein expand=True
+    # Kein expand=True, verhindert Layout-Fehler (Grauer Kasten)
     ansicht = ft.Column(horizontal_alignment=ft.CrossAxisAlignment.CENTER)
     page.add(ansicht)
 
@@ -40,7 +40,7 @@ def main(page: ft.Page):
         from pdf_generator import get_all_rewe_bases
         from formular import zeige_maske_ui
 
-        # DER NEUE BUTTON: Kein Schnickschnack, 100% kompatibel, fängt Abstürze ab!
+        # DER NEUE BUTTON: Nutzt Emojis als Icons, absolut kompatibel!
         def sicherer_button(btn_text, on_click, bgcolor="blue", color="white", expand=False, height=None, width=None):
             def safe_click(e):
                 try:
@@ -49,7 +49,7 @@ def main(page: ft.Page):
                     zeige_fehler(ex)
                     
             return ft.ElevatedButton(
-                str(btn_text), # Text direkt als erstes Argument übergeben (altes Flet mag das)
+                str(btn_text), 
                 on_click=safe_click, 
                 bgcolor=bgcolor, 
                 color=color, 
@@ -118,12 +118,12 @@ def main(page: ft.Page):
                     
                     btn_tour = sicherer_button(f"🚚 Tour {buchstabe}:\n{anzeige_text}", lambda e, i=index: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, i), "#005500", "white", expand=True)
                     
-                    # Fehlerfreies Mülltonnen-Icon
+                    # Fehlerfreier Mülltonnen-Emoji-Button
                     def safe_del(e, f=loesche_t):
                         try: f(e)
                         except Exception as ex: zeige_fehler(ex)
 
-                    btn_del = ft.IconButton(icon=ft.icons.DELETE, icon_color="white", bgcolor="red", on_click=safe_del)
+                    btn_del = sicherer_button("🗑️", safe_del, "red", "white", height=55, width=60)
                     
                     ansicht.controls.append(ft.Row([btn_tour, btn_del], vertical_alignment=ft.CrossAxisAlignment.CENTER))
                     
@@ -166,7 +166,7 @@ def main(page: ft.Page):
                 ft.Container(bgcolor="#330000", padding=10, border_radius=10, content=ft.Column([
                     ft.Text("📧 MANUELLER E-MAIL VERSAND:", color="orange", weight="bold"), 
                     email_feld, 
-                    ft.Text("1. Adresse gedrückt halten & kopieren.\n2. Auf das blaue Teilen-Icon drücken.\n3. PDF über die Büroklammer anhängen.", color="white", size=12)
+                    ft.Text("1. Adresse gedrückt halten & kopieren.\n2. Auf das 📧 Icon drücken.\n3. PDF über die Büroklammer anhängen.", color="white", size=12)
                 ]))
             )
             
@@ -200,7 +200,8 @@ def main(page: ft.Page):
                                 try: f(e)
                                 except Exception as ex: zeige_fehler(ex)
 
-                            btn_teilen = ft.IconButton(icon=ft.icons.SHARE, icon_color="white", bgcolor="blue", on_click=safe_mail_archiv)
+                            # Fehlerfreier 📧 Emoji-Button
+                            btn_teilen = sicherer_button("📧", safe_mail_archiv, "blue", "white", width=60, height=50)
 
                             ansicht.controls.append(
                                 ft.Container(bgcolor="#002200", padding=10, border_radius=10, 
@@ -255,8 +256,9 @@ def main(page: ft.Page):
                                 try: f(e)
                                 except Exception as ex: zeige_fehler(ex)
 
-                            btn_teilen = ft.IconButton(icon=ft.icons.SHARE, icon_color="white", bgcolor="blue", on_click=safe_mail_post)
-                            btn_del = ft.IconButton(icon=ft.icons.DELETE, icon_color="white", bgcolor="red", on_click=safe_rm)
+                            # Fehlerfreie Emoji-Buttons!
+                            btn_teilen = sicherer_button("📧", safe_mail_post, "blue", "white", width=60, height=50)
+                            btn_del = sicherer_button("🗑️", safe_rm, "red", "white", width=60, height=50)
 
                             ansicht.controls.append(
                                 ft.Container(bgcolor="#003300", padding=10, border_radius=10, 
