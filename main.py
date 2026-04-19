@@ -22,7 +22,7 @@ def main(page: ft.Page):
     try: page.window.icon = "icon.png"
     except: pass
 
-    # GRAUER KASTEN BEHOBEN
+    # GRAUER KASTEN BEHOBEN: Das Layout zentriert sich jetzt sauber.
     ansicht = ft.Column(horizontal_alignment=ft.CrossAxisAlignment.CENTER)
     page.add(ansicht)
 
@@ -40,7 +40,16 @@ def main(page: ft.Page):
         from pdf_generator import get_all_rewe_bases
         from formular import zeige_maske_ui
 
-        # HIER IST DER FEHLER BEHOBEN: Wir nutzen content=ft.Text(...) statt text=...
+        # NEU: Der Ladebildschirm! Verhindert das Einfrieren durch versehentliche Doppelklicks.
+        def lade_und_zeige(ziel_funktion):
+            ansicht.controls.clear()
+            ansicht.controls.append(ft.Container(height=100))
+            ansicht.controls.append(ft.Row([ft.ProgressRing(color="red")], alignment=ft.MainAxisAlignment.CENTER))
+            ansicht.controls.append(ft.Row([ft.Text("Lade Daten...", color="white", weight="bold")], alignment=ft.MainAxisAlignment.CENTER))
+            page.update()
+            ziel_funktion()
+
+        # PERFEKTE BUTTONS: Kompatibel mit deinem Handy, stürzen nicht ab!
         def sicherer_button(text, on_click, bgcolor="blue", color="white", expand=False, height=None, width=None):
             return ft.ElevatedButton(
                 content=ft.Text(text, text_align=ft.TextAlign.CENTER, size=14, weight="bold"),
@@ -60,9 +69,9 @@ def main(page: ft.Page):
             return ft.Container(
                 bgcolor="#001100", padding=10, border_radius=15, 
                 content=ft.Row(alignment=ft.MainAxisAlignment.SPACE_EVENLY, controls=[
-                    sicherer_button("🚚 Touren", lambda e: zeige_dashboard(), "#004400", "white", expand=True, height=50),
-                    sicherer_button("📤 Senden", lambda e: zeige_postausgang(), "#004400", "white", expand=True, height=50),
-                    sicherer_button("🗄️ Archiv", lambda e: zeige_archiv(), "#004400", "white", expand=True, height=50)
+                    sicherer_button("🚚 Touren", lambda e: lade_und_zeige(zeige_dashboard), "#004400", "white", expand=True, height=50),
+                    sicherer_button("📤 Senden", lambda e: lade_und_zeige(zeige_postausgang), "#004400", "white", expand=True, height=50),
+                    sicherer_button("🗄️ Archiv", lambda e: lade_und_zeige(zeige_archiv), "#004400", "white", expand=True, height=50)
                 ])
             )
 
@@ -75,6 +84,10 @@ def main(page: ft.Page):
             z_in = ft.TextField(label="Nachname", value=z, color="yellow", border_color="white", text_align=ft.TextAlign.CENTER, label_style=stil_label_weiss, width=300)
             
             def start_klick(e):
+                # Sofortiges Feedback auf dem Start-Button!
+                e.control.content.value = "⏳ LADE..."
+                e.control.disabled = True
+                page.update()
                 speichere_benutzer(v_in.value, z_in.value)
                 zeige_dashboard()
                 
@@ -112,15 +125,15 @@ def main(page: ft.Page):
                     buchstabe = chr(65 + index) if index < 26 else str(index)
                     
                     def loesche_t(e, i=index): 
-                        maerkte.pop(i); speichere_maerkte(maerkte); zeige_dashboard()
+                        maerkte.pop(i); speichere_maerkte(maerkte); lade_und_zeige(zeige_dashboard)
                     
-                    btn_tour = sicherer_button(f"🚚 Tour {buchstabe}:\n{anzeige_text}", lambda e, i=index: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, i), "#005500", "white", expand=True)
+                    btn_tour = sicherer_button(f"🚚 Tour {buchstabe}:\n{anzeige_text}", lambda e, i=index: lade_und_zeige(lambda: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, i)), "#005500", "white", expand=True)
                     btn_del = ft.IconButton(icon=ft.icons.DELETE, icon_color="white", bgcolor="red", on_click=loesche_t)
                     
                     ansicht.controls.append(ft.Row([btn_tour, btn_del], vertical_alignment=ft.CrossAxisAlignment.CENTER))
                     
             ansicht.controls.append(ft.Divider(color="transparent"))
-            btn_neu = sicherer_button("➕ Neue Tour", lambda e: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, None), "red", "white", height=50, width=200)
+            btn_neu = sicherer_button("➕ Neue Tour", lambda e: lade_und_zeige(lambda: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, None)), "red", "white", height=50, width=200)
             ansicht.controls.append(ft.Row([btn_neu], alignment=ft.MainAxisAlignment.CENTER))
             page.update()
 
@@ -158,7 +171,7 @@ def main(page: ft.Page):
                 ft.Container(bgcolor="#330000", padding=10, border_radius=10, content=ft.Column([
                     ft.Text("📧 MANUELLER E-MAIL VERSAND:", color="orange", weight="bold"), 
                     email_feld, 
-                    ft.Text("1. E-Mail-Adresse gedrückt halten & kopieren.\n2. Auf das TEILEN-Icon drücken.\n3. PDF über die Büroklammer anhängen.", color="white", size=12)
+                    ft.Text("1. Adresse gedrückt halten & kopieren.\n2. Auf das blaue E-Mail Icon drücken.\n3. PDF im E-Mail-Programm anhängen.", color="white", size=12)
                 ]))
             )
             
@@ -188,13 +201,13 @@ def main(page: ft.Page):
                                 betreff = urllib.parse.quote(f"REWE Monitoring Bericht: {d}")
                                 page.launch_url(f"mailto:registration-mibi.ber@tentamus.com?subject={betreff}")
 
-                            btn_teilen = ft.IconButton(icon=ft.icons.SHARE, icon_color="white", bgcolor="blue", on_click=mail_klick_archiv)
+                            btn_mail = ft.IconButton(icon=ft.icons.MAIL, icon_color="white", bgcolor="blue", on_click=mail_klick_archiv)
 
                             ansicht.controls.append(
                                 ft.Container(bgcolor="#002200", padding=10, border_radius=10, 
                                     content=ft.Row([
                                         ft.Text(pdf, color="white", size=12, expand=True, selectable=True), 
-                                        btn_teilen
+                                        btn_mail
                                     ])
                                 )
                             )
@@ -229,20 +242,20 @@ def main(page: ft.Page):
                                     
                             def rm_klick(e, pfad=pdf_komplett):
                                 if os.path.exists(pfad): os.remove(pfad)
-                                zeige_postausgang()
+                                lade_und_zeige(zeige_postausgang)
                             
                             def mail_klick_post(e, d=pdf):
                                 betreff = urllib.parse.quote(f"REWE Monitoring Bericht: {d}")
                                 page.launch_url(f"mailto:registration-mibi.ber@tentamus.com?subject={betreff}")
 
-                            btn_teilen = ft.IconButton(icon=ft.icons.SHARE, icon_color="white", bgcolor="blue", on_click=mail_klick_post)
+                            btn_mail = ft.IconButton(icon=ft.icons.MAIL, icon_color="white", bgcolor="blue", on_click=mail_klick_post)
                             btn_del = ft.IconButton(icon=ft.icons.DELETE, icon_color="white", bgcolor="red", on_click=rm_klick)
 
                             ansicht.controls.append(
                                 ft.Container(bgcolor="#003300", padding=10, border_radius=10, 
                                     content=ft.Row([
                                         ft.Text(pdf, color="white", size=12, expand=True, weight="bold"), 
-                                        btn_teilen,
+                                        btn_mail,
                                         btn_del
                                     ])
                                 )
