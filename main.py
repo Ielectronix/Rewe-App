@@ -40,13 +40,14 @@ def main(page: ft.Page):
         from pdf_generator import get_all_rewe_bases
         from formular import zeige_maske_ui
 
-        # --- REPARIERTER BUTTON (Garantiert 100% zentriert) ---
+        # --- REPARIERTER BUTTON (Absolut absturzsicher für alte & neue Flet-Versionen) ---
         def sicherer_button(text, on_click, bgcolor="blue", color="white", expand=False, height=None, width=None):
             text_size = 18 if text in ["🗑️", "📤", "📧"] else 13 
             return ft.ElevatedButton(
-                content=ft.Container(
-                    content=ft.Text(text, text_align=ft.TextAlign.CENTER, size=text_size, weight="bold"),
-                    alignment=ft.alignment.center
+                # Wir nutzen hier ft.Row zum Zentrieren, das kennt absolut JEDE Flet-Version!
+                content=ft.Row(
+                    [ft.Text(text, text_align=ft.TextAlign.CENTER, size=text_size, weight="bold")], 
+                    alignment=ft.MainAxisAlignment.CENTER
                 ),
                 on_click=on_click, 
                 bgcolor=bgcolor, 
