@@ -22,7 +22,11 @@ def main(page: ft.Page):
     try: page.window.icon = "icon.png"
     except: pass
 
-    # GRAUER KASTEN BEHOBEN: expand=True wurde entfernt!
+    # --- TEILEN-MODUL FÜR ANDROID (Aus deinem funktionierenden Code) ---
+    share = ft.Share()
+    page.overlay.append(share)
+
+    # --- GRAUER KASTEN BEHOBEN (expand=True wurde weggelassen) ---
     ansicht = ft.Column(horizontal_alignment=ft.CrossAxisAlignment.CENTER)
     page.add(ansicht)
 
@@ -40,10 +44,11 @@ def main(page: ft.Page):
         from pdf_generator import get_all_rewe_bases
         from formular import zeige_maske_ui
 
-        # BUTTON-FEHLER BEHOBEN: Wieder der saubere Flet-Standard! Nichts ragt mehr über.
+        # --- ABSOLUT SICHERER BUTTON (Verhindert Text-Abschneiden & Abstürze) ---
         def sicherer_button(text, on_click, bgcolor="blue", color="white", expand=False, height=None, width=None):
+            text_size = 18 if text in ["🗑️", "📤"] else 13
             return ft.ElevatedButton(
-                text=text,
+                content=ft.Text(text, text_align=ft.TextAlign.CENTER, size=text_size, weight="bold"),
                 on_click=on_click, 
                 bgcolor=bgcolor, 
                 color=color, 
@@ -51,7 +56,7 @@ def main(page: ft.Page):
                 height=height, 
                 width=width,
                 style=ft.ButtonStyle(
-                    shape=ft.RoundedRectangleBorder(radius=10),
+                    shape=ft.RoundedRectangleBorder(radius=8),
                     padding=5
                 )
             )
@@ -80,7 +85,7 @@ def main(page: ft.Page):
                 
             btn_start = sicherer_button("TAG STARTEN", start_klick, "red", "white", height=60, width=250)
             
-            # STARTBILDSCHIRM ZENTRIERT!
+            # STARTBILDSCHIRM PERFEKT ZENTRIERT
             ansicht.controls.extend([
                 ft.Container(height=40),
                 ft.Row([
@@ -109,16 +114,14 @@ def main(page: ft.Page):
                 for index, markt in enumerate(maerkte):
                     adr = (markt.get("adresse") or "").strip()
                     mnr = (markt.get("marktnummer") or "").strip()
-                    anzeige_text = f"{mnr} - {adr}" # Auf eine Zeile angepasst für bessere Ansicht
+                    anzeige_text = f"{mnr} - {adr}" 
                     buchstabe = chr(65 + index) if index < 26 else str(index)
                     
                     def loesche_t(e, i=index): 
                         maerkte.pop(i); speichere_maerkte(maerkte); zeige_dashboard()
                     
                     btn_tour = sicherer_button(f"🚚 Tour {buchstabe}:\n{anzeige_text}", lambda e, i=index: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, i), "#005500", "white", expand=True)
-                    
-                    # Rote Mülltonne als sauberes Icon!
-                    btn_del = ft.IconButton(icon=ft.icons.DELETE, icon_color="white", bgcolor="red", on_click=loesche_t)
+                    btn_del = sicherer_button("🗑️", loesche_t, "red", "white", height=50, width=50)
                     
                     ansicht.controls.append(ft.Row([btn_tour, btn_del], vertical_alignment=ft.CrossAxisAlignment.CENTER))
                     
@@ -156,12 +159,13 @@ def main(page: ft.Page):
             ansicht.controls.append(ft.Text("Archiv (Letzte 7 Tage)", size=22, weight="bold", color="white"))
             bereinige_archiv()
             
+            # Infotext angepasst für das neue Teilen-Menü
             email_feld = ft.TextField(value="registration-mibi.ber@tentamus.com", read_only=True, color="white", border=ft.InputBorder.NONE, content_padding=0, text_style=ft.TextStyle(size=14, weight="bold"), text_align=ft.TextAlign.CENTER)
             ansicht.controls.append(
                 ft.Container(bgcolor="#330000", padding=10, border_radius=10, content=ft.Column([
                     ft.Text("📧 ZIEL-ADRESSE:", color="orange", weight="bold"), 
                     email_feld, 
-                    ft.Text("1. Adresse gedrückt halten & kopieren.\n2. Auf das blaue Teilen-Icon drücken.\n3. PDF über die Büroklammer anhängen.", color="white", size=12)
+                    ft.Text("Drücke unten auf das blaue 📤 Icon, wähle deine E-Mail-App aus und füge diese Adresse ein.", color="white", size=12)
                 ]))
             )
             
@@ -186,19 +190,22 @@ def main(page: ft.Page):
                         ansicht.controls.append(ft.Text(f"{ordner}", color="yellow", weight="bold", size=14))
                         for pdf in p_list:
                             pdfs_gefunden = True
+                            pdf_komplett = os.path.join(ordner, pdf)
                             
-                            def mail_klick_archiv(e, d=pdf):
-                                betreff = urllib.parse.quote(f"REWE Monitoring Bericht: {d}")
-                                page.launch_url(f"mailto:registration-mibi.ber@tentamus.com?subject={betreff}")
+                            # DAS IST DEIN FUNKTIONIERENDER CODE AUS DER ALTEN APK!
+                            async def teilen_klick_archiv(e, pfad=pdf_komplett):
+                                if page.platform in [ft.PagePlatform.ANDROID, ft.PagePlatform.IOS]:
+                                    await share.share_files([ft.ShareFile.from_path(pfad)], text="Hier ist der neue REWE-Prüfbericht.")
+                                else:
+                                    print(f"Teilen am PC nicht möglich. PDF-Pfad wäre: {pfad}")
 
-                            # HIER IST WIEDER DAS BLAUE TEILEN-ICON
-                            btn_teilen = ft.IconButton(icon=ft.icons.SHARE, icon_color="white", bgcolor="blue", on_click=mail_klick_archiv)
+                            btn_share = sicherer_button("📤", teilen_klick_archiv, "blue", "white", width=50)
 
                             ansicht.controls.append(
                                 ft.Container(bgcolor="#002200", padding=10, border_radius=10, 
                                     content=ft.Row([
                                         ft.Text(pdf, color="white", size=12, expand=True, selectable=True), 
-                                        btn_teilen
+                                        btn_share
                                     ])
                                 )
                             )
@@ -235,19 +242,21 @@ def main(page: ft.Page):
                                 if os.path.exists(pfad): os.remove(pfad)
                                 zeige_postausgang()
                             
-                            def mail_klick_post(e, d=pdf):
-                                betreff = urllib.parse.quote(f"REWE Monitoring Bericht: {d}")
-                                page.launch_url(f"mailto:registration-mibi.ber@tentamus.com?subject={betreff}")
+                            # DEIN CODE FÜR DEN POSTAUSGANG
+                            async def teilen_klick_post(e, pfad=pdf_komplett):
+                                if page.platform in [ft.PagePlatform.ANDROID, ft.PagePlatform.IOS]:
+                                    await share.share_files([ft.ShareFile.from_path(pfad)], text="Hier ist der neue REWE-Prüfbericht.")
+                                else:
+                                    print(f"Teilen am PC nicht möglich. PDF-Pfad wäre: {pfad}")
 
-                            # HIER SIND DIE BLAUEN UND ROTEN ICONS FÜR TEILEN & LÖSCHEN
-                            btn_teilen = ft.IconButton(icon=ft.icons.SHARE, icon_color="white", bgcolor="blue", on_click=mail_klick_post)
-                            btn_del = ft.IconButton(icon=ft.icons.DELETE, icon_color="white", bgcolor="red", on_click=rm_klick)
+                            btn_share = sicherer_button("📤", teilen_klick_post, "blue", "white", width=50)
+                            btn_del = sicherer_button("🗑️", rm_klick, "red", "white", width=50)
 
                             ansicht.controls.append(
                                 ft.Container(bgcolor="#003300", padding=10, border_radius=10, 
                                     content=ft.Row([
                                         ft.Text(pdf, color="white", size=12, expand=True, weight="bold"), 
-                                        btn_teilen,
+                                        btn_share,
                                         btn_del
                                     ])
                                 )
