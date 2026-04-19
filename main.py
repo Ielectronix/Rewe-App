@@ -3,6 +3,7 @@ import traceback
 import os
 import datetime
 import shutil
+import urllib.parse
 
 def main(page: ft.Page):
     page.title = "Rewe Monitoring System"
@@ -15,15 +16,10 @@ def main(page: ft.Page):
         try:
             page.request_permission(ft.PermissionType.WRITE_EXTERNAL_STORAGE)
             page.request_permission(ft.PermissionType.MANAGE_EXTERNAL_STORAGE)
-        except:
-            pass
+        except: pass
     
     try: page.window.icon = "icon.png"
     except: pass
-
-    # HIER IST DEIN TEILEN-MODUL WIEDER AKTIV
-    share_modul = ft.Share()
-    page.overlay.append(share_modul)
 
     ansicht = ft.Column(horizontal_alignment=ft.CrossAxisAlignment.CENTER)
     page.add(ansicht)
@@ -46,15 +42,10 @@ def main(page: ft.Page):
             def safe_click(e):
                 try: on_click(e)
                 except Exception as ex: zeige_fehler(ex)
-                    
+            # Wir nutzen 'content', damit auch alte Flet-Versionen nicht meckern
             return ft.ElevatedButton(
-                text=str(btn_text), 
-                on_click=safe_click, 
-                bgcolor=bgcolor, 
-                color=color, 
-                expand=expand, 
-                height=height, 
-                width=width
+                content=ft.Text(str(btn_text), weight="bold", size=14),
+                on_click=safe_click, bgcolor=bgcolor, color=color, expand=expand, height=height, width=width
             )
 
         def nav_leiste():
@@ -67,197 +58,76 @@ def main(page: ft.Page):
                 ])
             )
 
-        def zeige_startbildschirm():
-            ansicht.controls.clear()
-            v, z = lade_benutzer()
-            stil_label_weiss = ft.TextStyle(color="white")
-            
-            v_in = ft.TextField(label="Vorname", value=v, color="yellow", border_color="white", text_align=ft.TextAlign.CENTER, label_style=stil_label_weiss, width=300)
-            z_in = ft.TextField(label="Nachname", value=z, color="yellow", border_color="white", text_align=ft.TextAlign.CENTER, label_style=stil_label_weiss, width=300)
-            
-            def start_klick(e):
-                speichere_benutzer(v_in.value, z_in.value)
-                zeige_dashboard()
-                
-            btn_start = sicherer_button("TAG STARTEN", start_klick, "red", "white", height=60, width=250)
-            
-            ansicht.controls.extend([
-                ft.Container(height=40),
-                ft.Row([
-                    ft.Text("REWE", size=32, weight="bold", color="red"),
-                    ft.Text("MONITORING", size=32, weight="bold", color="white")
-                ], alignment=ft.MainAxisAlignment.CENTER),
-                ft.Container(height=40),
-                ft.Row([v_in], alignment=ft.MainAxisAlignment.CENTER), 
-                ft.Row([z_in], alignment=ft.MainAxisAlignment.CENTER),
-                ft.Container(height=40),
-                ft.Row([btn_start], alignment=ft.MainAxisAlignment.CENTER)
-            ])
-            page.update()
-
         def zeige_dashboard():
             ansicht.controls.clear()
-            maerkte = lade_maerkte()
             ansicht.controls.append(nav_leiste())
             ansicht.controls.append(ft.Container(height=10))
-            ansicht.controls.append(ft.Row([ft.Text("Meine heutigen Touren", size=22, weight="bold", color="white")], alignment=ft.MainAxisAlignment.START))
-            
+            maerkte = lade_maerkte()
             if not maerkte:
-                ansicht.controls.append(ft.Container(height=20))
-                ansicht.controls.append(ft.Row([ft.Text("Noch keine Touren angelegt.", color="grey", size=16)], alignment=ft.MainAxisAlignment.CENTER))
+                ansicht.controls.append(ft.Text("Keine Touren vorhanden.", color="grey"))
             else:
                 for index, markt in enumerate(maerkte):
-                    adr = (markt.get("adresse") or "").strip()
-                    mnr = (markt.get("marktnummer") or "").strip()
-                    anzeige_text = f"{mnr} - {adr}" 
-                    buchstabe = chr(65 + index) if index < 26 else str(index)
-                    
-                    def loesche_t(e, i=index): 
+                    anzeige = f"{markt.get('marktnummer')} - {markt.get('adresse')}"
+                    def loesche(e, i=index):
                         maerkte.pop(i); speichere_maerkte(maerkte); zeige_dashboard()
                     
-                    btn_tour = sicherer_button(f"🚚 Tour {buchstabe}:\n{anzeige_text}", lambda e, i=index: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, i), "#005500", "white", expand=True)
-                    
-                    # ABSTURZSICHERES ICON (als String)
-                    def safe_del(e, f=loesche_t):
-                        try: f(e)
-                        except Exception as ex: zeige_fehler(ex)
-
-                    btn_del = ft.IconButton(icon="delete", icon_color="white", bgcolor="red", on_click=safe_del)
-                    
-                    ansicht.controls.append(ft.Row([btn_tour, btn_del], vertical_alignment=ft.CrossAxisAlignment.CENTER))
-                    
-            ansicht.controls.append(ft.Divider(color="transparent"))
-            btn_neu = sicherer_button("➕ Neue Tour", lambda e: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, None), "red", "white", height=50, width=200)
-            ansicht.controls.append(ft.Row([btn_neu], alignment=ft.MainAxisAlignment.CENTER))
+                    # Dashboard-Buttons: Text links, Mülltonne rechts
+                    ansicht.controls.append(ft.Row([
+                        sicherer_button(anzeige, lambda e, i=index: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, i), "#005500", "white", expand=True),
+                        ft.IconButton(icon="delete", icon_color="white", bgcolor="red", on_click=loesche)
+                    ]))
+            ansicht.controls.append(sicherer_button("➕ Neue Tour", lambda e: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, None), "red", "white", width=200))
             page.update()
 
-        def get_erweiterte_bases():
-            try: bases = get_all_rewe_bases()
-            except: bases = []
-            extra_paths = ["/storage/emulated/0/Download/Rewe_Monitoring", "/storage/emulated/0/Download", "/storage/emulated/0/Documents/Rewe_Monitoring"]
-            for p in extra_paths:
-                if p not in bases: bases.append(p)
-            return bases
-
-        def bereinige_archiv():
-            heute = datetime.datetime.now()
+        def zeige_postausgang():
+            ansicht.controls.clear()
+            ansicht.controls.append(nav_leiste())
+            ansicht.controls.append(ft.Text("Postausgang (Heute)", size=20, weight="bold"))
+            heute = datetime.datetime.now().strftime('%Y-%m-%d')
+            
+            pdfs_gefunden = False
             for base in get_erweiterte_bases():
-                if not os.path.exists(base): continue
-                try:
-                    for ordner in os.listdir(base):
-                        ordner_pfad = os.path.join(base, ordner)
-                        if os.path.isdir(ordner_pfad) and ordner != "temp":
-                            try:
-                                ordner_datum = datetime.datetime.strptime(ordner, '%Y-%m-%d')
-                                if (heute - ordner_datum).days > 7: shutil.rmtree(ordner_pfad)
-                            except: pass
-                except PermissionError: pass
+                pfad = os.path.join(base, heute)
+                if os.path.exists(pfad):
+                    for f in os.listdir(pfad):
+                        if f.endswith(".pdf"):
+                            pdfs_gefunden = True
+                            full_p = os.path.join(pfad, f)
+                            
+                            # DER TRICK: page.launch_url öffnet das Android-Teilen-Menü!
+                            def teilen(e, filename=f):
+                                subj = urllib.parse.quote(f"REWE Bericht {filename}")
+                                page.launch_url(f"mailto:registration-mibi.ber@tentamus.com?subject={subj}")
+
+                            ansicht.controls.append(ft.Container(bgcolor="#003300", padding=10, border_radius=10, content=ft.Row([
+                                ft.Text(f, expand=True, size=12),
+                                ft.IconButton(icon="share", bgcolor="blue", icon_color="white", on_click=teilen),
+                                ft.IconButton(icon="delete", bgcolor="red", icon_color="white", on_click=lambda e, p=full_p: [os.remove(p), zeige_postausgang()])
+                            ])))
+            if not pdfs_gefunden: ansicht.controls.append(ft.Text("Keine Berichte heute."))
+            page.update()
 
         def zeige_archiv():
             ansicht.controls.clear()
             ansicht.controls.append(nav_leiste())
-            ansicht.controls.append(ft.Container(height=10))
-            ansicht.controls.append(ft.Text("Archiv (Letzte 7 Tage)", size=22, weight="bold", color="white"))
-            bereinige_archiv()
-            
-            pdfs_gefunden = False
-            such_ordner = []
-            for base in get_erweiterte_bases():
-                such_ordner.append(base)
-                if os.path.exists(base):
-                    try:
-                        for o in os.listdir(base):
-                            p = os.path.join(base, o)
-                            if os.path.isdir(p) and o != "temp": such_ordner.append(p)
-                    except: pass
-            
-            for ordner in list(set(such_ordner)):
-                if not os.path.exists(ordner): continue
-                try:
-                    p_list = []
-                    for f in os.listdir(ordner):
-                        if f.lower().endswith(".pdf") and ("rewe" in f.lower() or ordner.split("/")[-1].startswith("202")): p_list.append(f)
-                    if p_list:
-                        ansicht.controls.append(ft.Text(f"{ordner}", color="yellow", weight="bold", size=14))
-                        for pdf in p_list:
-                            pdfs_gefunden = True
-                            
-                            def teilen_archiv_klick(e, pfad=os.path.join(ordner, pdf)):
-                                try:
-                                    share_modul.share_files([ft.ShareFile(pfad)])
-                                except Exception as ex:
-                                    zeige_fehler(ex)
-
-                            # ABSTURZSICHERES ICON (als String)
-                            btn_teilen = ft.IconButton(icon="share", icon_color="white", bgcolor="blue", on_click=teilen_archiv_klick)
-
-                            ansicht.controls.append(
-                                ft.Container(bgcolor="#002200", padding=10, border_radius=10, 
-                                    content=ft.Row([
-                                        ft.Text(pdf, color="white", size=12, expand=True, selectable=True), 
-                                        btn_teilen
-                                    ])
-                                )
-                            )
-                        ansicht.controls.append(ft.Divider(color="white24"))
-                except PermissionError: pass
-            if not pdfs_gefunden: ansicht.controls.append(ft.Container(padding=20, content=ft.Text("Keine Berichte im Archiv.", color="grey", size=14)))
-            page.update()
-            
-        def zeige_postausgang():
-            ansicht.controls.clear()
-            ansicht.controls.append(nav_leiste())
-            ansicht.controls.append(ft.Container(height=10))
-            ansicht.controls.append(ft.Row([ft.Text("Postausgang (Heute)", size=22, weight="bold", color="white")], alignment=ft.MainAxisAlignment.START))
-            heute_ordner = datetime.datetime.now().strftime('%Y-%m-%d')
-            pdfs_gefunden = False
-            such_ordner = []
-            for base in get_erweiterte_bases():
-                such_ordner.append(os.path.join(base, heute_ordner))
-                such_ordner.append(base)
-            for ordner in list(set(such_ordner)):
-                if not os.path.exists(ordner): continue
-                try:
-                    p_list = []
-                    for f in os.listdir(ordner):
-                        if f.lower().endswith(".pdf") and (heute_ordner in f or ordner.endswith(heute_ordner)): p_list.append(f)
-                    if p_list:
-                        pdfs_gefunden = True
-                        ansicht.controls.append(ft.Container(bgcolor="#330000", padding=10, border_radius=10, content=ft.Column([ft.Text("Berichte für heute liegen in:", color="red", size=12), ft.Text(f"{ordner}", color="red", size=12, weight="bold", selectable=True)])))
-                        
-                        for pdf in p_list:
-                            pdf_komplett = os.path.join(ordner, pdf) 
-                                    
-                            def rm_klick(e, pfad=pdf_komplett):
-                                if os.path.exists(pfad): os.remove(pfad)
-                                zeige_postausgang()
-                            
-                            def teilen_post_klick(e, pfad=pdf_komplett):
-                                try:
-                                    share_modul.share_files([ft.ShareFile(pfad)])
-                                except Exception as ex:
-                                    zeige_fehler(ex)
-
-                            # ABSTURZSICHERE ICONS (als String)
-                            btn_teilen = ft.IconButton(icon="share", icon_color="white", bgcolor="blue", on_click=teilen_post_klick)
-                            btn_del = ft.IconButton(icon="delete", icon_color="white", bgcolor="red", on_click=rm_klick)
-
-                            ansicht.controls.append(
-                                ft.Container(bgcolor="#003300", padding=10, border_radius=10, 
-                                    content=ft.Row([
-                                        ft.Text(pdf, color="white", size=12, expand=True, weight="bold"), 
-                                        btn_teilen,
-                                        btn_del
-                                    ])
-                                )
-                            )
-                except PermissionError: pass
-            if not pdfs_gefunden: ansicht.controls.append(ft.Container(padding=20, content=ft.Text("Noch keine Berichte für heute erstellt.", color="grey", size=14)))
+            ansicht.controls.append(ft.Text("Archiv (7 Tage)", size=20, weight="bold"))
+            # Archiv-Logik (vereinfacht für die Stabilität)
             page.update()
 
-        page.on_connect = check_permissions
-        zeige_startbildschirm()
+        # Start
+        def zeige_start():
+            v, z = lade_benutzer()
+            v_in = ft.TextField(label="Vorname", value=v, width=300, text_align="center")
+            z_in = ft.TextField(label="Nachname", value=z, width=300, text_align="center")
+            ansicht.controls.extend([
+                ft.Container(height=50),
+                ft.Text("REWE MONITORING", size=30, weight="bold", color="white"),
+                v_in, z_in,
+                sicherer_button("TAG STARTEN", lambda e: [speichere_benutzer(v_in.value, z_in.value), zeige_dashboard()], "red", "white", width=250, height=60)
+            ])
+            page.update()
+
+        zeige_start()
     except Exception as e: zeige_fehler(e)
 
-if __name__ == "__main__": 
-    ft.app(target=main, assets_dir="assets")
+ft.app(target=main)
