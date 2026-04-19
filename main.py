@@ -22,7 +22,7 @@ def main(page: ft.Page):
     try: page.window.icon = "icon.png"
     except: pass
 
-    # GRAUER KASTEN BEHOBEN: Kein expand=True mehr, das Layout zentriert sich sauber
+    # GRAUER KASTEN BEHOBEN
     ansicht = ft.Column(horizontal_alignment=ft.CrossAxisAlignment.CENTER)
     page.add(ansicht)
 
@@ -40,10 +40,10 @@ def main(page: ft.Page):
         from pdf_generator import get_all_rewe_bases
         from formular import zeige_maske_ui
 
-        # PERFEKTE BUTTONS: Alles zentriert, nichts ragt heraus
+        # HIER IST DER FEHLER BEHOBEN: Wir nutzen content=ft.Text(...) statt text=...
         def sicherer_button(text, on_click, bgcolor="blue", color="white", expand=False, height=None, width=None):
             return ft.ElevatedButton(
-                text=text,
+                content=ft.Text(text, text_align=ft.TextAlign.CENTER, size=14, weight="bold"),
                 on_click=on_click, 
                 bgcolor=bgcolor, 
                 color=color, 
@@ -188,7 +188,6 @@ def main(page: ft.Page):
                                 betreff = urllib.parse.quote(f"REWE Monitoring Bericht: {d}")
                                 page.launch_url(f"mailto:registration-mibi.ber@tentamus.com?subject={betreff}")
 
-                            # BLAUES TEILEN-ICON (Ersatz für den abstürzenden Share-Befehl)
                             btn_teilen = ft.IconButton(icon=ft.icons.SHARE, icon_color="white", bgcolor="blue", on_click=mail_klick_archiv)
 
                             ansicht.controls.append(
@@ -236,7 +235,6 @@ def main(page: ft.Page):
                                 betreff = urllib.parse.quote(f"REWE Monitoring Bericht: {d}")
                                 page.launch_url(f"mailto:registration-mibi.ber@tentamus.com?subject={betreff}")
 
-                            # BLAUES TEILEN-ICON & ROTE MÜLLTONNE
                             btn_teilen = ft.IconButton(icon=ft.icons.SHARE, icon_color="white", bgcolor="blue", on_click=mail_klick_post)
                             btn_del = ft.IconButton(icon=ft.icons.DELETE, icon_color="white", bgcolor="red", on_click=rm_klick)
 
