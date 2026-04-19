@@ -23,7 +23,6 @@ def main(page: ft.Page):
     try: page.window.icon = "icon.png"
     except: pass
 
-    # GRAUER KASTEN BEHOBEN (expand=True wurde entfernt)
     ansicht = ft.Column(horizontal_alignment=ft.CrossAxisAlignment.CENTER)
     page.add(ansicht)
 
@@ -41,14 +40,10 @@ def main(page: ft.Page):
         from pdf_generator import get_all_rewe_bases
         from formular import zeige_maske_ui
 
-        # BUTTON-FEHLER BEHOBEN: Kein Absturz mehr, Text bleibt im Button (overflow)
+        # --- ABSOLUT SICHERER BUTTON (Kein Explodieren zu grauen Kästen mehr!) ---
         def sicherer_button(text, on_click, bgcolor="blue", color="white", expand=False, height=None, width=None):
-            text_size = 18 if text in ["🗑️", "📤", "📧 E-Mail"] else 13 
             return ft.ElevatedButton(
-                content=ft.Row(
-                    [ft.Text(text, text_align=ft.TextAlign.CENTER, size=text_size, weight="bold", overflow=ft.TextOverflow.ELLIPSIS)], 
-                    alignment=ft.MainAxisAlignment.CENTER
-                ),
+                content=ft.Text(text, text_align=ft.TextAlign.CENTER, size=14, weight="bold"),
                 on_click=on_click, 
                 bgcolor=bgcolor, 
                 color=color, 
@@ -56,7 +51,7 @@ def main(page: ft.Page):
                 height=height, 
                 width=width,
                 style=ft.ButtonStyle(
-                    shape=ft.RoundedRectangleBorder(radius=10),
+                    shape=ft.RoundedRectangleBorder(radius=8),
                     padding=5
                 )
             )
@@ -157,12 +152,13 @@ def main(page: ft.Page):
             ansicht.controls.append(ft.Text("Archiv (Letzte 7 Tage)", size=22, weight="bold", color="white"))
             bereinige_archiv()
             
+            # Kurze Info für den Nutzer
             email_feld = ft.TextField(value="registration-mibi.ber@tentamus.com", read_only=True, color="white", border=ft.InputBorder.NONE, content_padding=0, text_style=ft.TextStyle(size=14, weight="bold"), text_align=ft.TextAlign.CENTER)
             ansicht.controls.append(
                 ft.Container(bgcolor="#330000", padding=10, border_radius=10, content=ft.Column([
-                    ft.Text("📧 E-MAIL VERSAND:", color="orange", weight="bold"), 
+                    ft.Text("📧 ZIEL-ADRESSE:", color="orange", weight="bold"), 
                     email_feld, 
-                    ft.Text("1. E-Mail-Adresse gedrückt halten & kopieren.\n2. Auf 'E-Mail' drücken.\n3. PDF manuell über die Büroklammer anhängen.", color="white", size=12)
+                    ft.Text("1. Adresse gedrückt halten & kopieren.\n2. Unten auf das E-Mail Icon drücken.\n3. PDF im E-Mail-Programm manuell anhängen.", color="white", size=12)
                 ]))
             )
             
@@ -188,12 +184,20 @@ def main(page: ft.Page):
                         for pdf in p_list:
                             pdfs_gefunden = True
                             
+                            # HIER IST DER MAILTO-LINK FÜR DAS ARCHIV (Öffnet Menü unten)
                             def mail_klick_archiv(e, d=pdf):
                                 betreff = urllib.parse.quote(f"REWE Monitoring Bericht: {d}")
-                                body = urllib.parse.quote("Hallo,\n\nbitte den Bericht im Anhang finden.\n(WICHTIG: PDF NOCH ANHÄNGEN!)\n\nViele Grüße")
-                                page.launch_url(f"mailto:registration-mibi.ber@tentamus.com?subject={betreff}&body={body}")
+                                page.launch_url(f"mailto:registration-mibi.ber@tentamus.com?subject={betreff}")
 
-                            ansicht.controls.append(ft.Container(bgcolor="#002200", padding=10, border_radius=10, content=ft.Row([ft.Text(pdf, color="white", size=12, expand=True, selectable=True), sicherer_button("📧 E-Mail", mail_klick_archiv, "blue", "white", width=95, height=40)])))
+                            ansicht.controls.append(
+                                ft.Container(bgcolor="#002200", padding=10, border_radius=10, 
+                                    content=ft.Row([
+                                        ft.Text(pdf, color="white", size=12, expand=True, selectable=True), 
+                                        # NUR DAS ICON 📧 WIE GEWÜNSCHT!
+                                        sicherer_button("📧", mail_klick_archiv, "blue", "white", width=55, height=50)
+                                    ])
+                                )
+                            )
                         ansicht.controls.append(ft.Divider(color="white24"))
                 except PermissionError: pass
             if not pdfs_gefunden: ansicht.controls.append(ft.Container(padding=20, content=ft.Text("Keine Berichte im Archiv.", color="grey", size=14)))
@@ -227,16 +231,17 @@ def main(page: ft.Page):
                                 if os.path.exists(pfad): os.remove(pfad)
                                 zeige_postausgang()
                             
+                            # HIER IST DER MAILTO-LINK FÜR DEN POSTAUSGANG (Öffnet Menü unten)
                             def mail_klick_post(e, d=pdf):
                                 betreff = urllib.parse.quote(f"REWE Monitoring Bericht: {d}")
-                                body = urllib.parse.quote("Hallo,\n\nbitte den Bericht im Anhang finden.\n(WICHTIG: PDF NOCH ANHÄNGEN!)\n\nViele Grüße")
-                                page.launch_url(f"mailto:registration-mibi.ber@tentamus.com?subject={betreff}&body={body}")
+                                page.launch_url(f"mailto:registration-mibi.ber@tentamus.com?subject={betreff}")
 
                             ansicht.controls.append(
                                 ft.Container(bgcolor="#003300", padding=10, border_radius=10, 
                                     content=ft.Row([
-                                        ft.Text(pdf, color="white", size=12, expand=True, weight="bold", overflow=ft.TextOverflow.ELLIPSIS), 
-                                        sicherer_button("📧 E-Mail", mail_klick_post, "blue", "white", width=95, height=50),
+                                        ft.Text(pdf, color="white", size=12, expand=True, weight="bold"), 
+                                        # NUR DAS ICON 📧 WIE GEWÜNSCHT!
+                                        sicherer_button("📧", mail_klick_post, "blue", "white", width=55, height=50),
                                         sicherer_button("🗑️", rm_klick, "red", "white", width=55, height=50)
                                     ])
                                 )
