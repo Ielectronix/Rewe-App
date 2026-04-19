@@ -12,7 +12,6 @@ def main(page: ft.Page):
     page.padding = ft.padding.only(left=15, top=55, right=15, bottom=15)
     page.scroll = ft.ScrollMode.AUTO
 
-    # Berechtigungen werden vom Nutzer manuell in Android gesetzt
     def check_permissions(e=None):
         try:
             page.request_permission(ft.PermissionType.WRITE_EXTERNAL_STORAGE)
@@ -23,6 +22,7 @@ def main(page: ft.Page):
     try: page.window.icon = "icon.png"
     except: pass
 
+    # GRAUER KASTEN BEHOBEN: expand=True wurde entfernt!
     ansicht = ft.Column(horizontal_alignment=ft.CrossAxisAlignment.CENTER)
     page.add(ansicht)
 
@@ -40,10 +40,10 @@ def main(page: ft.Page):
         from pdf_generator import get_all_rewe_bases
         from formular import zeige_maske_ui
 
-        # --- ABSOLUT SICHERER BUTTON (Kein Explodieren zu grauen Kästen mehr!) ---
+        # BUTTON-FEHLER BEHOBEN: Wieder der saubere Flet-Standard! Nichts ragt mehr über.
         def sicherer_button(text, on_click, bgcolor="blue", color="white", expand=False, height=None, width=None):
             return ft.ElevatedButton(
-                content=ft.Text(text, text_align=ft.TextAlign.CENTER, size=14, weight="bold"),
+                text=text,
                 on_click=on_click, 
                 bgcolor=bgcolor, 
                 color=color, 
@@ -51,7 +51,7 @@ def main(page: ft.Page):
                 height=height, 
                 width=width,
                 style=ft.ButtonStyle(
-                    shape=ft.RoundedRectangleBorder(radius=8),
+                    shape=ft.RoundedRectangleBorder(radius=10),
                     padding=5
                 )
             )
@@ -80,6 +80,7 @@ def main(page: ft.Page):
                 
             btn_start = sicherer_button("TAG STARTEN", start_klick, "red", "white", height=60, width=250)
             
+            # STARTBILDSCHIRM ZENTRIERT!
             ansicht.controls.extend([
                 ft.Container(height=40),
                 ft.Row([
@@ -87,8 +88,8 @@ def main(page: ft.Page):
                     ft.Text("MONITORING", size=32, weight="bold", color="white")
                 ], alignment=ft.MainAxisAlignment.CENTER),
                 ft.Container(height=40),
-                v_in, 
-                z_in,
+                ft.Row([v_in], alignment=ft.MainAxisAlignment.CENTER), 
+                ft.Row([z_in], alignment=ft.MainAxisAlignment.CENTER),
                 ft.Container(height=40),
                 ft.Row([btn_start], alignment=ft.MainAxisAlignment.CENTER)
             ])
@@ -108,14 +109,17 @@ def main(page: ft.Page):
                 for index, markt in enumerate(maerkte):
                     adr = (markt.get("adresse") or "").strip()
                     mnr = (markt.get("marktnummer") or "").strip()
-                    anzeige_text = f"{mnr}\n{adr}"
+                    anzeige_text = f"{mnr} - {adr}" # Auf eine Zeile angepasst für bessere Ansicht
                     buchstabe = chr(65 + index) if index < 26 else str(index)
                     
                     def loesche_t(e, i=index): 
                         maerkte.pop(i); speichere_maerkte(maerkte); zeige_dashboard()
                     
                     btn_tour = sicherer_button(f"🚚 Tour {buchstabe}:\n{anzeige_text}", lambda e, i=index: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, i), "#005500", "white", expand=True)
-                    btn_del = sicherer_button("🗑️", loesche_t, "red", "white", height=55, width=60)
+                    
+                    # Rote Mülltonne als sauberes Icon!
+                    btn_del = ft.IconButton(icon=ft.icons.DELETE, icon_color="white", bgcolor="red", on_click=loesche_t)
+                    
                     ansicht.controls.append(ft.Row([btn_tour, btn_del], vertical_alignment=ft.CrossAxisAlignment.CENTER))
                     
             ansicht.controls.append(ft.Divider(color="transparent"))
@@ -152,13 +156,12 @@ def main(page: ft.Page):
             ansicht.controls.append(ft.Text("Archiv (Letzte 7 Tage)", size=22, weight="bold", color="white"))
             bereinige_archiv()
             
-            # Kurze Info für den Nutzer
             email_feld = ft.TextField(value="registration-mibi.ber@tentamus.com", read_only=True, color="white", border=ft.InputBorder.NONE, content_padding=0, text_style=ft.TextStyle(size=14, weight="bold"), text_align=ft.TextAlign.CENTER)
             ansicht.controls.append(
                 ft.Container(bgcolor="#330000", padding=10, border_radius=10, content=ft.Column([
                     ft.Text("📧 ZIEL-ADRESSE:", color="orange", weight="bold"), 
                     email_feld, 
-                    ft.Text("1. Adresse gedrückt halten & kopieren.\n2. Unten auf das E-Mail Icon drücken.\n3. PDF im E-Mail-Programm manuell anhängen.", color="white", size=12)
+                    ft.Text("1. Adresse gedrückt halten & kopieren.\n2. Auf das blaue Teilen-Icon drücken.\n3. PDF über die Büroklammer anhängen.", color="white", size=12)
                 ]))
             )
             
@@ -184,17 +187,18 @@ def main(page: ft.Page):
                         for pdf in p_list:
                             pdfs_gefunden = True
                             
-                            # HIER IST DER MAILTO-LINK FÜR DAS ARCHIV (Öffnet Menü unten)
                             def mail_klick_archiv(e, d=pdf):
                                 betreff = urllib.parse.quote(f"REWE Monitoring Bericht: {d}")
                                 page.launch_url(f"mailto:registration-mibi.ber@tentamus.com?subject={betreff}")
+
+                            # HIER IST WIEDER DAS BLAUE TEILEN-ICON
+                            btn_teilen = ft.IconButton(icon=ft.icons.SHARE, icon_color="white", bgcolor="blue", on_click=mail_klick_archiv)
 
                             ansicht.controls.append(
                                 ft.Container(bgcolor="#002200", padding=10, border_radius=10, 
                                     content=ft.Row([
                                         ft.Text(pdf, color="white", size=12, expand=True, selectable=True), 
-                                        # NUR DAS ICON 📧 WIE GEWÜNSCHT!
-                                        sicherer_button("📧", mail_klick_archiv, "blue", "white", width=55, height=50)
+                                        btn_teilen
                                     ])
                                 )
                             )
@@ -231,18 +235,20 @@ def main(page: ft.Page):
                                 if os.path.exists(pfad): os.remove(pfad)
                                 zeige_postausgang()
                             
-                            # HIER IST DER MAILTO-LINK FÜR DEN POSTAUSGANG (Öffnet Menü unten)
                             def mail_klick_post(e, d=pdf):
                                 betreff = urllib.parse.quote(f"REWE Monitoring Bericht: {d}")
                                 page.launch_url(f"mailto:registration-mibi.ber@tentamus.com?subject={betreff}")
+
+                            # HIER SIND DIE BLAUEN UND ROTEN ICONS FÜR TEILEN & LÖSCHEN
+                            btn_teilen = ft.IconButton(icon=ft.icons.SHARE, icon_color="white", bgcolor="blue", on_click=mail_klick_post)
+                            btn_del = ft.IconButton(icon=ft.icons.DELETE, icon_color="white", bgcolor="red", on_click=rm_klick)
 
                             ansicht.controls.append(
                                 ft.Container(bgcolor="#003300", padding=10, border_radius=10, 
                                     content=ft.Row([
                                         ft.Text(pdf, color="white", size=12, expand=True, weight="bold"), 
-                                        # NUR DAS ICON 📧 WIE GEWÜNSCHT!
-                                        sicherer_button("📧", mail_klick_post, "blue", "white", width=55, height=50),
-                                        sicherer_button("🗑️", rm_klick, "red", "white", width=55, height=50)
+                                        btn_teilen,
+                                        btn_del
                                     ])
                                 )
                             )
