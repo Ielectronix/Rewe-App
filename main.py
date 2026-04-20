@@ -14,16 +14,29 @@ def main(page: ft.Page):
     ansicht = ft.Column(horizontal_alignment=ft.CrossAxisAlignment.CENTER)
     page.add(ansicht)
 
+    def zeige_fehler(e):
+        ansicht.controls.clear()
+        ansicht.controls.append(ft.Text(f"Fehler: {e}", color="red"))
+        page.update()
+
     # --- DER GEHEIMTRICK ALS FUNKTION ---
     def system_teilen(dateiname):
         betreff = urllib.parse.quote(f"REWE Bericht: {dateiname}")
-        # Dieser Befehl sagt dem Handy: "Öffne das Teilen-Fenster für E-Mail"
-        # Auf dem PC öffnet es einfach Outlook/Mail
+        # Ruft das Android-Teilen/Senden-Menü auf!
         page.launch_url(f"mailto:?subject={betreff}")
 
-    def sicherer_button(t, on_click, bg="blue", expand=False):
-        # Wir nutzen die simpelste Form, damit es überall läuft
-        return ft.ElevatedButton(text=t, on_click=on_click, bgcolor=bg, color="white", expand=expand)
+    # DER RICHTIGE BUTTON: Nutzt 'content' statt 'text', damit es NICHT abstürzt!
+    def sicherer_button(t, on_click, bg="blue", expand=False, height=None, width=None):
+        return ft.ElevatedButton(
+            content=ft.Text(str(t), weight="bold", size=14), 
+            on_click=on_click, 
+            bgcolor=bg, 
+            color="white", 
+            expand=expand,
+            height=height,
+            width=width,
+            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=5)
+        )
 
     try:
         from datenverwaltung import lade_maerkte, speichere_maerkte, lade_benutzer, speichere_benutzer
@@ -32,8 +45,8 @@ def main(page: ft.Page):
 
         def nav_leiste():
             return ft.Row([
-                sicherer_button("Touren", lambda e: zeige_dashboard(), "#004400", True),
-                sicherer_button("Senden", lambda e: zeige_postausgang(), "#004400", True),
+                sicherer_button("Touren", lambda e: zeige_dashboard(), "#004400", True, 50),
+                sicherer_button("Senden", lambda e: zeige_postausgang(), "#004400", True, 50),
             ])
 
         def zeige_dashboard():
@@ -47,7 +60,7 @@ def main(page: ft.Page):
                     sicherer_button(txt, lambda e, idx=i: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, print, idx), "#005500", True),
                     ft.IconButton("delete", icon_color="white", bgcolor="red", on_click=lambda e, idx=i: [maerkte.pop(idx), speichere_maerkte(maerkte), zeige_dashboard()])
                 ]))
-            ansicht.controls.append(sicherer_button("Neue Tour", lambda e: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, print, None), "red"))
+            ansicht.controls.append(sicherer_button("Neue Tour", lambda e: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, print, None), "red", width=200))
             page.update()
 
         def zeige_postausgang():
@@ -65,7 +78,6 @@ def main(page: ft.Page):
                                 bgcolor="#003300", padding=10, border_radius=10,
                                 content=ft.Row([
                                     ft.Text(f, expand=True, size=12),
-                                    # HIER WIRD DER TRICK AUFGERUFEN
                                     ft.IconButton("share", bgcolor="blue", icon_color="white", on_click=lambda e, fname=f: system_teilen(fname)),
                                     ft.IconButton("delete", bgcolor="red", icon_color="white", on_click=lambda e, p=os.path.join(pfad, f): [os.remove(p), zeige_postausgang()])
                                 ])
@@ -81,12 +93,12 @@ def main(page: ft.Page):
         ansicht.controls.extend([
             ft.Text("REWE MONITORING", size=25, weight="bold"),
             v_in, z_in,
-            sicherer_button("START", lambda e: [speichere_benutzer(v_in.value, z_in.value), zeige_dashboard()], "red")
+            sicherer_button("START", lambda e: [speichere_benutzer(v_in.value, z_in.value), zeige_dashboard()], "red", width=250, height=60)
         ])
         page.update()
 
     except Exception as e:
-        ansicht.controls.append(ft.Text(f"Fehler: {e}", color="red"))
+        ansicht.controls.append(ft.Text(f"Fehler beim Laden: {e}", color="red"))
         page.update()
 
 ft.app(target=main)
