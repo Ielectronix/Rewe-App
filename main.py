@@ -5,10 +5,19 @@ import datetime
 import shutil
 import urllib.parse
 
+import flet as ft
+import traceback
+import os
+import datetime
+import shutil
+import urllib.parse
+
 def main(page: ft.Page):
     page.title = "Rewe Monitoring System"
     page.bgcolor = "#003300" 
     page.padding = ft.padding.only(left=10, top=55, right=10, bottom=10)
+    
+    # 1. WICHTIG: Die Seite muss scrollen dürfen
     page.scroll = ft.ScrollMode.AUTO
 
     def check_permissions(e=None):
@@ -18,11 +27,15 @@ def main(page: ft.Page):
     try: page.window.icon = "icon.png"
     except: pass
 
-    ansicht = ft.Column(expand=True, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
+    # 2. DER ÜBELTÄTER: Hier stand vorher 'expand=True'. 
+    # Ohne das 'expand' darf die Spalte jetzt unendlich nach unten wachsen und wird NICHT mehr grau!
+    ansicht = ft.Column(horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
     page.add(ansicht)
 
-    # --- TEILEN-MODUL FÜR ANDROID (Versteckt den roten Kasten am PC) ---
+    # --- TEILEN-MODUL ---
     share = ft.Share()
+    if page.platform in [ft.PagePlatform.ANDROID, ft.PagePlatform.IOS]:
+        page.overlay.append(share)
 
     def zeige_fehler(e):
         ansicht.controls.clear()
