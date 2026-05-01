@@ -10,17 +10,17 @@ def main(page: ft.Page):
     page.bgcolor = "#001a00"
     page.padding = 20
     page.scroll = "auto"
-    # Zentrierung auf der ganzen Seite aktivieren
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
 
     ansicht = ft.Column(spacing=20, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
     page.add(ft.SafeArea(ansicht))
 
-    # --- DER ABSOLUTE SHARE-SCHUTZ ---
+    # --- DER FIX FÜR DEN SHARE-BALKEN & DAS HANDY ---
+    # Das Modul wird vorab als Variable vorbereitet, aber NICHT beim PC ins Overlay geladen.
+    # Dadurch gibt es am PC keinen roten Balken, aber auf dem Handy existiert es später für den Button!
     share_module = None
-    if page.platform == ft.PagePlatform.ANDROID or page.platform == ft.PagePlatform.IOS:
+    if page.platform in [ft.PagePlatform.ANDROID, ft.PagePlatform.IOS]:
         try:
-            # Wir laden Share NUR auf dem Handy
             share_module = ft.Share()
             page.overlay.append(share_module)
         except:
@@ -28,8 +28,7 @@ def main(page: ft.Page):
 
     def zeige_fehler(e):
         ansicht.controls.clear()
-        ansicht.controls.append(ft.Text("SYSTEM-FEHLER:", color="red", size=24, weight="bold"))
-        ansicht.controls.append(ft.Text(str(e), color="yellow"))
+        ansicht.controls.append(ft.Text(f"FEHLER: {str(e)}", color="red"))
         page.update()
 
     try:
@@ -37,18 +36,20 @@ def main(page: ft.Page):
         from pdf_generator import get_all_rewe_bases
         from formular import zeige_maske_ui
 
-        # Navigation oben (Dunkel)
+        # STIL: Navigation oben
         def nav_btn(text, on_click):
             return ft.ElevatedButton(
                 text, on_click=on_click, bgcolor="#1a1a1a", color="white",
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=20), padding=15)
             )
 
-        # DEIN WUNSCH-DESIGN: Farbrand-Buttons
+        # STIL: DEIN PREMIUM DESIGN (Outline / Farbrand)
         def action_btn(text, on_click, farbe):
             return ft.ElevatedButton(
                 content=ft.Text(text, size=14, weight="bold"),
-                on_click=on_click, bgcolor="#0b1a0b", color=farbe,
+                on_click=on_click, 
+                bgcolor="#0b1a0b", 
+                color=farbe,       
                 style=ft.ButtonStyle(
                     shape=ft.RoundedRectangleBorder(radius=25), 
                     padding=ft.padding.symmetric(horizontal=20, vertical=15),
@@ -66,17 +67,23 @@ def main(page: ft.Page):
                 ]
             )
 
+        # --- DER REPARIERTE STARTBILDSCHIRM ---
         def zeige_startbildschirm():
             ansicht.controls.clear()
             v, z = lade_benutzer()
             v_in = ft.TextField(label="Vorname", value=v, color="yellow", border_color="white", width=300, text_align="center")
             z_in = ft.TextField(label="Nachname", value=z, color="yellow", border_color="white", width=300, text_align="center")
+            
             def start_klick(e):
                 speichere_benutzer(v_in.value, z_in.value)
                 zeige_dashboard()
+                
             ansicht.controls.extend([
+                ft.Container(height=30),
                 ft.Text("REWE Monitoring", color="white", weight="bold", size=28),
+                ft.Container(height=10),
                 v_in, z_in,
+                ft.Container(height=10),
                 action_btn("🚀 Tag starten", start_klick, "#F44336")
             ])
             page.update()
@@ -88,24 +95,21 @@ def main(page: ft.Page):
             ansicht.controls.append(ft.Text("Meine heutigen Touren", size=20, weight="bold", color="white"))
             
             if not maerkte:
-                ansicht.controls.append(ft.Text("Noch keine Touren.", color="white54"))
+                ansicht.controls.append(ft.Text("Noch keine Touren angelegt.", color="white54"))
             else:
                 for index, markt in enumerate(maerkte):
                     mnr = (markt.get("marktnummer") or "Unbenannt")
                     def loesche_t(e, i=index): 
                         maerkte.pop(i); speichere_maerkte(maerkte); zeige_dashboard()
                     
-                    # Karten mit festem Maß (Breite 350) gegen den grauen Bereich
                     ansicht.controls.append(
                         ft.Container(
-                            bgcolor="#002200", padding=15, border_radius=15, width=350,
+                            bgcolor="#002200", padding=15, border_radius=15, width=380,
                             content=ft.Row([
-                                ft.Text(f"{mnr}", color="white", weight="bold", size=16),
-                                ft.Row([
-                                    action_btn("✏️", lambda e, i=index: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, i), "#2196F3"),
-                                    action_btn("🗑️", loesche_t, "#F44336")
-                                ], spacing=5)
-                            ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
+                                ft.Text(f"{mnr}", color="white", weight="bold", size=16, expand=True),
+                                action_btn("✏️", lambda e, i=index: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, i), "#2196F3"),
+                                action_btn("🗑️", loesche_t, "#F44336")
+                            ], alignment="spaceBetween")
                         )
                     )
             ansicht.controls.append(action_btn("➕ Neue Tour anlegen", lambda e: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, None), "#2196F3"))
@@ -118,33 +122,108 @@ def main(page: ft.Page):
         def zeige_postausgang():
             ansicht.controls.clear()
             ansicht.controls.append(nav_leiste())
-            ansicht.controls.append(ft.Text("Postausgang", size=20, weight="bold", color="white"))
+            ansicht.controls.append(ft.Text("Postausgang (Heute)", size=20, weight="bold", color="white"))
+            
+            heute_ordner = datetime.datetime.now().strftime('%Y-%m-%d')
             pdfs_gefunden = False
+            such_ordner = []
+            
+            for base in get_erweiterte_bases():
+                such_ordner.append(os.path.join(base, heute_ordner))
+                such_ordner.append(base)
+            
+            for ordner in list(set(such_ordner)):
+                if not os.path.exists(ordner): continue
+                try:
+                    for f in os.listdir(ordner):
+                        if f.lower().endswith(".pdf"):
+                            pdfs_gefunden = True
+                            pfad = os.path.join(ordner, f)
+                            
+                            # --- DER TEILEN-KLICK (funktioniert auf dem Handy!) ---
+                            async def teilen_jetzt(e, p=pfad):
+                                if share_module:
+                                    try:
+                                        await share_module.share_files([ft.ShareFile.from_path(p)], text="REWE Bericht")
+                                    except Exception as ex:
+                                        print(f"Fehler beim Teilen: {ex}")
+                                else:
+                                    print("PC: Share wird nicht unterstützt.")
+                                    
+                            def rm(e, p=pfad):
+                                if os.path.exists(p): os.remove(p)
+                                zeige_postausgang()
+
+                            ansicht.controls.append(
+                                ft.Container(
+                                    bgcolor="#002200", padding=15, border_radius=15, width=380,
+                                    content=ft.Row([
+                                        ft.Text(f[:18], color="white", size=12, expand=True),
+                                        action_btn("📤 Senden", teilen_jetzt, "#2196F3"),
+                                        action_btn("🗑️", rm, "#F44336")
+                                    ])
+                                )
+                            )
+                except: pass
+            if not pdfs_gefunden: ansicht.controls.append(ft.Text("Keine Berichte zum Senden.", color="white54"))
+            page.update()
+
+        def bereinige_archiv():
+            heute = datetime.datetime.now()
             for base in get_erweiterte_bases():
                 if not os.path.exists(base): continue
-                for f in os.listdir(base):
-                    if f.lower().endswith(".pdf"):
-                        pdfs_gefunden = True
-                        pfad = os.path.join(base, f)
-                        async def teilen(e, p=pfad):
-                            if share_module: await share_module.share_files([ft.ShareFile.from_path(p)])
-                        ansicht.controls.append(
-                            ft.Container(bgcolor="#002200", padding=10, border_radius=15, width=350,
-                                content=ft.Row([ft.Text(f[:15], color="white", size=12), action_btn("📤", teilen, "#2196F3")], alignment="spaceBetween")
-                            )
-                        )
-            if not pdfs_gefunden: ansicht.controls.append(ft.Text("Keine Berichte.", color="white54"))
-            page.update()
+                try:
+                    for ordner in os.listdir(base):
+                        ordner_pfad = os.path.join(base, ordner)
+                        if os.path.isdir(ordner_pfad) and ordner != "temp":
+                            try:
+                                ordner_datum = datetime.datetime.strptime(ordner, '%Y-%m-%d')
+                                if (heute - ordner_datum).days > 7: shutil.rmtree(ordner_pfad)
+                            except: pass
+                except PermissionError: pass
 
         def zeige_archiv():
             ansicht.controls.clear()
             ansicht.controls.append(nav_leiste())
-            ansicht.controls.append(ft.Text("Archiv", size=20, weight="bold", color="white"))
+            ansicht.controls.append(ft.Text("Archiv (Letzte 7 Tage)", size=20, weight="bold", color="white"))
+            bereinige_archiv()
             email = ft.TextField(value="registration-mibi.ber@tentamus.com", read_only=True, color="white", border="none", text_align="center", width=350)
-            ansicht.controls.append(ft.Container(bgcolor="#1a1a1a", padding=15, border_radius=15, width=350, content=ft.Column([ft.Text("E-MAIL KOPIEREN:", color="orange", weight="bold"), email], horizontal_alignment="center")))
+            ansicht.controls.append(ft.Container(bgcolor="#1a1a1a", padding=20, border_radius=15, content=ft.Column([ft.Text("E-MAIL KOPIEREN:", color="#FF9800", weight="bold"), email], horizontal_alignment="center")))
+            
+            pdfs_gefunden = False
+            such_ordner = []
+            for base in get_erweiterte_bases():
+                such_ordner.append(base)
+                if os.path.exists(base):
+                    try:
+                        for o in os.listdir(base):
+                            p = os.path.join(base, o)
+                            if os.path.isdir(p) and o != "temp": such_ordner.append(p)
+                    except: pass
+            
+            for ordner in list(set(such_ordner)):
+                if not os.path.exists(ordner): continue
+                try:
+                    p_list = []
+                    for f in os.listdir(ordner):
+                        if f.lower().endswith(".pdf"): p_list.append(f)
+                    if p_list:
+                        ansicht.controls.append(ft.Text(f"{ordner}", color="yellow", weight="bold"))
+                        for f in p_list:
+                            pdfs_gefunden = True
+                            def mail_senden(e, d=f):
+                                betreff = urllib.parse.quote(f"REWE Monitoring Bericht: {d}")
+                                body = urllib.parse.quote("Hallo,\n\nbitte den Bericht im Anhang finden.\n\nViele Grüße")
+                                page.launch_url(f"mailto:registration-mibi.ber@tentamus.com?subject={betreff}&body={body}")
+                            ansicht.controls.append(ft.Container(bgcolor="#002200", padding=15, border_radius=15, width=380, content=ft.Row([ft.Text(f[:18], color="white", size=12, expand=True), action_btn("📧 Mail", mail_senden, "#2196F3")])))
+                        ansicht.controls.append(ft.Divider(color="white24"))
+                except: pass
+            if not pdfs_gefunden: ansicht.controls.append(ft.Text("Keine Berichte im Archiv.", color="white54"))
             page.update()
 
+        # STARTET WIEDER KORREKT BEIM STARTBILDSCHIRM (Mit Namen eingeben)
         zeige_startbildschirm()
+
     except Exception as e: zeige_fehler(e)
 
 if __name__ == "__main__": 
