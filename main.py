@@ -86,7 +86,11 @@ def main(page: ft.Page):
                 ansicht.controls.append(ft.Text("Noch keine Touren angelegt.", color="white54"))
             else:
                 for index, markt in enumerate(maerkte):
-                    mnr = (markt.get("marktnummer") or "Unbenannt")
+                    # ANPASSUNG: Zeigt jetzt primär die Adresse an (Fallback ist Marktnummer)
+                    anzeige_text = markt.get("adresse")
+                    if not anzeige_text or str(anzeige_text).strip() == "":
+                        anzeige_text = markt.get("marktnummer") or "Unbenannte Tour"
+                        
                     def loesche_t(e, i=index): 
                         maerkte.pop(i); speichere_maerkte(maerkte); zeige_dashboard()
                     
@@ -94,7 +98,8 @@ def main(page: ft.Page):
                         ft.Container(
                             bgcolor="#002200", padding=15, border_radius=15, width=380,
                             content=ft.Row([
-                                ft.Text(f"{mnr}", color="white", weight="bold", size=16, expand=True),
+                                # ANPASSUNG: max_lines=2 verhindert, dass der Text den Rahmen sprengt
+                                ft.Text(f"{anzeige_text}", color="white", weight="bold", size=14, expand=True, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS),
                                 action_btn("✏️", lambda e, i=index: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, i), "#2196F3"),
                                 action_btn("🗑️", loesche_t, "#F44336")
                             ], alignment="spaceBetween")
@@ -196,11 +201,24 @@ def main(page: ft.Page):
                         ansicht.controls.append(ft.Text(f"{ordner}", color="yellow", weight="bold"))
                         for f in p_list:
                             pdfs_gefunden = True
-                            def mail_senden(e, d=f):
-                                betreff = urllib.parse.quote(f"REWE Monitoring Bericht: {d}")
-                                body = urllib.parse.quote("Hallo,\n\nbitte den Bericht im Anhang finden.\n\nViele Grüße")
-                                page.launch_url(f"mailto:registration-mibi.ber@tentamus.com?subject={betreff}&body={body}")
-                            ansicht.controls.append(ft.Container(bgcolor="#002200", padding=15, border_radius=15, width=380, content=ft.Row([ft.Text(f[:18], color="white", size=12, expand=True), action_btn("📧 Mail", mail_senden, "#2196F3")])))
+                            pfad = os.path.join(ordner, f)
+                            
+                            # ANPASSUNG: Native Teilen-Funktion (wie im Postausgang) statt Email
+                            async def teilen_jetzt(e, p=pfad):
+                                if share_obj:
+                                    await share_obj.share_files([ft.ShareFile.from_path(p)], text="REWE Bericht")
+                                else:
+                                    print("Share geht auf dem PC nicht.")
+
+                            ansicht.controls.append(
+                                ft.Container(
+                                    bgcolor="#002200", padding=15, border_radius=15, width=380, 
+                                    content=ft.Row([
+                                        ft.Text(f[:18], color="white", size=12, expand=True), 
+                                        action_btn("📤 Senden", teilen_jetzt, "#2196F3")
+                                    ])
+                                )
+                            )
                         ansicht.controls.append(ft.Divider(color="white24"))
                 except: pass
             if not pdfs_gefunden: ansicht.controls.append(ft.Text("Keine Berichte im Archiv.", color="white54"))
