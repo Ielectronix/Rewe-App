@@ -16,7 +16,6 @@ def main(page: ft.Page):
     page.add(ft.SafeArea(ansicht))
 
     # --- ULTIMATIVER SHARE FIX ---
-    # Alles im Overlay wurde gelöscht, da es auf deinem Android den Fehler triggert.
     share_obj = ft.Share() if page.platform in [ft.PagePlatform.ANDROID, ft.PagePlatform.IOS] else None
 
     def zeige_fehler(e):
@@ -29,10 +28,13 @@ def main(page: ft.Page):
         from pdf_generator import get_all_rewe_bases
         from formular import zeige_maske_ui
 
+        # ANPASSUNG: Die Buttons nehmen jetzt die volle Breite ihres Raster-Containers ein
         def nav_btn(text, on_click):
             return ft.ElevatedButton(
-                text, on_click=on_click, bgcolor="#1a1a1a", color="white",
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=20), padding=15)
+                content=ft.Text(text, size=13, weight="bold", text_align="center"),
+                on_click=on_click, bgcolor="#1a1a1a", color="white",
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=10),
+                width=float('inf')
             )
 
         def action_btn(text, on_click, farbe):
@@ -46,13 +48,14 @@ def main(page: ft.Page):
                 )
             )
 
+        # ANPASSUNG: ResponsiveRow sorgt dafür, dass alle 3 Buttons exakt 33% Platz auf einer Zeile bekommen!
         def nav_leiste():
-            return ft.Row(
-                wrap=True, alignment=ft.MainAxisAlignment.CENTER,
+            return ft.ResponsiveRow(
+                alignment=ft.MainAxisAlignment.CENTER,
                 controls=[
-                    nav_btn("🚚 Touren", lambda e: zeige_dashboard()),
-                    nav_btn("📤 Senden", lambda e: zeige_postausgang()),
-                    nav_btn("🗄️ Archiv", lambda e: zeige_archiv())
+                    ft.Container(col={"xs": 4}, content=nav_btn("🚚 Touren", lambda e: zeige_dashboard()), padding=2),
+                    ft.Container(col={"xs": 4}, content=nav_btn("📤 Senden", lambda e: zeige_postausgang()), padding=2),
+                    ft.Container(col={"xs": 4}, content=nav_btn("🗄️ Archiv", lambda e: zeige_archiv()), padding=2)
                 ]
             )
 
@@ -86,7 +89,6 @@ def main(page: ft.Page):
                 ansicht.controls.append(ft.Text("Noch keine Touren angelegt.", color="white54"))
             else:
                 for index, markt in enumerate(maerkte):
-                    # ANPASSUNG: Zeigt jetzt primär die Adresse an (Fallback ist Marktnummer)
                     anzeige_text = markt.get("adresse")
                     if not anzeige_text or str(anzeige_text).strip() == "":
                         anzeige_text = markt.get("marktnummer") or "Unbenannte Tour"
@@ -98,7 +100,6 @@ def main(page: ft.Page):
                         ft.Container(
                             bgcolor="#002200", padding=15, border_radius=15, width=380,
                             content=ft.Row([
-                                # ANPASSUNG: max_lines=2 verhindert, dass der Text den Rahmen sprengt
                                 ft.Text(f"{anzeige_text}", color="white", weight="bold", size=14, expand=True, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS),
                                 action_btn("✏️", lambda e, i=index: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, i), "#2196F3"),
                                 action_btn("🗑️", loesche_t, "#F44336")
@@ -132,10 +133,8 @@ def main(page: ft.Page):
                             pdfs_gefunden = True
                             pfad = os.path.join(ordner, f)
                             
-                            # Absolut Crash-Sicheres Teilen:
                             async def teilen_jetzt(e, p=pfad):
                                 if share_obj:
-                                    # Wenn Share geht (nur Handy), feuern wir es ab!
                                     await share_obj.share_files([ft.ShareFile.from_path(p)], text="REWE Bericht")
                                 else:
                                     print("Share geht auf dem PC nicht.")
@@ -203,7 +202,6 @@ def main(page: ft.Page):
                             pdfs_gefunden = True
                             pfad = os.path.join(ordner, f)
                             
-                            # ANPASSUNG: Native Teilen-Funktion (wie im Postausgang) statt Email
                             async def teilen_jetzt(e, p=pfad):
                                 if share_obj:
                                     await share_obj.share_files([ft.ShareFile.from_path(p)], text="REWE Bericht")
