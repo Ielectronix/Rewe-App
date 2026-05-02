@@ -56,19 +56,16 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 on_click=oc, bgcolor="#0b1a0b", color=farbe,
                 style=ft.ButtonStyle(
                     shape=ft.RoundedRectangleBorder(radius=10), 
-                    padding=ft.padding.symmetric(vertical=15, horizontal=20),
-                    side=ft.BorderSide(width=2, color=farbe) # Der Neon-Schein!
-                )
+                    padding=ft.padding.symmetric(vertical=15),
+                    side=ft.BorderSide(width=2, color=farbe)
+                ),
+                expand=True 
             )
             
         def emoji_btn(text, oc, farbe):
             return ft.ElevatedButton(
                 text, on_click=oc, bgcolor="#1a1a1a", color=farbe,
-                style=ft.ButtonStyle(
-                    shape=ft.RoundedRectangleBorder(radius=10), 
-                    padding=10,
-                    side=ft.BorderSide(width=2, color=farbe)
-                )
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=10)
             )
 
         def parse_datum(d, dt="", dm="", dj=""):
@@ -296,9 +293,9 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         )
 
         # ==========================================
-        # ZUSAMMENBAU DES HAUPT-LAYOUTS (NEON & WRAP FIX)
+        # ZUSAMMENBAU DES HAUPT-LAYOUTS (Neon-Rahmen Fix)
         # ==========================================
-        # FIX: wrap=True macht den Umbruch weich, die Buttons quetschen nicht mehr!
+        # FIX: Ein ganz natürliches Row(wrap=True), damit die Buttons nicht gequetscht werden
         top_nav = ft.Row(wrap=True, alignment=ft.MainAxisAlignment.CENTER)
         haupt_bereich = ft.Column(spacing=15)
         sicherer_container = ft.Container(content=haupt_bereich, padding=10)
@@ -315,8 +312,8 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             for tid, tname in tabs:
                 is_active = (tid == tab_id)
                 bg = "#004400" if is_active else "#1a1a1a"
-                border_color = "#4CAF50" if is_active else "transparent" # Neon-Leuchten für den aktiven Tab!
                 
+                # FIX: Schöner Neon-Rahmen, der sich nicht verzerrt!
                 btn = ft.ElevatedButton(
                     tname, 
                     on_click=lambda e, t=tid: switch_tab(t), 
@@ -324,10 +321,10 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                     style=ft.ButtonStyle(
                         shape=ft.RoundedRectangleBorder(radius=10), 
                         padding=15,
-                        side=ft.BorderSide(width=2, color=border_color) 
+                        side=ft.BorderSide(width=1.5, color="#4CAF50") 
                     )
                 )
-                top_nav.controls.append(ft.Container(content=btn, padding=2))
+                top_nav.controls.append(btn)
 
             if tab_id == "stamm":
                 haupt_bereich.controls.extend([vorlagen_card, ft.Divider(color="white24"), ft.Text("Stammdaten", size=24, weight="bold", color="white"), datum_row, adr_in, nr_in, auft_in, ag_dd, name_in, typ_dd, bem_in])
@@ -342,17 +339,16 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                     for sid, sname in [("eis", "❄️ Eis"), ("okz", "🔬 OKZ")]:
                         is_active = (sid == sub)
                         bg = "#004400" if is_active else "#1a1a1a"
-                        border_color = "#4CAF50" if is_active else "transparent"
                         
                         btn = ft.ElevatedButton(
                             sname, on_click=lambda e, s=sid: sw_se(s), 
                             bgcolor=bg, color="white", 
                             style=ft.ButtonStyle(
                                 shape=ft.RoundedRectangleBorder(radius=10), padding=15,
-                                side=ft.BorderSide(width=2, color=border_color)
+                                side=ft.BorderSide(width=1.5, color="#4CAF50")
                             )
                         )
-                        sub_nav.controls.append(ft.Container(content=btn, padding=2))
+                        sub_nav.controls.append(btn)
                     if sub == "eis": sub_cont.controls.extend([se_kalt_cb, se_zeit_in, se_zapf_dd, ft.Text("Technik:", color="white", weight="bold"), ft.Row([se_cb_eiswanne, se_cb_fallprobe], wrap=True), se_tech_sonst_in, se_desinf_dd, ft.Text("Auffälligkeiten:", color="white", weight="bold"), se_cb_ozon, se_auff_sonst_in, se_inhalt_in, se_verpackung_dd, se_entnahmeort_dd, se_temp_in, se_bemerkung_dd])
                     elif sub == "okz":
                         sub_cont.controls.extend([ft.Text("⚠️ Haken prüfen!", color="orange", weight="bold"), se_okz_cb, ft.Divider(color="white24")])
@@ -371,17 +367,16 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                     for sid, sname in [("hack", "🥩 Hack"), ("mett", "🍖 Mett"), ("fzs", "🐷 FZ Schwein"), ("fzg", "🐔 FZ Geflügel"), ("bio", "🥩 Bio"), ("okz", "🔬 OKZ")]:
                         is_active = (sid == sub)
                         bg = "#004400" if is_active else "#1a1a1a"
-                        border_color = "#4CAF50" if is_active else "transparent"
                         
                         btn = ft.ElevatedButton(
                             sname, on_click=lambda e, s=sid: sw_hfm(s), 
                             bgcolor=bg, color="white", 
                             style=ft.ButtonStyle(
                                 shape=ft.RoundedRectangleBorder(radius=10), padding=15,
-                                side=ft.BorderSide(width=2, color=border_color)
+                                side=ft.BorderSide(width=1.5, color="#4CAF50")
                             )
                         )
-                        sub_nav.controls.append(ft.Container(content=btn, padding=2))
+                        sub_nav.controls.append(btn)
                     if sub == "hack": sub_cont.controls.extend([hfm_hack_cb, hfm_hack_entnahmeort_dd, ft.Text("Herstellungsdatum:", color="white"), ft.Row([hfm_hack_herst_tag_dd, hfm_hack_herst_mon_dd, hfm_hack_herst_jahr_dd], wrap=True), hfm_hack_inhalt_in, hfm_hack_verpackung_dd, hfm_hack_lief_schwein_in, hfm_hack_lief_rind_in, ft.Text("MHD (Schwein):", color="yellow"), ft.Row([hfm_hack_mhd_s_tag_dd, hfm_hack_mhd_s_mon_dd, hfm_hack_mhd_s_jahr_dd], wrap=True), ft.Text("MHD (Rind):", color="yellow"), ft.Row([hfm_hack_mhd_r_tag_dd, hfm_hack_mhd_r_mon_dd, hfm_hack_mhd_r_jahr_dd], wrap=True), hfm_hack_charge_schwein_dd, hfm_hack_charge_rind_dd, hfm_hack_temp_in, hfm_hack_bemerkung_dd])
                     elif sub == "mett": sub_cont.controls.extend([hfm_mett_cb, hfm_mett_entnahmeort_dd, ft.Text("Herstellungsdatum:", color="white"), ft.Row([hfm_mett_herst_tag_dd, hfm_mett_herst_mon_dd, hfm_mett_herst_jahr_dd], wrap=True), hfm_mett_inhalt_in, hfm_mett_verpackung_dd, hfm_mett_lief_in, ft.Text("MHD:", color="white"), ft.Row([hfm_mett_mhd_tag_dd, hfm_mett_mhd_mon_dd, hfm_mett_mhd_jahr_dd], wrap=True), hfm_mett_charge_dd, hfm_mett_temp_in, hfm_mett_bemerkung_dd])
                     elif sub == "fzs": sub_cont.controls.extend([hfm_fzs_cb, hfm_fzs_entnahmeort_dd, hfm_fzs_produkt_in, hfm_fzs_marinade_in, ft.Text("Herstellungsdatum:", color="white"), ft.Row([hfm_fzs_herst_tag_dd, hfm_fzs_herst_mon_dd, hfm_fzs_herst_jahr_dd], wrap=True), hfm_fzs_inhalt_in, hfm_fzs_verpackung_dd, hfm_fzs_lief_in, ft.Text("MHD:", color="white"), ft.Row([hfm_fzs_mhd_tag_dd, hfm_fzs_mhd_mon_dd, hfm_fzs_mhd_jahr_dd], wrap=True), hfm_fzs_charge_dd, hfm_fzs_temp_in, hfm_fzs_bemerkung_dd])
@@ -404,17 +399,16 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                     for sid, sname in [("teil", "🥗 Convenience"), ("okz", "🔬 OKZ")]:
                         is_active = (sid == sub)
                         bg = "#004400" if is_active else "#1a1a1a"
-                        border_color = "#4CAF50" if is_active else "transparent"
                         
                         btn = ft.ElevatedButton(
                             sname, on_click=lambda e, s=sid: sw_og(s), 
                             bgcolor=bg, color="white", 
                             style=ft.ButtonStyle(
                                 shape=ft.RoundedRectangleBorder(radius=10), padding=15,
-                                side=ft.BorderSide(width=2, color=border_color)
+                                side=ft.BorderSide(width=1.5, color="#4CAF50")
                             )
                         )
-                        sub_nav.controls.append(ft.Container(content=btn, padding=2))
+                        sub_nav.controls.append(btn)
                     if sub == "teil":
                         sub_cont.controls.extend([og_cb, ft.Divider(color="white24")])
                         for i in range(1, 6):
@@ -694,14 +688,15 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 speichere_maerkte(maerkte)
                 try:
                     saved_path = erstelle_bericht(d)
-                    status_text.value = f"✅ PDF erstellt!\nGespeichert in:\n{saved_path}"; status_text.color = "green"
+                    # FIX: Zeigt dir den Namen der Datei mit Uhrzeit an, wenn er blockiert war!
+                    dateiname_nur = os.path.basename(saved_path)
+                    status_text.value = f"✅ Bericht erstellt!\nDateiname:\n{dateiname_nur}"; status_text.color = "green"
                 except Exception as ex:
                     status_text.value = ""; fehler_text.value = f"⚠️ SPEICHER-FEHLER: {str(ex)}"; fehler_text.visible = True
                 page.update()
             except Exception as ex: 
                 status_text.value = "❌ Fehler"; status_text.color = "red"; zeige_fehler(ex)
 
-        # Die Action-Buttons ganz unten nebeneinander umbrochen
         bottom_buttons = ft.Row([
             action_btn_form("🚚 Touren", lambda e: zeige_dashboard(), "#F44336"),
             action_btn_form("🔄 Reset", reset_form, "#9C27B0"),
