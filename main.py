@@ -30,7 +30,8 @@ def main(page: ft.Page):
         def nav_btn(text, on_click):
             return ft.ElevatedButton(
                 text, on_click=on_click, bgcolor="#1a1a1a", color="white",
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=10)
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=10),
+                expand=True
             )
 
         def action_btn(text, on_click, farbe):
@@ -56,22 +57,21 @@ def main(page: ft.Page):
                 width=45, height=45
             )
 
-        # FIX: Exakt gedrittelte Reihe, kein Quetschen mehr!
+        # Sichere, gleichmäßige Reihe für das Menü
         def nav_leiste():
             return ft.Row(
                 alignment=ft.MainAxisAlignment.CENTER,
                 spacing=10,
                 controls=[
-                    ft.Container(content=nav_btn("🚚 Touren", lambda e: zeige_dashboard()), expand=1),
-                    ft.Container(content=nav_btn("📤 Senden", lambda e: zeige_postausgang()), expand=1),
-                    ft.Container(content=nav_btn("🗄️ Archiv", lambda e: zeige_archiv()), expand=1)
+                    nav_btn("🚚 Touren", lambda e: zeige_dashboard()),
+                    nav_btn("📤 Senden", lambda e: zeige_postausgang()),
+                    nav_btn("🗄️ Archiv", lambda e: zeige_archiv())
                 ]
             )
 
         def zeige_startbildschirm():
             ansicht.controls.clear()
             v, z = lade_benutzer()
-            # FIX: Schriftfarbe explizit auf gelb gezwungen
             v_in = ft.TextField(label="Vorname", value=v, color="yellow", text_style=ft.TextStyle(color="yellow"), label_style=ft.TextStyle(color="white54"), border_color="white", width=300, text_align="center")
             z_in = ft.TextField(label="Nachname", value=z, color="yellow", text_style=ft.TextStyle(color="yellow"), label_style=ft.TextStyle(color="white54"), border_color="white", width=300, text_align="center")
             
