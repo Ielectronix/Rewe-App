@@ -359,3 +359,17 @@ def erstelle_bericht(daten):
     with open(ziel_pfad, "wb") as f: writer.write(f)
     print(f"✅ Perfekter Kombi-Bericht erstellt: {ziel_pfad}")
     return ziel_pfad
+
+
+# --- HIER IST DER FIX FÜR ANDROID (Löscht die Datei zuerst, falls sie existiert) ---
+    if os.path.exists(ziel_pfad):
+        try:
+            os.remove(ziel_pfad)
+        except Exception as e:
+            print(f"Alte Datei konnte nicht gelöscht werden: {e}")
+
+    with open(ziel_pfad, "wb") as f: 
+        writer.write(f)
+        
+    print(f"✅ Perfekter Kombi-Bericht erstellt: {ziel_pfad}")
+    return ziel_pfad
