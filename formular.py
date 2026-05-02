@@ -61,6 +61,13 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 ),
                 expand=True 
             )
+            
+        # Crash-sichere Emoji-Buttons für Vorlagen
+        def emoji_btn(text, oc, farbe):
+            return ft.ElevatedButton(
+                text, on_click=oc, bgcolor="#1a1a1a", color=farbe,
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=10)
+            )
 
         def parse_datum(d, dt="", dm="", dj=""):
             if not d: return dt, dm, dj
@@ -276,22 +283,21 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             vl_dd.options = [ft.dropdown.Option(k) for k in alle_vorlagen.keys()]
             vorlagen_status.value = f"✅ Vorlage gespeichert!"; vorlagen_status.color = "orange"; vl_name_in.value = ""; page.update()
 
+        # FIX: Absolut sichere Button mit purem Text/Emojis (Kein ft.icons mehr!)
         vorlagen_card = ft.Container(
             bgcolor="#002b00", padding=15, border_radius=10,
             content=ft.Column([
                 ft.Text("📋 Vorlagen-Verwaltung", weight="bold", color="white", size=16),
                 vorlagen_status,
-                # FIX: String "download" und "delete" statt kaputter Variable
-                ft.Row([vl_dd, ft.IconButton(icon="download", icon_color="#2196F3", on_click=lade_v, tooltip="Laden"), ft.IconButton(icon="delete", icon_color="#F44336", on_click=del_v, tooltip="Löschen")]),
-                # FIX: String "save" statt kaputter Variable
-                ft.Row([vl_name_in, ft.IconButton(icon="save", icon_color="#FF9800", on_click=save_v, tooltip="Speichern")])
+                ft.Row([vl_dd, emoji_btn("📥", lade_v, "#2196F3"), emoji_btn("🗑️", del_v, "#F44336")]),
+                ft.Row([vl_name_in, emoji_btn("💾", save_v, "#FF9800")])
             ])
         )
 
         # ==========================================
         # ZUSAMMENBAU DES HAUPT-LAYOUTS
         # ==========================================
-        top_nav = ft.ResponsiveRow(alignment=ft.MainAxisAlignment.CENTER)
+        top_nav = ft.Row(alignment=ft.MainAxisAlignment.CENTER)
         haupt_bereich = ft.Column(spacing=15)
         sicherer_container = ft.Container(content=haupt_bereich, padding=10)
         
@@ -304,6 +310,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             
             tabs = [("stamm", "Stammdaten"), ("tw", "Trinkwasser"), ("se", "Scherbeneis"), ("hfm", "HFM"), ("og", "Convenience")]
             
+            # FIX: Auch hier auf ft.Row mit expand umgestellt
             for tid, tname in tabs:
                 bg = "#004400" if tid == tab_id else "#1a1a1a"
                 btn = ft.ElevatedButton(
@@ -313,21 +320,21 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=10),
                     expand=True
                 )
-                top_nav.controls.append(ft.Container(col={"xs": 6, "sm": 4}, content=ft.Row([btn]), padding=2))
+                top_nav.controls.append(ft.Container(content=btn, padding=2, expand=1))
 
             if tab_id == "stamm":
                 haupt_bereich.controls.extend([vorlagen_card, ft.Divider(color="white24"), ft.Text("Stammdaten", size=24, weight="bold", color="white"), datum_row, adr_in, nr_in, auft_in, ag_dd, name_in, typ_dd, bem_in])
             elif tab_id == "tw":
                 haupt_bereich.controls.extend([ft.Text("Trinkwasser-Check", size=24, weight="bold", color="white"), tw_kalt_cb, tw_zeit_in, tw_temp_in, tw_tempkonst_in, ft.Divider(color="white24"), ft.Text("Probenahme / Zapfstelle:", color="white", weight="bold"), tw_entnahmeort_dd, tw_zapf_dd, tw_zapf_sonst_dd, tw_desinf_dd, ft.Row([cb_pn, cb_zwei, cb_sensor, cb_knie], wrap=True), ft.Row([cb_ein, cb_ein_g, cb_eck], wrap=True), ft.Divider(color="white24"), ft.Text("Sensorik & Analytik:", color="white", weight="bold"), tw_inaktiv_dd, tw_kurz1_dd, tw_kurz2_dd, tw_kurz3_dd, tw_kurz4_dd, ft.Divider(color="white24"), ft.Text("Auffälligkeiten:", color="white", weight="bold"), ft.Row([cb_auff_ja, cb_auff_nein], wrap=True), cb_auff_perl, cb_auff_verkalk, cb_auff_verbrueh, cb_auff_durchlauf, cb_auff_unterbau, cb_auff_eck_zu, cb_auff_nichtmoeglich, cb_auff_dusche, cb_auff_handbrause, cb_auff_sonst, tw_auff_sonstiges_in, ft.Divider(color="white24"), tw_zweck_dd, tw_inhalt_in, tw_verpackung_dd, tw_bemerkung_dd])
             elif tab_id == "se":
-                sub_nav = ft.ResponsiveRow(alignment=ft.MainAxisAlignment.CENTER)
+                sub_nav = ft.Row(alignment=ft.MainAxisAlignment.CENTER)
                 sub_cont = ft.Column()
                 haupt_bereich.controls.extend([ft.Text("Scherbeneis", size=24, weight="bold", color="white"), sub_nav, ft.Divider(color="white24"), sub_cont])
                 def sw_se(sub):
                     sub_cont.controls.clear(); sub_nav.controls.clear()
                     for sid, sname in [("eis", "❄️ Eis"), ("okz", "🔬 OKZ")]:
                         btn = ft.ElevatedButton(sname, on_click=lambda e, s=sid: sw_se(s), bgcolor="#004400" if sub==sid else "#1a1a1a", color="white", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=10), expand=True)
-                        sub_nav.controls.append(ft.Container(col={"xs": 6, "sm": 4}, content=ft.Row([btn]), padding=2))
+                        sub_nav.controls.append(ft.Container(content=btn, padding=2, expand=1))
                     if sub == "eis": sub_cont.controls.extend([se_kalt_cb, se_zeit_in, se_zapf_dd, ft.Text("Technik:", color="white", weight="bold"), ft.Row([se_cb_eiswanne, se_cb_fallprobe], wrap=True), se_tech_sonst_in, se_desinf_dd, ft.Text("Auffälligkeiten:", color="white", weight="bold"), se_cb_ozon, se_auff_sonst_in, se_inhalt_in, se_verpackung_dd, se_entnahmeort_dd, se_temp_in, se_bemerkung_dd])
                     elif sub == "okz":
                         sub_cont.controls.extend([ft.Text("⚠️ Haken prüfen!", color="orange", weight="bold"), se_okz_cb, ft.Divider(color="white24")])
@@ -338,14 +345,14 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                     page.update()
                 sw_se("eis")
             elif tab_id == "hfm":
-                sub_nav = ft.ResponsiveRow(alignment=ft.MainAxisAlignment.CENTER)
+                sub_nav = ft.Row(alignment=ft.MainAxisAlignment.CENTER, wrap=True)
                 sub_cont = ft.Column()
                 haupt_bereich.controls.extend([ft.Text("Hackfleischmonitoring", size=24, weight="bold", color="white"), sub_nav, ft.Divider(color="white24"), sub_cont])
                 def sw_hfm(sub):
                     sub_cont.controls.clear(); sub_nav.controls.clear()
                     for sid, sname in [("hack", "🥩 Hack"), ("mett", "🍖 Mett"), ("fzs", "🐷 FZ Schwein"), ("fzg", "🐔 FZ Geflügel"), ("bio", "🥩 Bio"), ("okz", "🔬 OKZ")]:
-                        btn = ft.ElevatedButton(sname, on_click=lambda e, s=sid: sw_hfm(s), bgcolor="#004400" if sub==sid else "#1a1a1a", color="white", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=10), expand=True)
-                        sub_nav.controls.append(ft.Container(col={"xs": 6, "sm": 4}, content=ft.Row([btn]), padding=2))
+                        btn = ft.ElevatedButton(sname, on_click=lambda e, s=sid: sw_hfm(s), bgcolor="#004400" if sub==sid else "#1a1a1a", color="white", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=10), width=100)
+                        sub_nav.controls.append(ft.Container(content=btn, padding=2))
                     if sub == "hack": sub_cont.controls.extend([hfm_hack_cb, hfm_hack_entnahmeort_dd, ft.Text("Herstellungsdatum:", color="white"), ft.Row([hfm_hack_herst_tag_dd, hfm_hack_herst_mon_dd, hfm_hack_herst_jahr_dd], wrap=True), hfm_hack_inhalt_in, hfm_hack_verpackung_dd, hfm_hack_lief_schwein_in, hfm_hack_lief_rind_in, ft.Text("MHD (Schwein):", color="yellow"), ft.Row([hfm_hack_mhd_s_tag_dd, hfm_hack_mhd_s_mon_dd, hfm_hack_mhd_s_jahr_dd], wrap=True), ft.Text("MHD (Rind):", color="yellow"), ft.Row([hfm_hack_mhd_r_tag_dd, hfm_hack_mhd_r_mon_dd, hfm_hack_mhd_r_jahr_dd], wrap=True), hfm_hack_charge_schwein_dd, hfm_hack_charge_rind_dd, hfm_hack_temp_in, hfm_hack_bemerkung_dd])
                     elif sub == "mett": sub_cont.controls.extend([hfm_mett_cb, hfm_mett_entnahmeort_dd, ft.Text("Herstellungsdatum:", color="white"), ft.Row([hfm_mett_herst_tag_dd, hfm_mett_herst_mon_dd, hfm_mett_herst_jahr_dd], wrap=True), hfm_mett_inhalt_in, hfm_mett_verpackung_dd, hfm_mett_lief_in, ft.Text("MHD:", color="white"), ft.Row([hfm_mett_mhd_tag_dd, hfm_mett_mhd_mon_dd, hfm_mett_mhd_jahr_dd], wrap=True), hfm_mett_charge_dd, hfm_mett_temp_in, hfm_mett_bemerkung_dd])
                     elif sub == "fzs": sub_cont.controls.extend([hfm_fzs_cb, hfm_fzs_entnahmeort_dd, hfm_fzs_produkt_in, hfm_fzs_marinade_in, ft.Text("Herstellungsdatum:", color="white"), ft.Row([hfm_fzs_herst_tag_dd, hfm_fzs_herst_mon_dd, hfm_fzs_herst_jahr_dd], wrap=True), hfm_fzs_inhalt_in, hfm_fzs_verpackung_dd, hfm_fzs_lief_in, ft.Text("MHD:", color="white"), ft.Row([hfm_fzs_mhd_tag_dd, hfm_fzs_mhd_mon_dd, hfm_fzs_mhd_jahr_dd], wrap=True), hfm_fzs_charge_dd, hfm_fzs_temp_in, hfm_fzs_bemerkung_dd])
@@ -360,14 +367,14 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                     page.update()
                 sw_hfm("hack")
             elif tab_id == "og":
-                sub_nav = ft.ResponsiveRow(alignment=ft.MainAxisAlignment.CENTER)
+                sub_nav = ft.Row(alignment=ft.MainAxisAlignment.CENTER)
                 sub_cont = ft.Column()
                 haupt_bereich.controls.extend([ft.Text("Convenience", size=24, weight="bold", color="white"), sub_nav, ft.Divider(color="white24"), sub_cont])
                 def sw_og(sub):
                     sub_cont.controls.clear(); sub_nav.controls.clear()
                     for sid, sname in [("teil", "🥗 Convenience"), ("okz", "🔬 OKZ")]:
                         btn = ft.ElevatedButton(sname, on_click=lambda e, s=sid: sw_og(s), bgcolor="#004400" if sub==sid else "#1a1a1a", color="white", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=10), expand=True)
-                        sub_nav.controls.append(ft.Container(col={"xs": 6, "sm": 4}, content=ft.Row([btn]), padding=2))
+                        sub_nav.controls.append(ft.Container(content=btn, padding=2, expand=1))
                     if sub == "teil":
                         sub_cont.controls.extend([og_cb, ft.Divider(color="white24")])
                         for i in range(1, 6):
@@ -654,11 +661,11 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             except Exception as ex: 
                 status_text.value = "❌ Fehler"; status_text.color = "red"; zeige_fehler(ex)
 
-        bottom_buttons = ft.ResponsiveRow([
-            ft.Container(col={"xs": 12, "sm": 6}, content=ft.Row([action_btn_form("🚚 Touren", lambda e: zeige_dashboard(), "#F44336")]), padding=2),
-            ft.Container(col={"xs": 12, "sm": 6}, content=ft.Row([action_btn_form("🔄 Zurücksetzen", reset_form, "#9C27B0")]), padding=2),
-            ft.Container(col={"xs": 12, "sm": 6}, content=ft.Row([action_btn_form("💾 Speichern", nur_speichern, "#FF9800")]), padding=2),
-            ft.Container(col={"xs": 12, "sm": 6}, content=ft.Row([action_btn_form("📄 Bericht", save_final, "#2196F3")]), padding=2),
+        bottom_buttons = ft.Row([
+            ft.Container(content=action_btn_form("🚚 Touren", lambda e: zeige_dashboard(), "#F44336"), expand=1),
+            ft.Container(content=action_btn_form("🔄 Reset", reset_form, "#9C27B0"), expand=1),
+            ft.Container(content=action_btn_form("💾 Speichern", nur_speichern, "#FF9800"), expand=1),
+            ft.Container(content=action_btn_form("📄 Bericht", save_final, "#2196F3"), expand=1),
         ], alignment=ft.MainAxisAlignment.CENTER)
 
         ansicht.controls.extend([
