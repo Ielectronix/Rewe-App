@@ -35,7 +35,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             c.suffix = ft.PopupMenuButton(items=items, content=ft.Text("▼", color="white"))
             return c
             
-        # NEU: Button-Design für absolute Gleichmäßigkeit auf dem Handy
         def action_btn_form(text, oc, farbe):
             return ft.ElevatedButton(
                 content=ft.Text(text, size=14, weight="bold"),
@@ -45,7 +44,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                     padding=ft.padding.symmetric(vertical=15),
                     side=ft.BorderSide(width=2, color=farbe)
                 ),
-                width=float('inf') # Zwingt den Button, die volle Breite seines Containers zu nutzen
+                width=float('inf') 
             )
 
         def parse_datum(d, dt="", dm="", dj=""):
@@ -71,6 +70,14 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             val = (e.control.value or "").strip()
             if val and not val.lower().endswith("g") and not val.lower().endswith("ml"):
                 e.control.value = val + " g"; e.control.update()
+
+        # FIX: Das Herstellungsdatum bei Fleisch erzwingt immer das heutige Datum, falls leer!
+        htoday, mtoday, jtoday = heute_str.split(".")[0], heute_str.split(".")[1], heute_str.split(".")[2]
+        def get_herst(key):
+            val = str(aktuelle_daten.get(key, "")).strip()
+            if not val or len(val.split(".")) != 3 or val == "..":
+                return htoday, mtoday, jtoday
+            return val.split(".")[0], val.split(".")[1], val.split(".")[2]
 
         tage_opts = [""] + [f"{i:02d}" for i in range(1, 32)]
         mon_opts = [""] + [f"{i:02d}" for i in range(1, 13)]
@@ -125,7 +132,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
         se_okz_cb = cb("Abklatschproben Scherbeneis", aktuelle_daten.get("se_abklatsch_cb", False), bold=True)
         se_okz_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("se_abklatsch_bemerkung", ""), ["", "Keine Besonderheiten"])
-        se_okz_opts = ["Eiswanne innen rechts", "Eiswanne innen links", "Auswurfrohr", "Eisschaufel", "Eiswanne", "Eismaschine innen", "Klappe/Deckel", "Sonstiges"]
+        se_okz_opts = ["", "Eiswanne innen rechts", "Eiswanne innen links", "Auswurfrohr", "Eisschaufel", "Eiswanne", "Eismaschine innen", "Klappe/Deckel", "Sonstiges"]
         se_okz_def = {1: "Eiswanne innen rechts", 2: "Eiswanne innen links", 3: "Auswurfrohr"}
         se_okz_controls = {}
         for i in range(1, 4):
@@ -134,7 +141,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
         hfm_hack_cb = cb("Hackfleisch gemischt", aktuelle_daten.get("hfm_hack_cb", False), bold=True)
         hfm_hack_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("hfm_hack_entnahmeort"), ort_opts)
-        t, m, j = parse_datum(aktuelle_daten.get("hfm_hack_herstelldatum", heute_str), heute_str.split(".")[0], heute_str.split(".")[1], heute_str.split(".")[2])
+        t, m, j = get_herst("hfm_hack_herstelldatum")
         hfm_hack_herst_tag_dd, hfm_hack_herst_mon_dd, hfm_hack_herst_jahr_dd = combo("Tag", t, tage_opts, 90), combo("Mon", m, mon_opts, 90), combo("Jahr", j, jahr_opts, 120)
         t, m, j = parse_datum(aktuelle_daten.get("hfm_hack_mhd_schwein", ""))
         hfm_hack_mhd_s_tag_dd, hfm_hack_mhd_s_mon_dd, hfm_hack_mhd_s_jahr_dd = combo("Tag", t, tage_opts, 90), combo("Mon", m, mon_opts, 90), combo("Jahr", j, jahr_opts, 120)
@@ -148,7 +155,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
         hfm_mett_cb = cb("Gewürztes Schweinemett", aktuelle_daten.get("hfm_mett_cb", False), bold=True)
         hfm_mett_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("hfm_mett_entnahmeort"), ort_opts)
-        t, m, j = parse_datum(aktuelle_daten.get("hfm_mett_herstelldatum", heute_str), heute_str.split(".")[0], heute_str.split(".")[1], heute_str.split(".")[2])
+        t, m, j = get_herst("hfm_mett_herstelldatum")
         hfm_mett_herst_tag_dd, hfm_mett_herst_mon_dd, hfm_mett_herst_jahr_dd = combo("Tag", t, tage_opts, 90), combo("Mon", m, mon_opts, 90), combo("Jahr", j, jahr_opts, 120)
         t, m, j = parse_datum(aktuelle_daten.get("hfm_mett_mhd", ""))
         hfm_mett_mhd_tag_dd, hfm_mett_mhd_mon_dd, hfm_mett_mhd_jahr_dd = combo("Tag", t, tage_opts, 90), combo("Mon", m, mon_opts, 90), combo("Jahr", j, jahr_opts, 120)
@@ -159,7 +166,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         hfm_fzs_cb = cb("Fleischzubereitung Schwein", aktuelle_daten.get("hfm_fzs_cb", False), bold=True)
         hfm_fzs_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("hfm_fzs_entnahmeort"), ort_opts)
         hfm_fzs_produkt_in, hfm_fzs_marinade_in = tf("Produkt", aktuelle_daten.get("hfm_fzs_produkt", "")), tf("Marinade", aktuelle_daten.get("hfm_fzs_marinade", ""))
-        t, m, j = parse_datum(aktuelle_daten.get("hfm_fzs_herstelldatum", heute_str), heute_str.split(".")[0], heute_str.split(".")[1], heute_str.split(".")[2])
+        t, m, j = get_herst("hfm_fzs_herstelldatum")
         hfm_fzs_herst_tag_dd, hfm_fzs_herst_mon_dd, hfm_fzs_herst_jahr_dd = combo("Tag", t, tage_opts, 90), combo("Mon", m, mon_opts, 90), combo("Jahr", j, jahr_opts, 120)
         t, m, j = parse_datum(aktuelle_daten.get("hfm_fzs_mhd", ""))
         hfm_fzs_mhd_tag_dd, hfm_fzs_mhd_mon_dd, hfm_fzs_mhd_jahr_dd = combo("Tag", t, tage_opts, 90), combo("Mon", m, mon_opts, 90), combo("Jahr", j, jahr_opts, 120)
@@ -170,7 +177,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         hfm_fzg_cb = cb("Fleischzubereitung Geflügel", aktuelle_daten.get("hfm_fzg_cb", False), bold=True)
         hfm_fzg_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("hfm_fzg_entnahmeort"), ort_opts)
         hfm_fzg_produkt_in, hfm_fzg_marinade_in = tf("Produkt", aktuelle_daten.get("hfm_fzg_produkt", "")), tf("Marinade", aktuelle_daten.get("hfm_fzg_marinade", ""))
-        t, m, j = parse_datum(aktuelle_daten.get("hfm_fzg_herstelldatum", heute_str), heute_str.split(".")[0], heute_str.split(".")[1], heute_str.split(".")[2])
+        t, m, j = get_herst("hfm_fzg_herstelldatum")
         hfm_fzg_herst_tag_dd, hfm_fzg_herst_mon_dd, hfm_fzg_herst_jahr_dd = combo("Tag", t, tage_opts, 90), combo("Mon", m, mon_opts, 90), combo("Jahr", j, jahr_opts, 120)
         t, m, j = parse_datum(aktuelle_daten.get("hfm_fzg_mhd", ""))
         hfm_fzg_mhd_tag_dd, hfm_fzg_mhd_mon_dd, hfm_fzg_mhd_jahr_dd = combo("Tag", t, tage_opts, 90), combo("Mon", m, mon_opts, 90), combo("Jahr", j, jahr_opts, 120)
@@ -180,7 +187,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
         hfm_bio_cb = cb("Bio-Hackfleisch", aktuelle_daten.get("hfm_bio_cb", False), bold=True)
         hfm_bio_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("hfm_bio_entnahmeort"), ort_opts)
-        t, m, j = parse_datum(aktuelle_daten.get("hfm_bio_herstelldatum", heute_str), heute_str.split(".")[0], heute_str.split(".")[1], heute_str.split(".")[2])
+        t, m, j = get_herst("hfm_bio_herstelldatum")
         hfm_bio_herst_tag_dd, hfm_bio_herst_mon_dd, hfm_bio_herst_jahr_dd = combo("Tag", t, tage_opts, 90), combo("Mon", m, mon_opts, 90), combo("Jahr", j, jahr_opts, 120)
         t, m, j = parse_datum(aktuelle_daten.get("hfm_bio_mhd_schwein", ""))
         hfm_bio_mhd_s_tag_dd, hfm_bio_mhd_s_mon_dd, hfm_bio_mhd_s_jahr_dd = combo("Tag", t, tage_opts, 90), combo("Mon", m, mon_opts, 90), combo("Jahr", j, jahr_opts, 120)
@@ -193,7 +200,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
         hfm_okz_cb = cb("Abklatschproben HFM", aktuelle_daten.get("hfm_abklatsch_cb", False), bold=True)
         hfm_okz_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("hfm_abklatsch_bemerkung", ""), ["", "Keine Besonderheiten"])
-        okz_obj_opts = ["Fleischwolf-Auflage", "Fleischwolf-Lochscheibe", "Fleischwolf-Auswurf", "Fleischwolf-Spirale", "Wand am Fleischwolf", "Hackstecher", "Schaufel", "Thekenschale", "Messer", "Schneidebrett", "Auflage Knochensäge", "Tisch", "Flesichwanne", "Kühlhausgriff", "Schüssel", "Seifenspender"]
+        okz_obj_opts = ["", "Fleischwolf-Auflage", "Fleischwolf-Lochscheibe", "Fleischwolf-Auswurf", "Fleischwolf-Spirale", "Wand am Fleischwolf", "Hackstecher", "Schaufel", "Thekenschale", "Messer", "Schneidebrett", "Auflage Knochensäge", "Tisch", "Flesichwanne", "Kühlhausgriff", "Schüssel", "Seifenspender"]
         okz_def = {1: {"o": "Fleischwolf-Auflage", "a": True, "t": False}, 2: {"o": "Fleischwolf-Auswurf", "a": True, "t": True}, 3: {"o": "Thekenschale", "a": True, "t": False}, 4: {"o": "Hackstecher", "a": True, "t": True}, 5: {"o": "Messer", "a": True, "t": False}, 6: {"o": "Schneidebrett", "a": True, "t": False}, 7: {"o": "Wand am Fleischwolf", "a": True, "t": True}, 8: {"o": "", "a": False, "t": False}, 9: {"o": "", "a": False, "t": False}, 10: {"o": "", "a": False, "t": False}}
         okz_controls = {}
         for i in range(1, 11):
@@ -220,14 +227,56 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         og_okz_cb = cb("Abklatschproben Convenience", aktuelle_daten.get("og_abklatsch_cb", False), bold=True)
         og_okz_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("og_abklatsch_bemerkung_1", ""), ["", "Keine Besonderheiten"])
         og_okz_anmerkung_in = tf("Anmerkung", aktuelle_daten.get("og_abklatsch_bemerkung_2", ""))
+        
+        og_okz_opts = ["", "Schneidebrett", "Messer", "Saftpresse Auffanggitter", "Saftpresse Rückwand", "Saftpresse Auslass", "Waagenauflage", "Schüssel", "Löffel", "GN-Behälter"]
         og_okz_def = {1: {"o": "Schneidebrett", "a": True, "t": True}, 2: {"o": "Messer", "a": True, "t": True}, 3: {"o": "Waagenauflage", "a": True, "t": False}, 4: {"o": "Schüssel", "a": True, "t": False}, 5: {"o": "Löffel", "a": True, "t": False}}
         og_okz_controls = {}
         for i in range(1, 6):
             idx = f"{i:02d}"
-            og_okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0011_status_{idx}"), ["R+D", "R", "P", "-"], 100), "objekt": combo("Objekt", aktuelle_daten.get(f"0011_objekt_{idx}") or og_okz_def[i]["o"], ["Schneidebrett", "Messer", "Saftpresse Auffanggitter", "Saftpresse Rückwand", "Saftpresse Auslass", "Waagenauflage", "Schüssel", "Löffel", "GN-Behälter"], 200), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0011_ort_{idx}", ""), ["Kühlraum", "Produktionsbereich", "Theke"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0011_abklatsch_{idx}", og_okz_def[i]["a"])), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0011_tupfer_{idx}", og_okz_def[i]["t"]))}
+            og_okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0011_status_{idx}"), ["R+D", "R", "P", "-"], 100), "objekt": combo("Objekt", aktuelle_daten.get(f"0011_objekt_{idx}") or og_okz_def[i]["o"], og_okz_opts, 200), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0011_ort_{idx}", ""), ["Kühlraum", "Produktionsbereich", "Theke"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0011_abklatsch_{idx}", og_okz_def[i]["a"])), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0011_tupfer_{idx}", og_okz_def[i]["t"]))}
 
         # ==========================================
-        # ZUSAMMENBAU DES HAUPT-LAYOUTS (RESPONSIVE GRID)
+        # VORLAGEN LOGIK (JETZT DIREKT IN DER TOUR!)
+        # ==========================================
+        alle_vorlagen = lade_vorlagen()
+        vorlagen_status = ft.Text("", weight="bold", size=12) 
+        vl_dd = ft.Dropdown(options=[ft.dropdown.Option(k) for k in alle_vorlagen.keys()], hint_text="Vorlage laden/löschen...", dense=True, content_padding=10, color="yellow", text_style=ft.TextStyle(color="yellow", size=12), border_color="white", expand=True)
+        vl_name_in = tf("Als neue Vorlage speichern", "", w=None)
+        vl_name_in.expand = True
+
+        def lade_v(e):
+            if not vl_dd.value: return
+            v = alle_vorlagen.get(vl_dd.value, {})
+            if "name_in" in v: name_in.value = v["name_in"]
+            if "ag_dd" in v: ag_dd.value = v["ag_dd"]
+            if "typ_dd" in v: typ_dd.value = v["typ_dd"]
+            vorlagen_status.value = f"✅ '{vl_dd.value}' geladen!"; vorlagen_status.color = "green"; page.update()
+            
+        def del_v(e):
+            if vl_dd.value in alle_vorlagen:
+                del alle_vorlagen[vl_dd.value]; speichere_vorlagen(alle_vorlagen)
+                vl_dd.options = [ft.dropdown.Option(k) for k in alle_vorlagen.keys()]
+                vorlagen_status.value = f"🗑️ Gelöscht!"; vorlagen_status.color = "red"; vl_dd.value = None; page.update()
+                
+        def save_v(e):
+            if not (vl_name_in.value or "").strip(): return
+            alle_vorlagen[vl_name_in.value] = {"name_in": name_in.value, "ag_dd": ag_dd.value, "typ_dd": typ_dd.value}
+            speichere_vorlagen(alle_vorlagen)
+            vl_dd.options = [ft.dropdown.Option(k) for k in alle_vorlagen.keys()]
+            vorlagen_status.value = f"✅ Vorlage gespeichert!"; vorlagen_status.color = "orange"; vl_name_in.value = ""; page.update()
+
+        vorlagen_card = ft.Container(
+            bgcolor="#002b00", padding=15, border_radius=10,
+            content=ft.Column([
+                ft.Text("📋 Vorlagen-Verwaltung", weight="bold", color="white", size=16),
+                vorlagen_status,
+                ft.Row([vl_dd, ft.IconButton(ft.icons.DOWNLOAD, icon_color="#2196F3", on_click=lade_v, tooltip="Laden"), ft.IconButton(ft.icons.DELETE, icon_color="#F44336", on_click=del_v, tooltip="Löschen")]),
+                ft.Row([vl_name_in, ft.IconButton(ft.icons.SAVE, icon_color="#FF9800", on_click=save_v, tooltip="Speichern")])
+            ])
+        )
+
+        # ==========================================
+        # ZUSAMMENBAU DES HAUPT-LAYOUTS
         # ==========================================
         top_nav = ft.ResponsiveRow(alignment=ft.MainAxisAlignment.CENTER)
         haupt_bereich = ft.Column(spacing=15)
@@ -240,7 +289,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             haupt_bereich.controls.clear()
             top_nav.controls.clear()
             
-            tabs = [("stamm", "Stammdaten"), ("tw", "Trinkwasser"), ("se", "Scherbeneis"), ("hfm", "HFM"), ("og", "Convenience"), ("vorlagen", "📋 Vorlagen")]
+            tabs = [("stamm", "Stammdaten"), ("tw", "Trinkwasser"), ("se", "Scherbeneis"), ("hfm", "HFM"), ("og", "Convenience")]
             
             for tid, tname in tabs:
                 bg = "#004400" if tid == tab_id else "#1a1a1a"
@@ -251,11 +300,10 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                     style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=10),
                     width=float('inf')
                 )
-                # Auf dem Handy 2 pro Reihe (xs:6), Tablet 3 pro Reihe (sm:4)
                 top_nav.controls.append(ft.Container(col={"xs": 6, "sm": 4}, content=btn, padding=2))
 
             if tab_id == "stamm":
-                haupt_bereich.controls.extend([ft.Text("Stammdaten", size=24, weight="bold", color="white"), datum_row, adr_in, nr_in, auft_in, ag_dd, name_in, typ_dd, bem_in])
+                haupt_bereich.controls.extend([vorlagen_card, ft.Divider(color="white24"), ft.Text("Stammdaten", size=24, weight="bold", color="white"), datum_row, adr_in, nr_in, auft_in, ag_dd, name_in, typ_dd, bem_in])
             elif tab_id == "tw":
                 haupt_bereich.controls.extend([ft.Text("Trinkwasser-Check", size=24, weight="bold", color="white"), tw_kalt_cb, tw_zeit_in, tw_temp_in, tw_tempkonst_in, ft.Divider(color="white24"), ft.Text("Probenahme / Zapfstelle:", color="white", weight="bold"), tw_entnahmeort_dd, tw_zapf_dd, tw_zapf_sonst_dd, tw_desinf_dd, ft.Row([cb_pn, cb_zwei, cb_sensor, cb_knie], wrap=True), ft.Row([cb_ein, cb_ein_g, cb_eck], wrap=True), ft.Divider(color="white24"), ft.Text("Sensorik & Analytik:", color="white", weight="bold"), tw_inaktiv_dd, tw_kurz1_dd, tw_kurz2_dd, tw_kurz3_dd, tw_kurz4_dd, ft.Divider(color="white24"), ft.Text("Auffälligkeiten:", color="white", weight="bold"), ft.Row([cb_auff_ja, cb_auff_nein], wrap=True), cb_auff_perl, cb_auff_verkalk, cb_auff_verbrueh, cb_auff_durchlauf, cb_auff_unterbau, cb_auff_eck_zu, cb_auff_nichtmoeglich, cb_auff_dusche, cb_auff_handbrause, cb_auff_sonst, tw_auff_sonstiges_in, ft.Divider(color="white24"), tw_zweck_dd, tw_inhalt_in, tw_verpackung_dd, tw_bemerkung_dd])
             elif tab_id == "se":
@@ -321,16 +369,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                         sub_cont.controls.extend([ft.Text("💡 Wichtig: Wird die Saftpresse beprobt, muss zwingend auch das Messer aufgenommen werden!", color="orange", weight="bold"), og_okz_bemerkung_dd, og_okz_anmerkung_in])
                     page.update()
                 sw_og("teil")
-            elif tab_id == "vorlagen":
-                haupt_bereich.controls.extend([
-                    ft.Text("Vorlagen verwalten", size=24, weight="bold", color="white"), vorlagen_status, vl_dd, 
-                    ft.ResponsiveRow([
-                        ft.Container(col={"xs": 6}, content=action_btn_form("Laden", lade_v, "#2196F3"), padding=2),
-                        ft.Container(col={"xs": 6}, content=action_btn_form("🗑️", del_v, "#F44336"), padding=2),
-                    ], alignment=ft.MainAxisAlignment.CENTER), 
-                    ft.Divider(color="white24"), vl_name_in, 
-                    action_btn_form("Als Vorlage speichern", save_v, "#FF9800")
-                ])
             page.update()
 
         def hole_aktuelle_daten():
@@ -550,7 +588,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
         # Die "Alles zurücksetzen" Funktion
         def reset_form(e):
-            # Löscht alles und lädt die Maske als komplett neue Tour!
             zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, None)
 
         def nur_speichern(e):
@@ -600,35 +637,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             except Exception as ex: 
                 status_text.value = "❌ Fehler"; status_text.color = "red"; zeige_fehler(ex)
 
-        # Vorlagen Logik
-        alle_vorlagen = lade_vorlagen()
-        vorlagen_status = ft.Text("", weight="bold") 
-        vl_dd = ft.Dropdown(options=[ft.dropdown.Option(k) for k in alle_vorlagen.keys()], hint_text="⬇️ Hier Vorlage auswählen...", dense=True, content_padding=10, color="yellow", text_style=ft.TextStyle(color="yellow", weight="bold", size=14), border_color="white")
-        vl_name_in = tf("Name für neue Vorlage", "")
-        def lade_v(e):
-            if not vl_dd.value: return
-            v = alle_vorlagen.get(vl_dd.value, {})
-            if "name_in" in v: name_in.value = v["name_in"]
-            if "ag_dd" in v: ag_dd.value = v["ag_dd"]
-            if "typ_dd" in v: typ_dd.value = v["typ_dd"]
-            vorlagen_status.value = f"✅ '{vl_dd.value}' geladen!"; vorlagen_status.color = "green"; page.update()
-        def del_v(e):
-            if vl_dd.value in alle_vorlagen:
-                del alle_vorlagen[vl_dd.value]; speichere_vorlagen(alle_vorlagen)
-                vl_dd.options = [ft.dropdown.Option(k) for k in alle_vorlagen.keys()]
-                vorlagen_status.value = f"🗑️ Gelöscht!"; vorlagen_status.color = "red"; vl_dd.value = None; page.update()
-        def save_v(e):
-            if not (vl_name_in.value or "").strip(): return
-            alle_vorlagen[vl_name_in.value] = {"name_in": name_in.value, "ag_dd": ag_dd.value, "typ_dd": typ_dd.value}
-            speichere_vorlagen(alle_vorlagen)
-            vl_dd.options = [ft.dropdown.Option(k) for k in alle_vorlagen.keys()]
-            vorlagen_status.value = f"✅ Vorlage gespeichert!"; vorlagen_status.color = "orange"; vl_name_in.value = ""; page.update()
-
-        # ==========================================
-        # ZUSAMMENBAU DES HAUPT-LAYOUTS
-        # ==========================================
-        
-        # Die unteren Buttons im ordentlichen Raster!
         bottom_buttons = ft.ResponsiveRow([
             ft.Container(col={"xs": 12, "sm": 6}, content=action_btn_form("🚚 Touren", lambda e: zeige_dashboard(), "#F44336"), padding=2),
             ft.Container(col={"xs": 12, "sm": 6}, content=action_btn_form("🔄 Zurücksetzen", reset_form, "#9C27B0"), padding=2),
