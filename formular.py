@@ -140,9 +140,12 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         tage_opts = [""] + [f"{i:02d}" for i in range(1, 32)]
         mon_opts = [""] + [f"{i:02d}" for i in range(1, 13)]
         jahr_opts = [""] + [str(i) for i in range(2024, 2035)]
+        
+        # Diese Standard-Werte werden ignoriert, wenn der Haupt-Haken fehlt
         c_opts_s = ["z. Z. nicht vorrätig", "keine Eigenproduktion", "", "Kein Schweinehackfleisch"]
         c_opts_r = ["z. Z. nicht vorrätig", "keine Eigenproduktion", "", "Kein Rinderhackfleisch"]
         c_opts_g = ["z. Z. nicht vorrätig", "keine Eigenproduktion", "", "Kein Geflügel"]
+        
         ort_opts = ["Fischabteilung", "Produktionsraum", "Bedientheke", "Vorbereitungsraum", "Metzgerei", "Kühlraum", "SB-Theke"]
         verp_opts = ["steriler Probenbecher", "steriler Probenbeutel", "Transportverpackung", "Kunststoffbecher mit Anrolldeckel u. etikett", "Pappschale mit Kunststofffolie umwickelt", "tiefgezogene Kunststoffschale mit Anrollfolie", "Styroporschale mit Kunststofffolie umwickelt", "SB-Kunststoffverpackung"]
 
@@ -291,13 +294,11 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             og_okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0011_status_{idx}"), ["R+D", "R", "P", "-"], 100), "objekt": combo("Objekt", aktuelle_daten.get(f"0011_objekt_{idx}") or og_okz_def[i]["o"], og_okz_opts, 200), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0011_ort_{idx}", ""), ["Kühlraum", "Produktionsbereich", "Theke"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0011_abklatsch_{idx}", og_okz_def[i]["a"])), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0011_tupfer_{idx}", og_okz_def[i]["t"]))}
 
         # ==========================================
-        # VORLAGEN LOGIK (BEHOBENER FEHLER, BESSERES DESIGN)
+        # VORLAGEN LOGIK 
         # ==========================================
         alle_vorlagen = lade_vorlagen_lokal()
         vorlagen_status = ft.Text("", weight="bold", size=12) 
         vl_dd = ft.Dropdown(options=[ft.dropdown.Option(k) for k in alle_vorlagen.keys()], hint_text="Vorlage laden/löschen...", dense=True, content_padding=10, color="yellow", text_style=ft.TextStyle(color="yellow", size=12), border_color="white", expand=True)
-        
-        # FIX: Kürzerer Label-Text, damit das Feld nicht mehr gequetscht wird!
         vl_name_in = tf("Name der Vorlage", "", w=None)
         vl_name_in.expand = True
 
@@ -414,7 +415,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 haupt_bereich.controls.extend([ft.Text("Convenience", size=24, weight="bold", color="white"), sub_nav, ft.Divider(color="white24"), sub_cont])
                 def sw_og(sub):
                     sub_cont.controls.clear(); sub_nav.controls.clear()
-                    # FIX: Kürzere Button-Beschriftung für "Convenience"
                     for sid, sname in [("teil", "🥗 Proben"), ("okz", "🔬 OKZ")]:
                         sub_nav.controls.append(neon_tab_btn(sname, active=(sid==sub), on_click=lambda e, s=sid: sw_og(s)))
                     if sub == "teil":
@@ -603,6 +603,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
             return d
 
+        # HIER WIRD SCHLAU GEPRÜFT, OB WIRKLICH WAS EINGEGEBEN WURDE
         def check_pflichtfelder():
             errors = []
             if not (nr_in.value or "").strip(): errors.append("- Marktnummer")
@@ -618,30 +619,66 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 if not (se_zeit_in.value or "").strip(): errors.append("- Scherbeneis: Uhrzeit")
                 if not (se_temp_in.value or "").strip(): errors.append("- Scherbeneis: Temperatur")
 
+            # --- HACKFLEISCH ---
+            hack_has_data = bool((hfm_hack_temp_in.value or "").strip()) or \
+                            bool((hfm_hack_lief_schwein_in.value or "").strip()) or \
+                            bool((hfm_hack_lief_rind_in.value or "").strip()) or \
+                            ((hfm_hack_charge_schwein_dd.value or "").strip() not in c_opts_s) or \
+                            ((hfm_hack_charge_rind_dd.value or "").strip() not in c_opts_r)
             if hfm_hack_cb.value:
                 if not (hfm_hack_temp_in.value or "").strip(): errors.append("- Hackfleisch: Temperatur")
                 if not (hfm_hack_charge_schwein_dd.value or "").strip() and not (hfm_hack_charge_rind_dd.value or "").strip(): errors.append("- Hackfleisch: Chargennummer")
                 if not (hfm_hack_mhd_s_tag_dd.value or "").strip() and not (hfm_hack_mhd_r_tag_dd.value or "").strip(): errors.append("- Hackfleisch: MHD")
+            elif hack_has_data:
+                errors.append("- HACKFLEISCH: Du hast Daten eingegeben, aber den HAKEN oben vergessen!")
 
+            # --- METT ---
+            mett_has_data = bool((hfm_mett_temp_in.value or "").strip()) or \
+                            bool((hfm_mett_lief_in.value or "").strip()) or \
+                            ((hfm_mett_charge_dd.value or "").strip() not in c_opts_s)
             if hfm_mett_cb.value:
                 if not (hfm_mett_temp_in.value or "").strip(): errors.append("- Mett: Temperatur")
                 if not (hfm_mett_charge_dd.value or "").strip(): errors.append("- Mett: Chargennummer")
                 if not (hfm_mett_mhd_tag_dd.value or "").strip(): errors.append("- Mett: MHD")
+            elif mett_has_data:
+                errors.append("- METT: Du hast Daten eingegeben, aber den HAKEN oben vergessen!")
 
+            # --- FZ SCHWEIN ---
+            fzs_has_data = bool((hfm_fzs_temp_in.value or "").strip()) or \
+                           bool((hfm_fzs_lief_in.value or "").strip()) or \
+                           bool((hfm_fzs_produkt_in.value or "").strip()) or \
+                           ((hfm_fzs_charge_dd.value or "").strip() not in c_opts_s)
             if hfm_fzs_cb.value:
                 if not (hfm_fzs_temp_in.value or "").strip(): errors.append("- FZ Schwein: Temperatur")
                 if not (hfm_fzs_charge_dd.value or "").strip(): errors.append("- FZ Schwein: Chargennummer")
                 if not (hfm_fzs_mhd_tag_dd.value or "").strip(): errors.append("- FZ Schwein: MHD")
+            elif fzs_has_data:
+                errors.append("- FZ SCHWEIN: Du hast Daten eingegeben, aber den HAKEN oben vergessen!")
 
+            # --- FZ GEFLÜGEL ---
+            fzg_has_data = bool((hfm_fzg_temp_in.value or "").strip()) or \
+                           bool((hfm_fzg_lief_in.value or "").strip()) or \
+                           bool((hfm_fzg_produkt_in.value or "").strip()) or \
+                           ((hfm_fzg_charge_dd.value or "").strip() not in c_opts_g)
             if hfm_fzg_cb.value:
                 if not (hfm_fzg_temp_in.value or "").strip(): errors.append("- FZ Geflügel: Temperatur")
                 if not (hfm_fzg_charge_dd.value or "").strip(): errors.append("- FZ Geflügel: Chargennummer")
                 if not (hfm_fzg_mhd_tag_dd.value or "").strip(): errors.append("- FZ Geflügel: MHD")
+            elif fzg_has_data:
+                errors.append("- FZ GEFLÜGEL: Du hast Daten eingegeben, aber den HAKEN oben vergessen!")
 
+            # --- BIO HACKFLEISCH ---
+            bio_has_data = bool((hfm_bio_temp_in.value or "").strip()) or \
+                           bool((hfm_bio_lief_schwein_in.value or "").strip()) or \
+                           bool((hfm_bio_lief_rind_in.value or "").strip()) or \
+                           ((hfm_bio_charge_schwein_dd.value or "").strip() not in c_opts_s) or \
+                           ((hfm_bio_charge_rind_dd.value or "").strip() not in c_opts_r)
             if hfm_bio_cb.value:
                 if not (hfm_bio_temp_in.value or "").strip(): errors.append("- Bio Hackfleisch: Temperatur")
                 if not (hfm_bio_charge_schwein_dd.value or "").strip() and not (hfm_bio_charge_rind_dd.value or "").strip(): errors.append("- Bio Hackfleisch: Chargennummer")
                 if not (hfm_bio_mhd_s_tag_dd.value or "").strip() and not (hfm_bio_mhd_r_tag_dd.value or "").strip(): errors.append("- Bio Hackfleisch: MHD")
+            elif bio_has_data:
+                errors.append("- BIO HACK: Du hast Daten eingegeben, aber den HAKEN oben vergessen!")
             
             return errors
 
@@ -651,7 +688,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         def nur_speichern(e):
             errs = check_pflichtfelder()
             if errs:
-                fehler_text.value = "⚠️ BITTE FOLGENDE FELDER AUSFÜLLEN:\n" + "\n".join(errs)
+                fehler_text.value = "⚠️ BITTE FOLGENDE FELDER AUSFÜLLEN ODER PRÜFEN:\n" + "\n".join(errs)
                 fehler_text.visible = True
                 status_text.value = ""
                 page.update()
@@ -673,7 +710,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         def save_final(e):
             errs = check_pflichtfelder()
             if errs:
-                fehler_text.value = "⚠️ BITTE FOLGENDE FELDER AUSFÜLLEN:\n" + "\n".join(errs)
+                fehler_text.value = "⚠️ BITTE FOLGENDE FELDER AUSFÜLLEN ODER PRÜFEN:\n" + "\n".join(errs)
                 fehler_text.visible = True
                 status_text.value = ""
                 page.update()
