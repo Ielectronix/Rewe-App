@@ -164,10 +164,8 @@ def sammle_alle_daten(daten):
     w["tf_0006_00_ZS-1441"] = formatiere_temperatur(get_val("hfm_mett_temp"))
     w["dd_0006_00_ZS-001796"] = get_val("hfm_mett_bemerkung")
     
-    # HIER ist die ID, für die wir gleich durch die PDF-Struktur klettern
     m_mett = get_val("hfm_mett_mhd")
-    if m_mett.replace(".", "").strip(): 
-        w["tf_0006_00_ZS-001835"] = m_mett
+    if m_mett.replace(".", "").strip(): w["tf_0006_00_ZS-001835"] = m_mett
 
     # --- FZS Schwein (Seite 8) ---
     check("hfm_fzs_cb", "cb_0008_00")
@@ -184,8 +182,7 @@ def sammle_alle_daten(daten):
     w["dd_0008_00_ZS-001796"] = get_val("hfm_fzs_bemerkung")
     
     m_fzs = get_val("hfm_fzs_mhd")
-    if m_fzs.replace(".", "").strip(): 
-        w["tf_0008_00_ZS-001835"] = m_fzs
+    if m_fzs.replace(".", "").strip(): w["tf_0008_00_ZS-001835"] = m_fzs
 
     # --- FZG Geflügel (Seite 9) ---
     check("hfm_fzg_cb", "cb_0007_00")
@@ -202,8 +199,7 @@ def sammle_alle_daten(daten):
     w["dd_0007_00_ZS-001796"] = get_val("hfm_fzg_bemerkung")
     
     m_fzg = get_val("hfm_fzg_mhd")
-    if m_fzg.replace(".", "").strip(): 
-        w["tf_0007_00_ZS-001835"] = m_fzg
+    if m_fzg.replace(".", "").strip(): w["tf_0007_00_ZS-001835"] = m_fzg
 
     # --- ABKLATSCHPROBEN (Seite 10-14, 19-21, 22-23) ---
     def map_abklatsch(prefix, start_idx, num_items):
@@ -249,11 +245,14 @@ def sammle_alle_daten(daten):
     w["dd_0003_00_ZS-001796"] = get_val("se_abklatsch_bemerkung")
     map_abklatsch("0003", 1, 3)
 
-    # --- BIO HACKFLEISCH (Seite 24-25) ---
+    # --- BIO HACKFLEISCH (Seite 24-25 / PDF Seite 33) ---
     check("hfm_bio_cb", "cb_0005_00")
     w["tf_0005_00"] = "Biohackfleisch"
     w["dd_0005_00_ZS-001799"] = get_val("hfm_bio_entnahmeort", "Produktionsraum")
+    
+    # HIER IST DEIN PATIENT:
     w["cal_0005_00_ZS-001810"] = get_val("hfm_bio_herstelldatum")
+    
     w["tf_0005_00_ZS-1215"] = get_val("hfm_bio_inhalt", "jeweils ca. 200 g")
     w["dd_0005_00_ZS-001798"] = get_val("hfm_bio_verpackung", "steriler Probenbecher")
     
@@ -307,20 +306,20 @@ def erstelle_bericht(daten):
 
     mapping = sammle_alle_daten(daten)
     
-    # Textfelder offiziell und sauber ausfüllen (Dies deckt 99% ab!)
+    # 1. Normale Textfelder offiziell ausfüllen (Dies deckt die sauberen 99% ab)
     text_mapping = {k: str(v) for k, v in mapping.items() if not isinstance(v, bool)}
     for page in writer.pages:
         writer.update_page_form_field_values(page, text_mapping)
 
+        # 2. Die Baum-Kletter-Methode für Haken UND kaputte Textfelder!
         if "/Annots" in page:
             for annot_ref in page["/Annots"]:
                 annot = annot_ref.get_object()
                 
-                # --- HIER IST DIE MAGIE: WIR KLETTERN DEN BAUM HOCH! ---
+                # Wir klettern den Baum zum wahren Namen hoch
                 current_obj = annot
                 f_id = None
                 
-                # Wir suchen den WAHREN Namen des Feldes, auch wenn er beim "Elternteil" liegt
                 while current_obj:
                     if "/T" in current_obj:
                         f_id = clean_id(str(current_obj["/T"]).strip("()"))
@@ -333,7 +332,7 @@ def erstelle_bericht(daten):
                 if not f_id:
                     continue
 
-                # 1. Haken setzen (Booleans)
+                # --- HAKEN SETZEN ---
                 if f_id in mapping and isinstance(mapping[f_id], bool):
                     val = mapping[f_id]
                     if val:
@@ -347,14 +346,15 @@ def erstelle_bericht(daten):
                     else:
                         annot.update({NameObject("/V"): NameObject("/Off"), NameObject("/AS"): NameObject("/Off")})
 
-                # 2. DAS VERSTECKTE METT MHD FINDEN UND BEFÜLLEN
-                elif f_id == "tf_0006_00_ZS-001835":
-                    m_mett = daten.get("hfm_mett_mhd", "").strip()
-                    if m_mett and m_mett != "..":
-                        # Wir beschreiben sowohl die Box als auch das Eltern-Element!
-                        annot.update({NameObject("/V"): create_string_object(m_mett)})
+                # --- DIE ABSOLUTE TEXTFELD-PANZERBRECHER-METHODE ---
+                # Fängt ALLES ab, was die Methode oben übersehen hat (inklusive Mett MHD und Bio Herstelldatum!)
+                elif f_id in mapping and not isinstance(mapping[f_id], bool):
+                    val = str(mapping[f_id])
+                    if val and val != "..":
+                        # Wir beschreiben sowohl die Box selbst, als auch das kaputte Eltern-Element im Hintergrund!
+                        annot.update({NameObject("/V"): create_string_object(val)})
                         if "/Parent" in annot:
-                            annot["/Parent"].get_object().update({NameObject("/V"): create_string_object(m_mett)})
+                            annot["/Parent"].get_object().update({NameObject("/V"): create_string_object(val)})
 
     with open(ziel_pfad, "wb") as f: writer.write(f)
     print(f"✅ Perfekter Kombi-Bericht erstellt: {ziel_pfad}")
