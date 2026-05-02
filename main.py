@@ -27,11 +27,30 @@ def main(page: ft.Page):
         from pdf_generator import get_all_rewe_bases
         from formular import zeige_maske_ui
 
-        def nav_btn(text, on_click):
-            return ft.ElevatedButton(
-                text, on_click=on_click, bgcolor="#1a1a1a", color="white",
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=10),
-                expand=True
+        # FIX: Das smarte Menü (Neon immer an, Hintergrund grün wenn aktiv, immer exakt gleich breit!)
+        def nav_leiste(active_tab="touren"):
+            def make_btn(text, tab_id, on_click):
+                is_active = (active_tab == tab_id)
+                return ft.ElevatedButton(
+                    text, on_click=on_click,
+                    bgcolor="#004400" if is_active else "#1a1a1a",
+                    color="white",
+                    style=ft.ButtonStyle(
+                        shape=ft.RoundedRectangleBorder(radius=10),
+                        padding=10,
+                        side=ft.BorderSide(width=1.5, color="#4CAF50") # Dünner Neonschein immer da!
+                    ),
+                    expand=True # Zwingt alle 3 Buttons auf die exakt gleiche Breite
+                )
+            
+            return ft.Row(
+                alignment=ft.MainAxisAlignment.CENTER,
+                spacing=10,
+                controls=[
+                    make_btn("🚚 Touren", "touren", lambda e: zeige_dashboard()),
+                    make_btn("📤 Senden", "senden", lambda e: zeige_postausgang()),
+                    make_btn("🗄️ Archiv", "archiv", lambda e: zeige_archiv())
+                ]
             )
 
         def action_btn(text, on_click, farbe):
@@ -57,18 +76,6 @@ def main(page: ft.Page):
                 width=45, height=45
             )
 
-        # Sichere, gleichmäßige Reihe für das Menü
-        def nav_leiste():
-            return ft.Row(
-                alignment=ft.MainAxisAlignment.CENTER,
-                spacing=10,
-                controls=[
-                    nav_btn("🚚 Touren", lambda e: zeige_dashboard()),
-                    nav_btn("📤 Senden", lambda e: zeige_postausgang()),
-                    nav_btn("🗄️ Archiv", lambda e: zeige_archiv())
-                ]
-            )
-
         def zeige_startbildschirm():
             ansicht.controls.clear()
             v, z = lade_benutzer()
@@ -92,7 +99,7 @@ def main(page: ft.Page):
         def zeige_dashboard():
             ansicht.controls.clear()
             maerkte = lade_maerkte()
-            ansicht.controls.append(nav_leiste())
+            ansicht.controls.append(nav_leiste("touren")) # Markiert "Touren" als aktiv
             ansicht.controls.append(ft.Text("Meine heutigen Touren", size=20, weight="bold", color="white"))
             
             if not maerkte:
@@ -125,7 +132,7 @@ def main(page: ft.Page):
 
         def zeige_postausgang():
             ansicht.controls.clear()
-            ansicht.controls.append(nav_leiste())
+            ansicht.controls.append(nav_leiste("senden")) # Markiert "Senden" als aktiv
             ansicht.controls.append(ft.Text("Postausgang (Heute)", size=20, weight="bold", color="white"))
             
             heute_ordner = datetime.datetime.now().strftime('%Y-%m-%d')
@@ -181,7 +188,7 @@ def main(page: ft.Page):
 
         def zeige_archiv():
             ansicht.controls.clear()
-            ansicht.controls.append(nav_leiste())
+            ansicht.controls.append(nav_leiste("archiv")) # Markiert "Archiv" als aktiv
             ansicht.controls.append(ft.Text("Archiv (Letzte 7 Tage)", size=20, weight="bold", color="white"))
             bereinige_archiv()
             email_val = "registration-mibi.ber@tentamus.com"
