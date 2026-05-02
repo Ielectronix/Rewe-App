@@ -281,8 +281,10 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             content=ft.Column([
                 ft.Text("📋 Vorlagen-Verwaltung", weight="bold", color="white", size=16),
                 vorlagen_status,
-                ft.Row([vl_dd, ft.IconButton(ft.icons.FILE_DOWNLOAD, icon_color="#2196F3", on_click=lade_v, tooltip="Laden"), ft.IconButton(ft.icons.DELETE, icon_color="#F44336", on_click=del_v, tooltip="Löschen")]),
-                ft.Row([vl_name_in, ft.IconButton(ft.icons.SAVE, icon_color="#FF9800", on_click=save_v, tooltip="Speichern")])
+                # FIX: String "download" und "delete" statt kaputter Variable
+                ft.Row([vl_dd, ft.IconButton(icon="download", icon_color="#2196F3", on_click=lade_v, tooltip="Laden"), ft.IconButton(icon="delete", icon_color="#F44336", on_click=del_v, tooltip="Löschen")]),
+                # FIX: String "save" statt kaputter Variable
+                ft.Row([vl_name_in, ft.IconButton(icon="save", icon_color="#FF9800", on_click=save_v, tooltip="Speichern")])
             ])
         )
 
@@ -598,7 +600,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, None)
 
         def nur_speichern(e):
-            # FIX: ZUERST die alten Texte unsichtbar machen und UI updaten!
             fehler_text.visible = False
             fehler_text.value = ""
             status_text.value = ""
@@ -625,7 +626,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 status_text.value = "❌ Fehler"; status_text.color = "red"; zeige_fehler(ex)
         
         def save_final(e):
-            # FIX: ZUERST die alten Texte unsichtbar machen und UI updaten!
             fehler_text.visible = False
             fehler_text.value = ""
             status_text.value = ""
