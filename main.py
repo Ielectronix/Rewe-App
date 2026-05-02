@@ -15,6 +15,7 @@ def main(page: ft.Page):
     ansicht = ft.Column(spacing=20, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
     page.add(ft.SafeArea(ansicht))
 
+    # --- SHARE FUNKTION FÜR ANDROID/IOS ---
     share_obj = ft.Share() if page.platform in [ft.PagePlatform.ANDROID, ft.PagePlatform.IOS] else None
 
     def zeige_fehler(e):
@@ -27,28 +28,15 @@ def main(page: ft.Page):
         from pdf_generator import get_all_rewe_bases
         from formular import zeige_maske_ui
 
-        def nav_btn(text, on_click, is_active=False):
-            bg = "#004000" if is_active else "#222222"
-            txt_color = "#A3FFA3" if is_active else "white"
-            spread = 1 if is_active else 0
-            blur = 6 if is_active else 2
-            neon_shadow = ft.BoxShadow(spread_radius=spread, blur_radius=blur, color="#32CD32", offset=ft.Offset(0,0))
-            
-            btn = ft.ElevatedButton(
-                text, on_click=on_click, bgcolor=bg, color=txt_color,
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=10),
+        # Navigations-Buttons für das Hauptmenü
+        def nav_btn(text, on_click):
+            return ft.ElevatedButton(
+                text, on_click=on_click, bgcolor="#1a1a1a", color="white",
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=15), padding=10),
                 expand=True
             )
-            return ft.Container(
-                content=ft.Row([btn]),
-                col={"xs": 4},
-                padding=2,
-                shadow=neon_shadow,
-                border_radius=10,
-                margin=ft.margin.symmetric(vertical=5, horizontal=2)
-            )
 
-        # Großer Button für "Neue Tour" oder "Tag starten"
+        # Große Aktions-Buttons für Dashboard und Senden
         def action_btn(text, on_click, farbe):
             return ft.ElevatedButton(
                 content=ft.Text(text, size=14, weight="bold"),
@@ -60,35 +48,35 @@ def main(page: ft.Page):
                 )
             )
 
-        # NEU: Kleiner Button extra für Listen (Stift, Müll, Senden), um Platz zu sparen
-        def small_action_btn(text, on_click, farbe):
+        # NEU: Kleine, runde Icon-Buttons (für Bearbeiten und Löschen)
+        def small_btn(emoji, on_click, farbe):
             return ft.ElevatedButton(
-                content=ft.Text(text, size=12),
+                content=ft.Text(emoji, size=16),
                 on_click=on_click, bgcolor="#0b1a0b", color=farbe,
                 style=ft.ButtonStyle(
-                    shape=ft.RoundedRectangleBorder(radius=15), 
-                    padding=ft.padding.symmetric(horizontal=8, vertical=10), # Sehr schmales Padding!
-                    side=ft.BorderSide(width=1.5, color=farbe)
-                )
+                    shape=ft.CircleBorder(), # Macht den Button perfekt rund
+                    padding=0,               # Nimmt das wuchtige Polster weg
+                    side=ft.BorderSide(width=2, color=farbe)
+                ),
+                width=45, height=45        # Feste, kleine Größe
             )
 
-        def nav_leiste(active_tab="touren"):
+        # Die obere Menüleiste in einer sauberen 3er-Reihe
+        def nav_leiste():
             return ft.ResponsiveRow(
                 alignment=ft.MainAxisAlignment.CENTER,
                 controls=[
-                    nav_btn("🚚 Touren", lambda e: zeige_dashboard(), is_active=(active_tab=="touren")),
-                    nav_btn("📤 Senden", lambda e: zeige_postausgang(), is_active=(active_tab=="senden")),
-                    nav_btn("🗄️ Archiv", lambda e: zeige_archiv(), is_active=(active_tab=="archiv"))
+                    ft.Container(col={"xs": 4}, content=ft.Row([nav_btn("🚚 Touren", lambda e: zeige_dashboard())]), padding=2),
+                    ft.Container(col={"xs": 4}, content=ft.Row([nav_btn("📤 Senden", lambda e: zeige_postausgang())]), padding=2),
+                    ft.Container(col={"xs": 4}, content=ft.Row([nav_btn("🗄️ Archiv", lambda e: zeige_archiv())]), padding=2)
                 ]
             )
 
         def zeige_startbildschirm():
             ansicht.controls.clear()
             v, z = lade_benutzer()
-            
-            # HIER IST DER FIX: label_style=ft.TextStyle(color="white") macht den Info-Text gut lesbar
-            v_in = ft.TextField(label="Vorname", value=v, bgcolor="#003D00", color="yellow", border_color="white", label_style=ft.TextStyle(color="white"), width=300, text_align="center")
-            z_in = ft.TextField(label="Nachname", value=z, bgcolor="#003D00", color="yellow", border_color="white", label_style=ft.TextStyle(color="white"), width=300, text_align="center")
+            v_in = ft.TextField(label="Vorname", value=v, color="yellow", border_color="white", width=300, text_align="center")
+            z_in = ft.TextField(label="Nachname", value=z, color="yellow", border_color="white", width=300, text_align="center")
             
             def start_klick(e):
                 speichere_benutzer(v_in.value, z_in.value)
@@ -107,13 +95,14 @@ def main(page: ft.Page):
         def zeige_dashboard():
             ansicht.controls.clear()
             maerkte = lade_maerkte()
-            ansicht.controls.append(nav_leiste("touren"))
+            ansicht.controls.append(nav_leiste())
             ansicht.controls.append(ft.Text("Meine heutigen Touren", size=20, weight="bold", color="white"))
             
             if not maerkte:
                 ansicht.controls.append(ft.Text("Noch keine Touren angelegt.", color="white54"))
             else:
                 for index, markt in enumerate(maerkte):
+                    # Adresse anzeigen, Fallback auf Marktnummer
                     anzeige_text = markt.get("adresse")
                     if not anzeige_text or str(anzeige_text).strip() == "":
                         anzeige_text = markt.get("marktnummer") or "Unbenannte Tour"
@@ -123,13 +112,14 @@ def main(page: ft.Page):
                     
                     ansicht.controls.append(
                         ft.Container(
-                            bgcolor="#002200", padding=10, border_radius=15, width=380,
+                            bgcolor="#002200", padding=15, border_radius=15, width=380,
                             content=ft.Row([
-                                # HIER IST DER FIX: size=12 und kompaktere Anordnung
+                                # ANPASSUNG: Schriftgröße von 14 auf 12 reduziert
                                 ft.Text(f"{anzeige_text}", color="white", weight="bold", size=12, expand=True, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS),
-                                small_action_btn("✏️", lambda e, i=index: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, i), "#2196F3"),
-                                small_action_btn("🗑️", loesche_t, "#F44336")
-                            ], alignment="spaceBetween", spacing=5) # spacing=5 rückt alles enger zusammen
+                                # ANPASSUNG: Neue kleine Buttons nutzen
+                                small_btn("✏️", lambda e, i=index: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, i), "#2196F3"),
+                                small_btn("🗑️", loesche_t, "#F44336")
+                            ], alignment="spaceBetween")
                         )
                     )
             ansicht.controls.append(action_btn("➕ Neue Tour anlegen", lambda e: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, None), "#2196F3"))
@@ -141,7 +131,7 @@ def main(page: ft.Page):
 
         def zeige_postausgang():
             ansicht.controls.clear()
-            ansicht.controls.append(nav_leiste("senden"))
+            ansicht.controls.append(nav_leiste())
             ansicht.controls.append(ft.Text("Postausgang (Heute)", size=20, weight="bold", color="white"))
             
             heute_ordner = datetime.datetime.now().strftime('%Y-%m-%d')
@@ -169,12 +159,13 @@ def main(page: ft.Page):
 
                             ansicht.controls.append(
                                 ft.Container(
-                                    bgcolor="#002200", padding=10, border_radius=15, width=380,
+                                    bgcolor="#002200", padding=15, border_radius=15, width=380,
                                     content=ft.Row([
                                         ft.Text(f[:18], color="white", size=12, expand=True),
-                                        small_action_btn("📤 Senden", teilen_jetzt, "#2196F3"),
-                                        small_action_btn("🗑️", rm, "#F44336")
-                                    ], spacing=5)
+                                        action_btn("📤 Senden", teilen_jetzt, "#2196F3"),
+                                        # ANPASSUNG: Mülleimer hier auch klein machen
+                                        small_btn("🗑️", rm, "#F44336")
+                                    ])
                                 )
                             )
                 except: pass
@@ -197,7 +188,7 @@ def main(page: ft.Page):
 
         def zeige_archiv():
             ansicht.controls.clear()
-            ansicht.controls.append(nav_leiste("archiv"))
+            ansicht.controls.append(nav_leiste())
             ansicht.controls.append(ft.Text("Archiv (Letzte 7 Tage)", size=20, weight="bold", color="white"))
             bereinige_archiv()
             email_val = "registration-mibi.ber@tentamus.com"
@@ -230,11 +221,11 @@ def main(page: ft.Page):
 
                             ansicht.controls.append(
                                 ft.Container(
-                                    bgcolor="#002200", padding=10, border_radius=15, width=380, 
+                                    bgcolor="#002200", padding=15, border_radius=15, width=380, 
                                     content=ft.Row([
                                         ft.Text(f[:18], color="white", size=12, expand=True), 
-                                        small_action_btn("📤 Senden", teilen_archiv, "#2196F3")
-                                    ], spacing=5)
+                                        action_btn("📤 Senden", teilen_archiv, "#2196F3")
+                                    ])
                                 )
                             )
                         ansicht.controls.append(ft.Divider(color="white24"))
