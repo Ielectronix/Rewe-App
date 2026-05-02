@@ -15,16 +15,9 @@ def main(page: ft.Page):
     ansicht = ft.Column(spacing=20, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
     page.add(ft.SafeArea(ansicht))
 
-    # --- DER FIX FÜR DEN SHARE-BALKEN & DAS HANDY ---
-    # Das Modul wird vorab als Variable vorbereitet, aber NICHT beim PC ins Overlay geladen.
-    # Dadurch gibt es am PC keinen roten Balken, aber auf dem Handy existiert es später für den Button!
-    share_module = None
-    if page.platform in [ft.PagePlatform.ANDROID, ft.PagePlatform.IOS]:
-        try:
-            share_module = ft.Share()
-            page.overlay.append(share_module)
-        except:
-            pass
+    # --- ULTIMATIVER SHARE FIX ---
+    # Alles im Overlay wurde gelöscht, da es auf deinem Android den Fehler triggert.
+    share_obj = ft.Share() if page.platform in [ft.PagePlatform.ANDROID, ft.PagePlatform.IOS] else None
 
     def zeige_fehler(e):
         ansicht.controls.clear()
@@ -36,24 +29,20 @@ def main(page: ft.Page):
         from pdf_generator import get_all_rewe_bases
         from formular import zeige_maske_ui
 
-        # STIL: Navigation oben
         def nav_btn(text, on_click):
             return ft.ElevatedButton(
                 text, on_click=on_click, bgcolor="#1a1a1a", color="white",
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=20), padding=15)
             )
 
-        # STIL: DEIN PREMIUM DESIGN (Outline / Farbrand)
         def action_btn(text, on_click, farbe):
             return ft.ElevatedButton(
                 content=ft.Text(text, size=14, weight="bold"),
-                on_click=on_click, 
-                bgcolor="#0b1a0b", 
-                color=farbe,       
+                on_click=on_click, bgcolor="#0b1a0b", color=farbe,
                 style=ft.ButtonStyle(
                     shape=ft.RoundedRectangleBorder(radius=25), 
                     padding=ft.padding.symmetric(horizontal=20, vertical=15),
-                    side=ft.BorderSide(width=2, color=farbe) 
+                    side=ft.BorderSide(width=2, color=farbe)
                 )
             )
 
@@ -67,7 +56,6 @@ def main(page: ft.Page):
                 ]
             )
 
-        # --- DER REPARIERTE STARTBILDSCHIRM ---
         def zeige_startbildschirm():
             ansicht.controls.clear()
             v, z = lade_benutzer()
@@ -127,7 +115,6 @@ def main(page: ft.Page):
             heute_ordner = datetime.datetime.now().strftime('%Y-%m-%d')
             pdfs_gefunden = False
             such_ordner = []
-            
             for base in get_erweiterte_bases():
                 such_ordner.append(os.path.join(base, heute_ordner))
                 such_ordner.append(base)
@@ -140,16 +127,14 @@ def main(page: ft.Page):
                             pdfs_gefunden = True
                             pfad = os.path.join(ordner, f)
                             
-                            # --- DER TEILEN-KLICK (funktioniert auf dem Handy!) ---
+                            # Absolut Crash-Sicheres Teilen:
                             async def teilen_jetzt(e, p=pfad):
-                                if share_module:
-                                    try:
-                                        await share_module.share_files([ft.ShareFile.from_path(p)], text="REWE Bericht")
-                                    except Exception as ex:
-                                        print(f"Fehler beim Teilen: {ex}")
+                                if share_obj:
+                                    # Wenn Share geht (nur Handy), feuern wir es ab!
+                                    await share_obj.share_files([ft.ShareFile.from_path(p)], text="REWE Bericht")
                                 else:
-                                    print("PC: Share wird nicht unterstützt.")
-                                    
+                                    print("Share geht auf dem PC nicht.")
+
                             def rm(e, p=pfad):
                                 if os.path.exists(p): os.remove(p)
                                 zeige_postausgang()
@@ -221,10 +206,9 @@ def main(page: ft.Page):
             if not pdfs_gefunden: ansicht.controls.append(ft.Text("Keine Berichte im Archiv.", color="white54"))
             page.update()
 
-        # STARTET WIEDER KORREKT BEIM STARTBILDSCHIRM (Mit Namen eingeben)
         zeige_startbildschirm()
 
     except Exception as e: zeige_fehler(e)
 
 if __name__ == "__main__": 
-    ft.app(target=main, assets_dir="assets")
+    ft.app(target=main)
