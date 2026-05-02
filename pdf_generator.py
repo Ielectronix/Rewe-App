@@ -14,7 +14,7 @@ def formatiere_uhrzeit(wert):
 
 def formatiere_temperatur(wert):
     if not wert or str(wert).strip() == "": return ""
-    w = str(wert).strip().replace("°C", "").replace("°", "").strip().replace(".", ",")
+    w = str(wert).strip().replace("°C", "").replace("°", "").replace(" C", "").replace("C", "").strip().replace(".", ",")
     if not w.startswith("+") and not w.startswith("-"): w = f"+ {w}"
     return f"{w} °C"
 
@@ -46,221 +46,236 @@ def get_tages_ordner():
 
 def sammle_alle_daten(daten):
     w = {}
-    h_yes = NameObject('/Yes')
-    h_j = NameObject('/j')
+
+    def get_val(key, default=""):
+        v = daten.get(key)
+        if v is None or str(v).strip() == "": return str(default)
+        return str(v)
+
+    def check(key, pdf_id):
+        w[pdf_id] = bool(daten.get(key))
 
     # --- STAMMDATEN ---
-    w["cal_templateLaborderprobenahmeDatum"] = daten.get("datum", "")
-    w["tf_0000_00_ZS-1408"] = daten.get("marktnummer", "")
-    w["tf_0000_00_ZS-001870"] = daten.get("adresse", "") 
-    w["dd_0000_00_ZS-1566"] = daten.get("auftraggeber", "")
-    w["dd_0000_00_ZS-002314"] = daten.get("mitarbeiter_name", "")
-    w["dd_0000_00_ZS-002315"] = daten.get("typ_probenahme", "")
-    w["tf_0000_00_ZS-002000"] = daten.get("auftragsnummer", "")
-    w["dd_0000_00_ZS-001796"] = daten.get("bemerkung", "")
+    w["cal_templateLaborderprobenahmeDatum"] = get_val("datum")
+    w["tf_0000_00_ZS-1408"] = get_val("marktnummer")
+    w["tf_0000_00_ZS-001870"] = get_val("adresse") 
+    w["dd_0000_00_ZS-1566"] = get_val("auftraggeber", "03509 - REWE Hackfleischmonitoring")
+    w["dd_0000_00_ZS-002314"] = get_val("mitarbeiter_name")
+    w["dd_0000_00_ZS-002315"] = get_val("typ_probenahme", "Standard")
+    w["tf_0000_00_ZS-002000"] = get_val("auftragsnummer")
+    w["dd_0000_00_ZS-001796"] = get_val("bemerkung")
 
-    # --- TRINKWASSER KALT (Seite 2, 3, 4) ---
-    if daten.get("tw_kalt"): w["cb_0001_00"] = h_yes
-    # Werte werden IMMER eingetragen, auch wenn Haken oben fehlt!
-    w["tf_0001_00_probenahmeUhrzeit"] = formatiere_uhrzeit(daten.get("tw_zeit", ""))
-    w["tf_0001_00_ZS-1441"] = formatiere_temperatur(daten.get("tw_temp", ""))
-    w["tf_0001_00_PE_ZS-1514"] = formatiere_temperatur(daten.get("tw_tempkonst", ""))
-    w["dd_0001_00_PE_ZS-002255"] = daten.get("tw_desinf", "")
-    w["dd_0001_00_PE_ZS-002318"] = daten.get("tw_zapf", "")
+    # --- TRINKWASSER (Seite 2, 3, 4) ---
+    check("tw_kalt", "cb_0001_00")
+    w["tf_0001_00"] = "Trinkwasser kalt"
+    w["tf_0001_00_probenahmeUhrzeit"] = formatiere_uhrzeit(get_val("tw_zeit"))
+    w["tf_0001_00_ZS-1441"] = formatiere_temperatur(get_val("tw_temp"))
+    w["tf_0001_00_PE_ZS-1514"] = formatiere_temperatur(get_val("tw_tempkonst"))
+    w["dd_0001_00_PE_ZS-002255"] = get_val("tw_desinf", "Sprühdesinfektion")
+    w["dd_0001_00_PE_ZS-002318"] = get_val("tw_zapf", "Spülbecken")
     
-    if daten.get("tw_cb_pn"): w["cb_0001_00_PE_ZS-002304_PN-Hahn"] = h_yes
-    if daten.get("tw_cb_ein"): w["cb_0001_00_PE_ZS-002304_ Einhebel-Mischarmatur"] = h_yes
-    if daten.get("tw_cb_zwei"): w["cb_0001_00_PE_ZS-002304_ Zweigriff-Mischarmatur"] = h_yes
-    if daten.get("tw_cb_eingriff"): w["cb_0001_00_PE_ZS-002304_ Eingriff-Armmatur"] = h_yes
-    if daten.get("tw_cb_sensor"): w["cb_0001_00_PE_ZS-002304_ Sensor-Armatur"] = h_yes
-    if daten.get("tw_cb_eckventil"): w["cb_0001_00_PE_ZS-002304_ Eckventil"] = h_yes
-    if daten.get("tw_cb_knie"): w["cb_0001_00_PE_ZS-002304_ Armatur mit Kniebestätigung"] = h_yes
-    w["cb_0001_00_PE_ZS-002304_Sonstiges"] = daten.get("tw_zapf_sonstiges_text", "")
+    check("tw_cb_pn", "cb_0001_00_PE_ZS-002304_PN-Hahn")
+    check("tw_cb_ein", "cb_0001_00_PE_ZS-002304_ Einhebel-Mischarmatur")
+    check("tw_cb_zwei", "cb_0001_00_PE_ZS-002304_ Zweigriff-Mischarmatur")
+    check("tw_cb_ein_g", "cb_0001_00_PE_ZS-002304_ Eingriff-Armmatur")
+    check("tw_cb_sensor", "cb_0001_00_PE_ZS-002304_ Sensor-Armatur")
+    check("tw_cb_eck", "cb_0001_00_PE_ZS-002304_ Eckventil")
+    check("tw_cb_knie", "cb_0001_00_PE_ZS-002304_ Armatur mit Kniebestätigung")
+    w["cb_0001_00_PE_ZS-002304_Sonstiges"] = get_val("tw_zapf_sonst")
 
-    # Auffälligkeiten & Sensorik (Seite 3)
-    w["dd_0001_00_PE_ZS-001948"] = daten.get("tw_inaktivierung", "")
-    w["dd_0001_00_PE_ZS-002305_Farbe"] = daten.get("tw_farbe", "")
-    w["dd_0001_00_PE_ZS-002305_ Trübung"] = daten.get("tw_truebung", "")
-    w["dd_0001_00_PE_ZS-002305_ Bodensatz"] = daten.get("tw_bodensatz", "")
-    w["dd_0001_00_PE_ZS-002305_ Geruch"] = daten.get("tw_geruch", "")
+    w["dd_0001_00_PE_ZS-001948"] = get_val("tw_inaktiv", "Na-Thiosulfat")
+    w["dd_0001_00_PE_ZS-002305_Farbe"] = get_val("tw_kurz1", "1 - nicht wahrnehmbar")
+    w["dd_0001_00_PE_ZS-002305_ Trübung"] = get_val("tw_kurz2", "1 - nicht wahrnehmbar")
+    w["dd_0001_00_PE_ZS-002305_ Bodensatz"] = get_val("tw_kurz3", "1 - nicht wahrnehmbar")
+    w["dd_0001_00_PE_ZS-002305_ Geruch"] = get_val("tw_kurz4", "1 - nicht wahrnehmbar")
     
-    if daten.get("tw_auff_ja"): w["cb_0001_00_PE_ZS-1268_ja"] = h_yes
-    if daten.get("tw_auff_nein"): w["cb_0001_00_PE_ZS-1268_ nein"] = h_yes
-    if daten.get("tw_auff_perlator"): w["cb_0001_00_PE_ZS-1268_ Perlator nicht entfernbar"] = h_yes
-    if daten.get("tw_auff_kalk"): w["cb_0001_00_PE_ZS-1268_ Starke Verkalkung"] = h_yes
-    if daten.get("tw_auff_verbrueh"): w["cb_0001_00_PE_ZS-1268_ Armatur mit Verbrühschutz"] = h_yes
-    if daten.get("tw_auff_durchlauf"): w["cb_0001_00_PE_ZS-1268_ Durchlauferhitzer"] = h_yes
-    if daten.get("tw_auff_unterbau"): w["cb_0001_00_PE_ZS-1268_ Unterbauspeicher [L]"] = h_yes
-    if daten.get("tw_auff_eckventil"): w["cb_0001_00_PE_ZS-1268_ Eckventil warm/kalt geschlossen"] = h_yes
-    if daten.get("tw_auff_unmoeglich"): w["cb_0001_00_PE_ZS-1268_ nicht möglich"] = h_yes
-    if daten.get("tw_auff_dusche"): w["cb_0001_00_PE_ZS-1268_ Entnahme aus der Dusche"] = h_yes
-    if daten.get("tw_auff_handbrause"): w["cb_0001_00_PE_ZS-1268_ Handbrause"] = h_yes
-    
-    # FIX FÜR DAS SONSTIGES-FELD: Checkbox hat Leerzeichen, Textfeld nicht!
-    if daten.get("tw_auff_sonstiges"): w["cb_0001_00_PE_ZS-1268_ Sonstiges"] = h_yes
-    w["cb_0001_00_PE_ZS-1268_Sonstiges"] = daten.get("tw_auff_sonst_text", "")
+    check("tw_auff_ja", "cb_0001_00_PE_ZS-1268_ja")
+    check("tw_auff_nein", "cb_0001_00_PE_ZS-1268_ nein")
+    check("tw_auff_perlator", "cb_0001_00_PE_ZS-1268_ Perlator nicht entfernbar")
+    check("tw_auff_kalk", "cb_0001_00_PE_ZS-1268_ Starke Verkalkung")
+    check("tw_auff_verbrueh", "cb_0001_00_PE_ZS-1268_ Armatur mit Verbrühschutz")
+    check("tw_auff_durchlauf", "cb_0001_00_PE_ZS-1268_ Durchlauferhitzer")
+    check("tw_auff_unterbau", "cb_0001_00_PE_ZS-1268_ Unterbauspeicher [L]")
+    check("tw_auff_eckventil", "cb_0001_00_PE_ZS-1268_ Eckventil warm/kalt geschlossen")
+    check("tw_auff_unmoeglich", "cb_0001_00_PE_ZS-1268_ nicht möglich")
+    check("tw_auff_dusche", "cb_0001_00_PE_ZS-1268_ Entnahme aus der Dusche")
+    check("tw_auff_handbrause", "cb_0001_00_PE_ZS-1268_ Handbrause")
+    check("tw_auff_sonstiges", "cb_0001_00_PE_ZS-1268_ Sonstiges")
+    w["cb_0001_00_PE_ZS-1268_Sonstiges"] = get_val("tw_auff_sonst_text")
 
-    w["dd_0001_00_PE_ZS-002317"] = daten.get("tw_zweck", "")
-    w["tf_0001_00_ZS-1215"] = daten.get("tw_inhalt", "")
-    w["dd_0001_00_ZS-001798"] = daten.get("tw_verpackung", "")
-    w["dd_0001_00_ZS-001799"] = daten.get("tw_entnahmeort", "")
-    w["dd_0001_00_ZS-001796"] = daten.get("tw_bemerkung_2", "")
+    w["dd_0001_00_PE_ZS-002317"] = get_val("tw_zweck", "DIN EN ISO 19458 Zweck B")
+    w["tf_0001_00_ZS-1215"] = get_val("tw_inhalt", "ca. 500 ml")
+    w["dd_0001_00_ZS-001798"] = get_val("tw_verpackung", "500ml Kunststoff-Flasche mit Natriumthiosulfat")
+    w["dd_0001_00_ZS-001799"] = get_val("tw_entnahmeort", "Metzgerei")
+    w["dd_0001_00_ZS-001796"] = get_val("tw_bemerkung_2")
 
     # --- SCHERBENEIS (Seite 5) ---
-    if daten.get("se_kalt"): w["cb_0002_00"] = h_yes
-    w["tf_0002_00_probenahmeUhrzeit"] = formatiere_uhrzeit(daten.get("se_zeit", ""))
-    w["tf_0002_00_ZS-1441"] = formatiere_temperatur(daten.get("se_temp", ""))
-    w["dd_0002_00_PE_ZS-002319"] = daten.get("se_zapf", "")
-    if daten.get("se_cb_eiswanne"): w["cb_0002_00_PE_ZS-002304_Eiswanne"] = h_yes
-    if daten.get("se_cb_fallprobe"): w["cb_0002_00_PE_ZS-002304_ Fallprobe"] = h_yes
-    w["cb_0002_00_PE_ZS-002304_Sonstiges"] = daten.get("se_zapf_sonstiges_text", "")
-    w["dd_0002_00_PE_ZS-002255"] = daten.get("se_desinf", "")
-    if daten.get("se_cb_ozon"): w["cb_0002_00_PE_ZS-1268_Ozonsterilisator"] = h_yes
-    w["cb_0002_00_PE_ZS-1268_Sonstiges"] = daten.get("se_sonstiges_text", "")
-    w["tf_0002_00_ZS-1215"] = daten.get("se_inhalt", "")
-    w["dd_0002_00_ZS-001798"] = daten.get("se_verpackung", "")
-    w["dd_0002_00_ZS-001799"] = daten.get("se_entnahmeort", "")
-    w["dd_0002_00_ZS-001796"] = daten.get("se_bemerkung", "")
+    check("se_kalt", "cb_0002_00")
+    w["tf_0002_00"] = "Scherbeneis Eigenkontrolle"
+    w["tf_0002_00_probenahmeUhrzeit"] = formatiere_uhrzeit(get_val("se_zeit"))
+    w["dd_0002_00_PE_ZS-002319"] = get_val("se_zapf", "Eismaschine")
+    check("se_cb_eiswanne", "cb_0002_00_PE_ZS-002304_Eiswanne")
+    check("se_cb_fallprobe", "cb_0002_00_PE_ZS-002304_ Fallprobe")
+    w["cb_0002_00_PE_ZS-002304_Sonstiges"] = get_val("se_tech_sonst")
+    w["dd_0002_00_PE_ZS-002255"] = get_val("se_desinf", "ohne Desinfektion")
+    check("se_cb_ozon", "cb_0002_00_PE_ZS-1268_Ozonsterilisator")
+    w["cb_0002_00_PE_ZS-1268_Sonstiges"] = get_val("se_auff_sonst")
+    w["tf_0002_00_ZS-1215"] = get_val("se_inhalt", "ca. 1000ml")
+    w["dd_0002_00_ZS-001798"] = get_val("se_verpackung", "steriler Probenbeutel")
+    w["dd_0002_00_ZS-001799"] = get_val("se_entnahmeort", "Fischabteilung-Eismaschine")
+    w["tf_0002_00_ZS-1441"] = formatiere_temperatur(get_val("se_temp"))
+    w["dd_0002_00_ZS-001796"] = get_val("se_bemerkung")
 
     # --- HACKFLEISCH (Seite 6) ---
-    if daten.get("hfm_hack_cb"): w["cb_0004_00"] = h_yes
-    w["dd_0004_00_ZS-001799"] = daten.get("hfm_hack_entnahmeort", "")
-    w["cal_0004_00_ZS-001810"] = daten.get("hfm_hack_herstelldatum", "")
-    w["tf_0004_00_ZS-1215"] = daten.get("hfm_hack_inhalt", "")
-    w["dd_0004_00_ZS-001798"] = daten.get("hfm_hack_verpackung", "")
-    w["tf_0004_00_ZS-1441"] = formatiere_temperatur(daten.get("hfm_hack_temp", ""))
-    w["dd_0004_00_ZS-001796"] = daten.get("hfm_hack_bemerkung", "")
+    check("hfm_hack_cb", "cb_0004_00")
+    w["tf_0004_00"] = "Hackfleisch gemischt"
+    w["dd_0004_00_ZS-001799"] = get_val("hfm_hack_entnahmeort", "Kühlraum")
+    w["cal_0004_00_ZS-001810"] = get_val("hfm_hack_herstelldatum")
+    w["tf_0004_00_ZS-1215"] = get_val("hfm_hack_inhalt", "jeweils ca. 200 g")
+    w["dd_0004_00_ZS-001798"] = get_val("hfm_hack_verpackung", "steriler Probenbeutel")
     
-    l_r = daten.get("hfm_hack_lief_rind", "").strip()
-    if l_r: w["tf_0004_00_ZS-1209_Rindfleisch: XXX"] = f"Rindfleisch: {l_r}"
-    c_r = daten.get("hfm_hack_charge_rind", "").strip()
-    if c_r: w["tf_0004_00_ZS-002081_Rindfleisch: XXX"] = f"Rindfleisch: {c_r}"
-    l_s = daten.get("hfm_hack_lief_schwein", "").strip()
+    l_s = get_val("hfm_hack_lief_schwein")
     if l_s: w["tf_0004_00_ZS-1209_Schweinefleisch: XXX"] = f"Schweinefleisch: {l_s}"
-    c_s = daten.get("hfm_hack_charge_schwein", "").strip()
-    if c_s: w["tf_0004_00_ZS-002081_Schweinefleisch: XXX"] = f"Schweinefleisch: {c_s}"
+    l_r = get_val("hfm_hack_lief_rind")
+    if l_r: w["tf_0004_00_ZS-1209_Rindfleisch: XXX"] = f"Rindfleisch: {l_r}"
     
-    # MHD Daten jetzt IMMER auswerten
-    m_r = daten.get("hfm_hack_mhd_rind", "").strip()
-    if m_r and m_r != "..": w["tf_0004_00_ZS-001835_Rindfleisch: XXX"] = f"Rindfleisch: {m_r}"
-    m_s = daten.get("hfm_hack_mhd_schwein", "").strip()
-    if m_s and m_s != "..": w["tf_0004_00_ZS-001835_Schweinefleisch: XXX"] = f"Schweinefleisch: {m_s}"
+    m_r = get_val("hfm_hack_mhd_rind")
+    if m_r.replace(".", "").strip(): w["tf_0004_00_ZS-001835_Rindfleisch: XXX"] = f"Rindfleisch: {m_r}"
+    m_s = get_val("hfm_hack_mhd_schwein")
+    if m_s.replace(".", "").strip(): w["tf_0004_00_ZS-001835_Schweinefleisch: XXX"] = f"Schweinefleisch: {m_s}"
+    
+    c_s = get_val("hfm_hack_charge_schwein")
+    if c_s: w["tf_0004_00_ZS-002081_Schweinefleisch: XXX"] = f"Schweinefleisch: {c_s}"
+    c_r = get_val("hfm_hack_charge_rind")
+    if c_r: w["tf_0004_00_ZS-002081_Rindfleisch: XXX"] = f"Rindfleisch: {c_r}"
+    
+    w["tf_0004_00_ZS-1441"] = formatiere_temperatur(get_val("hfm_hack_temp"))
+    w["dd_0004_00_ZS-001796"] = get_val("hfm_hack_bemerkung")
 
     # --- METT (Seite 7) ---
-    if daten.get("hfm_mett_cb"): w["cb_0006_00"] = h_yes
-    w["dd_0006_00_ZS-001799"] = daten.get("hfm_mett_entnahmeort", "")
-    w["cal_0006_00_ZS-001810"] = daten.get("hfm_mett_herstelldatum", "")
-    w["tf_0006_00_ZS-1215"] = daten.get("hfm_mett_inhalt", "")
-    w["dd_0006_00_ZS-001798"] = daten.get("hfm_mett_verpackung", "")
-    w["tf_0006_00_ZS-1209"] = daten.get("hfm_mett_lief", "")
-    w["tf_0006_00_ZS-002081"] = daten.get("hfm_mett_charge", "")
-    w["tf_0006_00_ZS-1441"] = formatiere_temperatur(daten.get("hfm_mett_temp", ""))
-    w["dd_0006_00_ZS-001796"] = daten.get("hfm_mett_bemerkung", "")
-    m_mett = daten.get("hfm_mett_mhd", "").strip()
-    if m_mett and m_mett != "..": w["tf_0006_00_ZS-001835"] = m_mett
+    check("hfm_mett_cb", "cb_0006_00")
+    w["tf_0006_00"] = "gewürztes Schweinemett"
+    w["dd_0006_00_ZS-001799"] = get_val("hfm_mett_entnahmeort", "Kühlraum")
+    w["cal_0006_00_ZS-001810"] = get_val("hfm_mett_herstelldatum")
+    w["tf_0006_00_ZS-1215"] = get_val("hfm_mett_inhalt", "ca. 200 g")
+    w["dd_0006_00_ZS-001798"] = get_val("hfm_mett_verpackung", "steriler Probenbeutel")
+    w["tf_0006_00_ZS-1209"] = get_val("hfm_mett_lief")
+    w["tf_0006_00_ZS-002081"] = get_val("hfm_mett_charge")
+    w["tf_0006_00_ZS-1441"] = formatiere_temperatur(get_val("hfm_mett_temp"))
+    w["dd_0006_00_ZS-001796"] = get_val("hfm_mett_bemerkung")
+    
+    # HIER ist die ID, für die wir gleich durch die PDF-Struktur klettern
+    m_mett = get_val("hfm_mett_mhd")
+    if m_mett.replace(".", "").strip(): 
+        w["tf_0006_00_ZS-001835"] = m_mett
 
     # --- FZS Schwein (Seite 8) ---
-    if daten.get("hfm_fzs_cb"): w["cb_0008_00"] = h_yes
-    p, m = str(daten.get("hfm_fzs_produkt", "")).strip(), str(daten.get("hfm_fzs_marinade", "")).strip()
+    check("hfm_fzs_cb", "cb_0008_00")
+    w["tf_0008_00"] = "Fleischzubereitung Schwein"
+    p, m = get_val("hfm_fzs_produkt"), get_val("hfm_fzs_marinade")
     w['tf_0008_00_ Produkt "Marinade"'] = f'{p} "{m}"' if p and m else p + m
-    w["dd_0008_00_ZS-001799"] = daten.get("hfm_fzs_entnahmeort", "")
-    w["cal_0008_00_ZS-001810"] = daten.get("hfm_fzs_herstelldatum", "")
-    w["tf_0008_00_ZS-1215"] = daten.get("hfm_fzs_inhalt", "")
-    w["dd_0008_00_ZS-001798"] = daten.get("hfm_fzs_verpackung", "")
-    w["tf_0008_00_ZS-1209"] = daten.get("hfm_fzs_lief", "")
-    w["tf_0008_00_ZS-002081"] = daten.get("hfm_fzs_charge", "")
-    w["tf_0008_00_ZS-1441"] = formatiere_temperatur(daten.get("hfm_fzs_temp", ""))
-    w["dd_0008_00_ZS-001796"] = daten.get("hfm_fzs_bemerkung", "")
-    m_fzs = daten.get("hfm_fzs_mhd", "").strip()
-    if m_fzs and m_fzs != "..": w["tf_0008_00_ZS-001835"] = m_fzs
+    w["dd_0008_00_ZS-001799"] = get_val("hfm_fzs_entnahmeort", "Kühlraum")
+    w["cal_0008_00_ZS-001810"] = get_val("hfm_fzs_herstelldatum")
+    w["tf_0008_00_ZS-1215"] = get_val("hfm_fzs_inhalt", "ca. 200 g")
+    w["dd_0008_00_ZS-001798"] = get_val("hfm_fzs_verpackung", "steriler Probenbeutel")
+    w["tf_0008_00_ZS-1209"] = get_val("hfm_fzs_lief")
+    w["tf_0008_00_ZS-002081"] = get_val("hfm_fzs_charge")
+    w["tf_0008_00_ZS-1441"] = formatiere_temperatur(get_val("hfm_fzs_temp"))
+    w["dd_0008_00_ZS-001796"] = get_val("hfm_fzs_bemerkung")
+    
+    m_fzs = get_val("hfm_fzs_mhd")
+    if m_fzs.replace(".", "").strip(): 
+        w["tf_0008_00_ZS-001835"] = m_fzs
 
     # --- FZG Geflügel (Seite 9) ---
-    if daten.get("hfm_fzg_cb"): w["cb_0007_00"] = h_yes
-    p, m = str(daten.get("hfm_fzg_produkt", "")).strip(), str(daten.get("hfm_fzg_marinade", "")).strip()
+    check("hfm_fzg_cb", "cb_0007_00")
+    w["tf_0007_00"] = "Fleischzubereitung Geflügel"
+    p, m = get_val("hfm_fzg_produkt"), get_val("hfm_fzg_marinade")
     w['tf_0007_00_ Produkt "Marinade"'] = f'{p} "{m}"' if p and m else p + m
-    w["dd_0007_00_ZS-001799"] = daten.get("hfm_fzg_entnahmeort", "")
-    w["cal_0007_00_ZS-001810"] = daten.get("hfm_fzg_herstelldatum", "")
-    w["tf_0007_00_ZS-1215"] = daten.get("hfm_fzg_inhalt", "")
-    w["dd_0007_00_ZS-001798"] = daten.get("hfm_fzg_verpackung", "")
-    w["tf_0007_00_ZS-1209"] = daten.get("hfm_fzg_lief", "")
-    w["tf_0007_00_ZS-002081"] = daten.get("hfm_fzg_charge", "")
-    w["tf_0007_00_ZS-1441"] = formatiere_temperatur(daten.get("hfm_fzg_temp", ""))
-    w["dd_0007_00_ZS-001796"] = daten.get("hfm_fzg_bemerkung", "")
-    m_fzg = daten.get("hfm_fzg_mhd", "").strip()
-    if m_fzg and m_fzg != "..": w["tf_0007_00_ZS-001835"] = m_fzg
+    w["dd_0007_00_ZS-001799"] = get_val("hfm_fzg_entnahmeort", "Kühlraum")
+    w["cal_0007_00_ZS-001810"] = get_val("hfm_fzg_herstelldatum")
+    w["tf_0007_00_ZS-1215"] = get_val("hfm_fzg_inhalt", "ca. 200 g")
+    w["dd_0007_00_ZS-001798"] = get_val("hfm_fzg_verpackung", "steriler Probenbeutel")
+    w["tf_0007_00_ZS-1209"] = get_val("hfm_fzg_lief")
+    w["tf_0007_00_ZS-002081"] = get_val("hfm_fzg_charge")
+    w["tf_0007_00_ZS-1441"] = formatiere_temperatur(get_val("hfm_fzg_temp"))
+    w["dd_0007_00_ZS-001796"] = get_val("hfm_fzg_bemerkung")
+    
+    m_fzg = get_val("hfm_fzg_mhd")
+    if m_fzg.replace(".", "").strip(): 
+        w["tf_0007_00_ZS-001835"] = m_fzg
 
-    # --- ABKLATSCH HFM (Seite 10-14) ---
+    # --- ABKLATSCHPROBEN (Seite 10-14, 19-21, 22-23) ---
     def map_abklatsch(prefix, start_idx, num_items):
         for i in range(1, num_items + 1):
-            pdf_idx = f"{start_idx + i - 1:02d}"
-            app_idx = str(i)
-            status = daten.get(f"{prefix}_status_{app_idx}", "")
-            objekt = daten.get(f"{prefix}_objekt_{app_idx}", "")
-            ort = daten.get(f"{prefix}_ort_{app_idx}", "")
-            if status: w[f"dd_{prefix}_{pdf_idx}_ZS-001880"] = status
-            if objekt: w[f"dd_{prefix}_{pdf_idx}_ZS-1419"] = objekt
-            if ort: w[f"dd_{prefix}_{pdf_idx}_ZS-001792"] = ort
-            if daten.get(f"{prefix}_abklatsch_{app_idx}"): w[f"cb_{prefix}_{pdf_idx}_ZS-002294"] = h_j
-            if daten.get(f"{prefix}_tupfer_{app_idx}"): w[f"cb_{prefix}_{pdf_idx}_ZS-002295"] = h_yes
+            pdf_idx = f"{start_idx + i - 1:02d}" 
+            app_idx = f"{i:02d}" 
+            
+            w[f"dd_{prefix}_{pdf_idx}_ZS-001880"] = get_val(f"{prefix}_status_{app_idx}", "R+D")
+            obj = get_val(f"{prefix}_objekt_{app_idx}")
+            if obj: w[f"dd_{prefix}_{pdf_idx}_ZS-1419"] = obj
+            w[f"dd_{prefix}_{pdf_idx}_ZS-001792"] = get_val(f"{prefix}_ort_{app_idx}")
+            
+            check(f"{prefix}_abklatsch_{app_idx}", f"cb_{prefix}_{pdf_idx}_ZS-002294")
+            check(f"{prefix}_tupfer_{app_idx}", f"cb_{prefix}_{pdf_idx}_ZS-002295")
 
-    if daten.get("hfm_abklatsch_cb"): w["cb_0010_00"] = h_yes
-    w["dd_0010_00_ZS-001796"] = daten.get("hfm_abklatsch_bemerkung", "")
+    check("hfm_abklatsch_cb", "cb_0010_00")
+    w["tf_0010_00"] = "Abklatschproben HFM"
+    w["dd_0010_00_ZS-001796"] = get_val("hfm_abklatsch_bemerkung")
     map_abklatsch("0010", 1, 10)
 
-    # --- OBST/GEMÜSE (Seite 15-18) ---
-    if daten.get("og_cb"): w["cb_0009_00"] = h_yes
+    # --- CONVENIENCE (Seite 15-18) ---
+    check("og_cb", "cb_0009_00")
+    w["tf_0009_00"] = "Obst-/Gemüse Convenience"
     for i in range(1, 6):
         idx = f"{i:02d}" 
-        val = daten.get(f"og_name_{idx}", "")
+        val = get_val(f"og_name_{idx}")
         if val: w[f"tf_0009_00_ Teilprobe {i}:"] = f"Teilprobe {i}:{val}"
-        w[f"dd_0009_{idx}_ZS-001799"] = daten.get(f"og_ort_{idx}", "")
-        w[f"cal_0009_{idx}_ZS-001810"] = daten.get(f"og_herst_{idx}", "")
-        w[f"tf_0009_{idx}_ZS-1527"] = daten.get(f"og_verb_{idx}", "")
-        w[f"tf_0009_{idx}_ZS-1215"] = daten.get(f"og_inhalt_{idx}", "")
-        w[f"dd_0009_{idx}_ZS-001798"] = daten.get(f"og_verp_{idx}", "")
-        w[f"tf_0009_{idx}_ZS-1441"] = formatiere_temperatur(daten.get(f"og_temp_{idx}", ""))
+        w[f"dd_0009_{idx}_ZS-001799"] = get_val(f"og_ort_{idx}")
+        w[f"cal_0009_{idx}_ZS-001810"] = get_val(f"og_herst_{idx}")
+        w[f"tf_0009_{idx}_ZS-1527"] = get_val(f"og_verb_{idx}")
+        w[f"tf_0009_{idx}_ZS-1215"] = get_val(f"og_inhalt_{idx}")
+        w[f"dd_0009_{idx}_ZS-001798"] = get_val(f"og_verp_{idx}")
+        w[f"tf_0009_{idx}_ZS-1441"] = formatiere_temperatur(get_val(f"og_temp_{idx}"))
 
-    # --- ABKLATSCH OBST/GEMÜSE (Seite 19-21) ---
-    if daten.get("og_abklatsch_cb"): w["cb_0011_00"] = h_yes
-    w["dd_0011_00_ZS-001796"] = daten.get("og_abklatsch_bemerkung_1", "")
-    w["Anmerkung"] = daten.get("og_abklatsch_bemerkung_2", "")
+    check("og_abklatsch_cb", "cb_0011_00")
+    w["tf_0011_00"] = "Obst-Gemüse Abklatschproben"
+    w["dd_0011_00_ZS-001796"] = get_val("og_abklatsch_bemerkung_1")
+    w["Anmerkung"] = get_val("og_abklatsch_bemerkung_2")
     map_abklatsch("0011", 1, 5)
 
-    # --- ABKLATSCH SCHERBENEIS (Seite 22-23) ---
-    if daten.get("se_abklatsch_cb"): w["cb_0003_00"] = h_yes
-    w["dd_0003_00_ZS-001796"] = daten.get("se_abklatsch_bemerkung", "")
+    check("se_abklatsch_cb", "cb_0003_00")
+    w["tf_0003_00"] = "Abklatschproben Scherbeneismaschine"
+    w["dd_0003_00_ZS-001796"] = get_val("se_abklatsch_bemerkung")
     map_abklatsch("0003", 1, 3)
 
     # --- BIO HACKFLEISCH (Seite 24-25) ---
-    if daten.get("hfm_bio_cb"): w["cb_0005_00"] = h_yes
-    w["dd_0005_00_ZS-001799"] = daten.get("hfm_bio_entnahmeort", "")
+    check("hfm_bio_cb", "cb_0005_00")
+    w["tf_0005_00"] = "Biohackfleisch"
+    w["dd_0005_00_ZS-001799"] = get_val("hfm_bio_entnahmeort", "Produktionsraum")
+    w["cal_0005_00_ZS-001810"] = get_val("hfm_bio_herstelldatum")
+    w["tf_0005_00_ZS-1215"] = get_val("hfm_bio_inhalt", "jeweils ca. 200 g")
+    w["dd_0005_00_ZS-001798"] = get_val("hfm_bio_verpackung", "steriler Probenbecher")
     
-    # HIER FEHLTE DAS DATUM:
-    w["cal_0005_00_ZS-001810"] = daten.get("hfm_bio_herstelldatum", "")
+    l_s_bio = get_val("hfm_bio_lief_schwein")
+    if l_s_bio: w["tf_0005_00_ZS-1209_Schweinefleisch: XXX"] = f"Schweinefleisch: {l_s_bio}"
+    c_s_bio = get_val("hfm_bio_charge_schwein")
+    if c_s_bio: w["tf_0005_00_ZS-002081_Schweinefleisch: XXX"] = f"Schweinefleisch: {c_s_bio}"
     
-    w["tf_0005_00_ZS-1215"] = daten.get("hfm_bio_inhalt", "")
-    w["dd_0005_00_ZS-001798"] = daten.get("hfm_bio_verpackung", "")
-    w["tf_0005_00_ZS-1441"] = formatiere_temperatur(daten.get("hfm_bio_temp", ""))
-    w["dd_0005_00_ZS-001796"] = daten.get("hfm_bio_bemerkung", "")
-    
-    l_s = daten.get("hfm_bio_lief_schwein", "").strip()
-    if l_s: w["tf_0005_00_ZS-1209_Schweinefleisch: XXX"] = f"Schweinefleisch: {l_s}"
-    c_s = daten.get("hfm_bio_charge_schwein", "").strip()
-    if c_s: w["tf_0005_00_ZS-002081_Schweinefleisch: XXX"] = f"Schweinefleisch: {c_s}"
-    
-    # HIER FEHLTE DER LIEFERANT UND DIE CHARGE FÜR RIND:
-    l_r = daten.get("hfm_bio_lief_rind", "").strip()
-    if l_r: w["tf_0005_00_ZS-1209_Rindfleisch: XXX"] = f"Rindfleisch: {l_r}"
-    c_r = daten.get("hfm_bio_charge_rind", "").strip()
-    if c_r: w["tf_0005_00_ZS-002081_Rindfleisch: XXX"] = f"Rindfleisch: {c_r}"
+    l_r_bio = get_val("hfm_bio_lief_rind")
+    if l_r_bio: w["tf_0005_00_ZS-1209_Rindfleisch: XXX"] = f"Rindfleisch: {l_r_bio}"
+    c_r_bio = get_val("hfm_bio_charge_rind")
+    if c_r_bio: w["tf_0005_00_ZS-002081_Rindfleisch: XXX"] = f"Rindfleisch: {c_r_bio}"
 
-    m_r = daten.get("hfm_bio_mhd_rind", "").strip()
-    if m_r and m_r != "..": w["tf_0005_00_ZS-001835_Rindfleisch: XXX"] = f"Rindfleisch: {m_r}"
-    m_s = daten.get("hfm_bio_mhd_schwein", "").strip()
-    if m_s and m_s != "..": w["tf_0005_00_ZS-001835_Schweinefleisch: XXX"] = f"Schweinefleisch: {m_s}"
+    m_r_bio = get_val("hfm_bio_mhd_rind")
+    if m_r_bio.replace(".", "").strip(): w["tf_0005_00_ZS-001835_Rindfleisch: XXX"] = f"Rindfleisch: {m_r_bio}"
+    m_s_bio = get_val("hfm_bio_mhd_schwein")
+    if m_s_bio.replace(".", "").strip(): w["tf_0005_00_ZS-001835_Schweinefleisch: XXX"] = f"Schweinefleisch: {m_s_bio}"
+    
+    w["tf_0005_00_ZS-1441"] = formatiere_temperatur(get_val("hfm_bio_temp"))
+    w["dd_0005_00_ZS-001796"] = get_val("hfm_bio_bemerkung")
 
     return w
-# --- HAUPT-FUNKTION ---
 
 # --- HAUPT-FUNKTION ---
 
@@ -278,15 +293,10 @@ def erstelle_bericht(daten):
     reader_neu = PdfReader(neu_pfad)
     writer = PdfWriter()
     
-    # ==================================================
-    # REPARIERTE PDF-ZUSAMMENFÜHRUNG (Nichts wird mehr gelöscht!)
-    # ==================================================
     writer.append(reader_master, pages=list(range(0, 5)))
     writer.append(reader_neu)
     writer.append(reader_master, pages=list(range(5, len(reader_master.pages))))
-    # ==================================================
     
-    # Formularstruktur kopieren (wichtig für AcroForm Erhalt!)
     if "/AcroForm" not in writer.root_object:
         if "/AcroForm" in reader_master.trailer["/Root"]:
             writer.root_object.update({NameObject("/AcroForm"): reader_master.trailer["/Root"]["/AcroForm"]})
@@ -296,38 +306,55 @@ def erstelle_bericht(daten):
     writer.root_object["/AcroForm"].update({NameObject("/NeedAppearances"): BooleanObject(True)})
 
     mapping = sammle_alle_daten(daten)
-    text_mapping = {k: str(v) for k, v in mapping.items() if not isinstance(v, NameObject)}
-
+    
+    # Textfelder offiziell und sauber ausfüllen (Dies deckt 99% ab!)
+    text_mapping = {k: str(v) for k, v in mapping.items() if not isinstance(v, bool)}
     for page in writer.pages:
-        # Sicheres Beschreiben der Textfelder
         writer.update_page_form_field_values(page, text_mapping)
 
-        # ==================================================
-        # DER MAGISCHE CHECKBOX-HACKER
-        # Liest vollautomatisch aus, welches Wort die Checkbox will (/Yes, /j, etc.)
-        # ==================================================
         if "/Annots" in page:
             for annot_ref in page["/Annots"]:
                 annot = annot_ref.get_object()
-                if "/T" in annot:
-                    f_id = clean_id(str(annot["/T"]).strip("()"))
-                    is_checkbox = f_id.startswith("cb_") or f_id.startswith("Check Box")
+                
+                # --- HIER IST DIE MAGIE: WIR KLETTERN DEN BAUM HOCH! ---
+                current_obj = annot
+                f_id = None
+                
+                # Wir suchen den WAHREN Namen des Feldes, auch wenn er beim "Elternteil" liegt
+                while current_obj:
+                    if "/T" in current_obj:
+                        f_id = clean_id(str(current_obj["/T"]).strip("()"))
+                        break
+                    if "/Parent" in current_obj:
+                        current_obj = current_obj["/Parent"].get_object()
+                    else:
+                        break
 
-                    if f_id in mapping and isinstance(mapping[f_id], NameObject):
-                        val = mapping[f_id]
-                        try:
-                            # Wir fragen das PDF: "Welches Wort bedeutet bei dir 'Haken gesetzt'?"
-                            if "/AP" in annot and "/N" in annot["/AP"]:
-                                for k in annot["/AP"]["/N"].keys():
-                                    if k != "/Off": 
-                                        val = NameObject(k) 
-                                        break
-                        except: pass
-                        annot.update({NameObject("/V"): val, NameObject("/AS"): val})
-                    elif is_checkbox and f_id not in mapping:
-                        # Schaltet nur echte Haken aus, lässt Textfelder in Ruhe!
-                        # Wenn wir keinen Haken haben, zwingend auf AUS setzen
+                if not f_id:
+                    continue
+
+                # 1. Haken setzen (Booleans)
+                if f_id in mapping and isinstance(mapping[f_id], bool):
+                    val = mapping[f_id]
+                    if val:
+                        on_state = NameObject("/Yes")
+                        if "/AP" in annot and "/N" in annot["/AP"]:
+                            for k in annot["/AP"]["/N"].keys():
+                                if k != "/Off": 
+                                    on_state = NameObject(k) 
+                                    break
+                        annot.update({NameObject("/V"): on_state, NameObject("/AS"): on_state})
+                    else:
                         annot.update({NameObject("/V"): NameObject("/Off"), NameObject("/AS"): NameObject("/Off")})
+
+                # 2. DAS VERSTECKTE METT MHD FINDEN UND BEFÜLLEN
+                elif f_id == "tf_0006_00_ZS-001835":
+                    m_mett = daten.get("hfm_mett_mhd", "").strip()
+                    if m_mett and m_mett != "..":
+                        # Wir beschreiben sowohl die Box als auch das Eltern-Element!
+                        annot.update({NameObject("/V"): create_string_object(m_mett)})
+                        if "/Parent" in annot:
+                            annot["/Parent"].get_object().update({NameObject("/V"): create_string_object(m_mett)})
 
     with open(ziel_pfad, "wb") as f: writer.write(f)
     print(f"✅ Perfekter Kombi-Bericht erstellt: {ziel_pfad}")
