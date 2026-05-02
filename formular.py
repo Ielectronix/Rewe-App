@@ -74,7 +74,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 expand=True
             )
 
-        # NEON-DESIGN: Immer dünn, leuchtend wenn aktiv
         def neon_tab_btn(text, active, on_click):
             bg = "#004000" if active else "#222222"
             txt_color = "#A3FFA3" if active else "white"
@@ -96,7 +95,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 margin=ft.margin.symmetric(vertical=5, horizontal=2)
             )
 
-        # VORLAGEN BUTTONS DESIGN FIX
         def vorlagen_btn(text, oc, farbe):
             return ft.ElevatedButton(
                 content=ft.Text(text, size=14, weight="bold"),
@@ -293,12 +291,14 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             og_okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0011_status_{idx}"), ["R+D", "R", "P", "-"], 100), "objekt": combo("Objekt", aktuelle_daten.get(f"0011_objekt_{idx}") or og_okz_def[i]["o"], og_okz_opts, 200), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0011_ort_{idx}", ""), ["Kühlraum", "Produktionsbereich", "Theke"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0011_abklatsch_{idx}", og_okz_def[i]["a"])), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0011_tupfer_{idx}", og_okz_def[i]["t"]))}
 
         # ==========================================
-        # EINKLAPPBARE VORLAGEN LOGIK (ÜBERALL SICHTBAR)
+        # VORLAGEN LOGIK (BEHOBENER FEHLER, BESSERES DESIGN)
         # ==========================================
         alle_vorlagen = lade_vorlagen_lokal()
         vorlagen_status = ft.Text("", weight="bold", size=12) 
         vl_dd = ft.Dropdown(options=[ft.dropdown.Option(k) for k in alle_vorlagen.keys()], hint_text="Vorlage laden/löschen...", dense=True, content_padding=10, color="yellow", text_style=ft.TextStyle(color="yellow", size=12), border_color="white", expand=True)
-        vl_name_in = tf("Als neue Vorlage speichern", "", w=None)
+        
+        # FIX: Kürzerer Label-Text, damit das Feld nicht mehr gequetscht wird!
+        vl_name_in = tf("Name der Vorlage", "", w=None)
         vl_name_in.expand = True
 
         def lade_v(e):
@@ -414,7 +414,8 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 haupt_bereich.controls.extend([ft.Text("Convenience", size=24, weight="bold", color="white"), sub_nav, ft.Divider(color="white24"), sub_cont])
                 def sw_og(sub):
                     sub_cont.controls.clear(); sub_nav.controls.clear()
-                    for sid, sname in [("teil", "🥗 Convenience"), ("okz", "🔬 OKZ")]:
+                    # FIX: Kürzere Button-Beschriftung für "Convenience"
+                    for sid, sname in [("teil", "🥗 Proben"), ("okz", "🔬 OKZ")]:
                         sub_nav.controls.append(neon_tab_btn(sname, active=(sid==sub), on_click=lambda e, s=sid: sw_og(s)))
                     if sub == "teil":
                         sub_cont.controls.extend([og_cb, ft.Divider(color="white24")])
