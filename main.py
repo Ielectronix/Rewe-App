@@ -1,5 +1,4 @@
 import flet as ft
-import traceback
 import os
 import datetime
 import urllib.parse
@@ -27,29 +26,30 @@ def main(page: ft.Page):
         from pdf_generator import get_all_rewe_bases
         from formular import zeige_maske_ui
 
-        # FIX: Die smarte Menü-Logik (Dünner Neon-Rahmen immer da, Sattgrün nur wenn aktiv)
         def nav_leiste(active_tab="touren"):
+            # FIX: Schriftgröße auf 13 und Padding auf 8, damit "Senden" locker reinpasst
             def make_btn(text, tab_id, on_click):
                 is_active = (active_tab == tab_id)
-                return ft.ElevatedButton(
-                    text, on_click=on_click,
-                    bgcolor="#004400" if is_active else "#1a1a1a", # Sattgrün wenn aktiv
-                    color="white",
-                    style=ft.ButtonStyle(
-                        shape=ft.RoundedRectangleBorder(radius=10),
-                        padding=10,
-                        # Dünner Neonschein immer da (außer der Button ist komplett grün)
-                        side=ft.BorderSide(width=1.5, color="#4CAF50" if not is_active else "transparent")
-                    ),
-                    expand=True # Zwingt alle 3 Buttons auf die exakt gleiche Breite
+                return ft.Container(
+                    expand=1,
+                    content=ft.ElevatedButton(
+                        content=ft.Text(text, size=13, weight="bold"),
+                        on_click=on_click,
+                        bgcolor="#004400" if is_active else "#1a1a1a",
+                        color="white",
+                        style=ft.ButtonStyle(
+                            shape=ft.RoundedRectangleBorder(radius=10),
+                            padding=8,
+                            side=ft.BorderSide(width=1.5, color="#4CAF50") # IMMER Neon-Rahmen
+                        )
+                    )
                 )
-            
             return ft.Row(
                 alignment=ft.MainAxisAlignment.CENTER,
-                spacing=10,
+                spacing=8,
                 controls=[
                     make_btn("🚚 Touren", "touren", lambda e: zeige_dashboard()),
-                    make_btn("📤 Send", "senden", lambda e: zeige_postausgang()), # Kürzestes Wort
+                    make_btn("📤 Senden", "senden", lambda e: zeige_postausgang()), # Senden ist zurück!
                     make_btn("🗄️ Archiv", "archiv", lambda e: zeige_archiv())
                 ]
             )
@@ -164,7 +164,7 @@ def main(page: ft.Page):
                                     bgcolor="#002200", padding=15, border_radius=15, width=380,
                                     content=ft.Row([
                                         ft.Text(f[:18], color="white", size=12, expand=True),
-                                        action_btn("📤 Send", teilen_jetzt, "#2196F3"),
+                                        action_btn("📤 Senden", teilen_jetzt, "#2196F3"),
                                         small_btn("🗑️", rm, "#F44336")
                                     ])
                                 )
@@ -225,7 +225,7 @@ def main(page: ft.Page):
                                     bgcolor="#002200", padding=15, border_radius=15, width=380, 
                                     content=ft.Row([
                                         ft.Text(f[:18], color="white", size=12, expand=True), 
-                                        action_btn("📤 Send", teilen_archiv, "#2196F3")
+                                        action_btn("📤 Senden", teilen_archiv, "#2196F3")
                                     ])
                                 )
                             )
