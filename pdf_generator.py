@@ -65,7 +65,7 @@ def sammle_alle_daten(daten):
     w["tf_0000_00_ZS-002000"] = get_val("auftragsnummer")
     w["dd_0000_00_ZS-001796"] = get_val("bemerkung")
 
-    # --- TRINKWASSER (Seite 2, 3, 4) ---
+    # --- TRINKWASSER ---
     check("tw_kalt", "cb_0001_00")
     w["tf_0001_00"] = "Trinkwasser kalt"
     w["tf_0001_00_probenahmeUhrzeit"] = formatiere_uhrzeit(get_val("tw_zeit"))
@@ -109,7 +109,7 @@ def sammle_alle_daten(daten):
     w["dd_0001_00_ZS-001799"] = get_val("tw_entnahmeort", "Metzgerei")
     w["dd_0001_00_ZS-001796"] = get_val("tw_bemerkung_2")
 
-    # --- SCHERBENEIS (Seite 5) ---
+    # --- SCHERBENEIS ---
     check("se_kalt", "cb_0002_00")
     w["tf_0002_00"] = "Scherbeneis Eigenkontrolle"
     w["tf_0002_00_probenahmeUhrzeit"] = formatiere_uhrzeit(get_val("se_zeit"))
@@ -126,14 +126,19 @@ def sammle_alle_daten(daten):
     w["tf_0002_00_ZS-1441"] = formatiere_temperatur(get_val("se_temp"))
     w["dd_0002_00_ZS-001796"] = get_val("se_bemerkung")
 
-    # --- HACKFLEISCH (Seite 6) ---
+    # --- HACKFLEISCH ---
     check("hfm_hack_cb", "cb_0004_00")
     w["tf_0004_00"] = "Hackfleisch gemischt"
     w["dd_0004_00_ZS-001799"] = get_val("hfm_hack_entnahmeort", "Kühlraum")
-    w["cal_0004_00_ZS-001810"] = get_val("hfm_hack_herstelldatum")
     w["tf_0004_00_ZS-1215"] = get_val("hfm_hack_inhalt", "jeweils ca. 200 g")
     w["dd_0004_00_ZS-001798"] = get_val("hfm_hack_verpackung", "steriler Probenbeutel")
     
+    # Panzerbrecher-Mapping für Hack Herstelldatum
+    hack_herst = get_val("hfm_hack_herstelldatum")
+    if hack_herst.replace(".", "").strip():
+        w["cal_0004_00_ZS-001810"] = hack_herst
+        w["tf_0004_00_ZS-001810"] = hack_herst
+
     l_s = get_val("hfm_hack_lief_schwein")
     if l_s: w["tf_0004_00_ZS-1209_Schweinefleisch: XXX"] = f"Schweinefleisch: {l_s}"
     l_r = get_val("hfm_hack_lief_rind")
@@ -152,7 +157,7 @@ def sammle_alle_daten(daten):
     w["tf_0004_00_ZS-1441"] = formatiere_temperatur(get_val("hfm_hack_temp"))
     w["dd_0004_00_ZS-001796"] = get_val("hfm_hack_bemerkung")
 
-    # --- METT (Seite 7) ---
+    # --- METT ---
     check("hfm_mett_cb", "cb_0006_00")
     w["tf_0006_00"] = "gewürztes Schweinemett"
     w["dd_0006_00_ZS-001799"] = get_val("hfm_mett_entnahmeort", "Kühlraum")
@@ -167,7 +172,7 @@ def sammle_alle_daten(daten):
     m_mett = get_val("hfm_mett_mhd")
     if m_mett.replace(".", "").strip(): w["tf_0006_00_ZS-001835"] = m_mett
 
-    # --- FZS Schwein (Seite 8) ---
+    # --- FZS Schwein ---
     check("hfm_fzs_cb", "cb_0008_00")
     w["tf_0008_00"] = "Fleischzubereitung Schwein"
     p, m = get_val("hfm_fzs_produkt"), get_val("hfm_fzs_marinade")
@@ -180,11 +185,10 @@ def sammle_alle_daten(daten):
     w["tf_0008_00_ZS-002081"] = get_val("hfm_fzs_charge")
     w["tf_0008_00_ZS-1441"] = formatiere_temperatur(get_val("hfm_fzs_temp"))
     w["dd_0008_00_ZS-001796"] = get_val("hfm_fzs_bemerkung")
-    
     m_fzs = get_val("hfm_fzs_mhd")
     if m_fzs.replace(".", "").strip(): w["tf_0008_00_ZS-001835"] = m_fzs
 
-    # --- FZG Geflügel (Seite 9) ---
+    # --- FZG Geflügel ---
     check("hfm_fzg_cb", "cb_0007_00")
     w["tf_0007_00"] = "Fleischzubereitung Geflügel"
     p, m = get_val("hfm_fzg_produkt"), get_val("hfm_fzg_marinade")
@@ -197,11 +201,10 @@ def sammle_alle_daten(daten):
     w["tf_0007_00_ZS-002081"] = get_val("hfm_fzg_charge")
     w["tf_0007_00_ZS-1441"] = formatiere_temperatur(get_val("hfm_fzg_temp"))
     w["dd_0007_00_ZS-001796"] = get_val("hfm_fzg_bemerkung")
-    
     m_fzg = get_val("hfm_fzg_mhd")
     if m_fzg.replace(".", "").strip(): w["tf_0007_00_ZS-001835"] = m_fzg
 
-    # --- ABKLATSCHPROBEN (Seite 10-14, 19-21, 22-23) ---
+    # --- ABKLATSCHPROBEN HFM ---
     def map_abklatsch(prefix, start_idx, num_items):
         for i in range(1, num_items + 1):
             pdf_idx = f"{start_idx + i - 1:02d}" 
@@ -220,7 +223,7 @@ def sammle_alle_daten(daten):
     w["dd_0010_00_ZS-001796"] = get_val("hfm_abklatsch_bemerkung")
     map_abklatsch("0010", 1, 10)
 
-    # --- CONVENIENCE (Seite 15-18) ---
+    # --- CONVENIENCE ---
     check("og_cb", "cb_0009_00")
     w["tf_0009_00"] = "Obst-/Gemüse Convenience"
     for i in range(1, 6):
@@ -245,14 +248,18 @@ def sammle_alle_daten(daten):
     w["dd_0003_00_ZS-001796"] = get_val("se_abklatsch_bemerkung")
     map_abklatsch("0003", 1, 3)
 
-    # --- BIO HACKFLEISCH (Seite 24-25 / PDF Seite 33) ---
+    # --- BIO HACKFLEISCH ---
     check("hfm_bio_cb", "cb_0005_00")
     w["tf_0005_00"] = "Biohackfleisch"
     w["dd_0005_00_ZS-001799"] = get_val("hfm_bio_entnahmeort", "Produktionsraum")
     
-    # HIER IST DEIN PATIENT:
-    w["cal_0005_00_ZS-001810"] = get_val("hfm_bio_herstelldatum")
-    
+    # HIER KOMMT DIE SCHROTFLINTE FÜR DAS BIO-HERSTELLUNGSDATUM:
+    bio_herst = get_val("hfm_bio_herstelldatum")
+    if bio_herst.replace(".", "").strip():
+        w["cal_0005_00_ZS-001810"] = bio_herst
+        w["tf_0005_00_ZS-001810"] = bio_herst
+        w["cal_0005_00"] = bio_herst
+
     w["tf_0005_00_ZS-1215"] = get_val("hfm_bio_inhalt", "jeweils ca. 200 g")
     w["dd_0005_00_ZS-001798"] = get_val("hfm_bio_verpackung", "steriler Probenbecher")
     
@@ -306,17 +313,16 @@ def erstelle_bericht(daten):
 
     mapping = sammle_alle_daten(daten)
     
-    # 1. Normale Textfelder offiziell ausfüllen (Dies deckt die sauberen 99% ab)
+    # 1. Normale Textfelder offiziell ausfüllen
     text_mapping = {k: str(v) for k, v in mapping.items() if not isinstance(v, bool)}
     for page in writer.pages:
         writer.update_page_form_field_values(page, text_mapping)
 
-        # 2. Die Baum-Kletter-Methode für Haken UND kaputte Textfelder!
+        # 2. Baum-Kletterer für Haken UND kaputte Textfelder (Mett, Bio)
         if "/Annots" in page:
             for annot_ref in page["/Annots"]:
                 annot = annot_ref.get_object()
                 
-                # Wir klettern den Baum zum wahren Namen hoch
                 current_obj = annot
                 f_id = None
                 
@@ -346,30 +352,15 @@ def erstelle_bericht(daten):
                     else:
                         annot.update({NameObject("/V"): NameObject("/Off"), NameObject("/AS"): NameObject("/Off")})
 
-                # --- DIE ABSOLUTE TEXTFELD-PANZERBRECHER-METHODE ---
-                # Fängt ALLES ab, was die Methode oben übersehen hat (inklusive Mett MHD und Bio Herstelldatum!)
+                # --- DER PANZERBRECHER FÜR TEXTFELDER ---
+                # Greift auch bei cal_0005_00_ZS-001810 (Bio Datum) und Mett MHD!
                 elif f_id in mapping and not isinstance(mapping[f_id], bool):
                     val = str(mapping[f_id])
                     if val and val != "..":
-                        # Wir beschreiben sowohl die Box selbst, als auch das kaputte Eltern-Element im Hintergrund!
                         annot.update({NameObject("/V"): create_string_object(val)})
                         if "/Parent" in annot:
                             annot["/Parent"].get_object().update({NameObject("/V"): create_string_object(val)})
 
     with open(ziel_pfad, "wb") as f: writer.write(f)
-    print(f"✅ Perfekter Kombi-Bericht erstellt: {ziel_pfad}")
-    return ziel_pfad
-
-
-# --- HIER IST DER FIX FÜR ANDROID (Löscht die Datei zuerst, falls sie existiert) ---
-    if os.path.exists(ziel_pfad):
-        try:
-            os.remove(ziel_pfad)
-        except Exception as e:
-            print(f"Alte Datei konnte nicht gelöscht werden: {e}")
-
-    with open(ziel_pfad, "wb") as f: 
-        writer.write(f)
-        
     print(f"✅ Perfekter Kombi-Bericht erstellt: {ziel_pfad}")
     return ziel_pfad
