@@ -27,11 +27,14 @@ def main(page: ft.Page):
         from pdf_generator import get_all_rewe_bases
         from formular import zeige_maske_ui
 
-        # NEON-BUTTON-DESIGN FÜR DAS HAUPTMENÜ
+        # NEON-DESIGN: Immer dünn, leuchtend wenn aktiv
         def nav_btn(text, on_click, is_active=False):
-            bg = "#39FF14" if is_active else "#333333"
-            txt_color = "black" if is_active else "white"
-            neon_shadow = ft.BoxShadow(spread_radius=1, blur_radius=10, color="#39FF14", offset=ft.Offset(0,0))
+            bg = "#004000" if is_active else "#222222"
+            txt_color = "#A3FFA3" if is_active else "white"
+            spread = 1 if is_active else 0
+            blur = 6 if is_active else 2
+            neon_shadow = ft.BoxShadow(spread_radius=spread, blur_radius=blur, color="#32CD32", offset=ft.Offset(0,0))
+            
             btn = ft.ElevatedButton(
                 text, on_click=on_click, bgcolor=bg, color=txt_color,
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=10),
@@ -70,7 +73,6 @@ def main(page: ft.Page):
         def zeige_startbildschirm():
             ansicht.controls.clear()
             v, z = lade_benutzer()
-            # HIER AUCH ETWAS HELLER!
             v_in = ft.TextField(label="Vorname", value=v, bgcolor="#003D00", color="yellow", border_color="white", width=300, text_align="center")
             z_in = ft.TextField(label="Nachname", value=z, bgcolor="#003D00", color="yellow", border_color="white", width=300, text_align="center")
             
