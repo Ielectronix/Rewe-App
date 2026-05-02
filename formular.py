@@ -24,6 +24,10 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         ansicht.controls.clear()
         ansicht.horizontal_alignment = ft.CrossAxisAlignment.CENTER 
         
+        # FIX: Hier sind die Texte GANZ OBEN sicher definiert!
+        fehler_text = ft.Text("", color="red", weight="bold", visible=False, size=14)
+        status_text = ft.Text("", color="yellow", weight="bold", size=16, text_align="center")
+
         maerkte = lade_maerkte()
         v, z = lade_benutzer()
         heute_str = datetime.datetime.now().strftime('%d.%m.%Y')
@@ -109,7 +113,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         verp_opts = ["steriler Probenbecher", "steriler Probenbeutel", "Transportverpackung", "Kunststoffbecher mit Anrolldeckel u. etikett", "Pappschale mit Kunststofffolie umwickelt", "tiefgezogene Kunststoffschale mit Anrollfolie", "Styroporschale mit Kunststofffolie umwickelt", "SB-Kunststoffverpackung"]
 
         # ==========================================
-        # ALLE UI ELEMENTE INITIALISIEREN (Wieder da!)
+        # ALLE UI ELEMENTE INITIALISIEREN
         # ==========================================
         lims_override_cb = cb("Trotzdem speichern", False)
 
@@ -602,7 +606,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
         def nur_speichern(e):
             fehler_text.visible = False
-            fehler_text.value = ""
             status_text.value = ""
             page.update()
 
@@ -628,7 +631,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         
         def save_final(e):
             fehler_text.visible = False
-            fehler_text.value = ""
             status_text.value = ""
             page.update()
 
@@ -649,7 +651,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 try:
                     saved_path = erstelle_bericht(d)
                     fname = os.path.basename(saved_path)
-                    status_text.value = f"✅ NEU GESPEICHERT!\nDatei: {fname}"; status_text.color = "green"
+                    status_text.value = f"✅ BERICHT ERSTELLT!\nDatei: {fname}"; status_text.color = "green"
                 except Exception as ex:
                     status_text.value = ""; fehler_text.value = f"⚠️ SPEICHER-FEHLER: {str(ex)}"; fehler_text.visible = True
                 page.update()
