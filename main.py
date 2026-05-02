@@ -27,18 +27,19 @@ def main(page: ft.Page):
         from pdf_generator import get_all_rewe_bases
         from formular import zeige_maske_ui
 
-        # FIX: Das smarte Menü (Neon immer an, Hintergrund grün wenn aktiv, immer exakt gleich breit!)
+        # FIX: Die smarte Menü-Logik (Dünner Neon-Rahmen immer da, Sattgrün nur wenn aktiv)
         def nav_leiste(active_tab="touren"):
             def make_btn(text, tab_id, on_click):
                 is_active = (active_tab == tab_id)
                 return ft.ElevatedButton(
                     text, on_click=on_click,
-                    bgcolor="#004400" if is_active else "#1a1a1a",
+                    bgcolor="#004400" if is_active else "#1a1a1a", # Sattgrün wenn aktiv
                     color="white",
                     style=ft.ButtonStyle(
                         shape=ft.RoundedRectangleBorder(radius=10),
                         padding=10,
-                        side=ft.BorderSide(width=1.5, color="#4CAF50") # Dünner Neonschein immer da!
+                        # Dünner Neonschein immer da (außer der Button ist komplett grün)
+                        side=ft.BorderSide(width=1.5, color="#4CAF50" if not is_active else "transparent")
                     ),
                     expand=True # Zwingt alle 3 Buttons auf die exakt gleiche Breite
                 )
@@ -48,7 +49,7 @@ def main(page: ft.Page):
                 spacing=10,
                 controls=[
                     make_btn("🚚 Touren", "touren", lambda e: zeige_dashboard()),
-                    make_btn("📤 Senden", "senden", lambda e: zeige_postausgang()),
+                    make_btn("📤 Send", "senden", lambda e: zeige_postausgang()), # Kürzestes Wort
                     make_btn("🗄️ Archiv", "archiv", lambda e: zeige_archiv())
                 ]
             )
@@ -99,7 +100,7 @@ def main(page: ft.Page):
         def zeige_dashboard():
             ansicht.controls.clear()
             maerkte = lade_maerkte()
-            ansicht.controls.append(nav_leiste("touren")) # Markiert "Touren" als aktiv
+            ansicht.controls.append(nav_leiste("touren"))
             ansicht.controls.append(ft.Text("Meine heutigen Touren", size=20, weight="bold", color="white"))
             
             if not maerkte:
@@ -132,7 +133,7 @@ def main(page: ft.Page):
 
         def zeige_postausgang():
             ansicht.controls.clear()
-            ansicht.controls.append(nav_leiste("senden")) # Markiert "Senden" als aktiv
+            ansicht.controls.append(nav_leiste("senden"))
             ansicht.controls.append(ft.Text("Postausgang (Heute)", size=20, weight="bold", color="white"))
             
             heute_ordner = datetime.datetime.now().strftime('%Y-%m-%d')
@@ -163,7 +164,7 @@ def main(page: ft.Page):
                                     bgcolor="#002200", padding=15, border_radius=15, width=380,
                                     content=ft.Row([
                                         ft.Text(f[:18], color="white", size=12, expand=True),
-                                        action_btn("📤 Senden", teilen_jetzt, "#2196F3"),
+                                        action_btn("📤 Send", teilen_jetzt, "#2196F3"),
                                         small_btn("🗑️", rm, "#F44336")
                                     ])
                                 )
@@ -188,7 +189,7 @@ def main(page: ft.Page):
 
         def zeige_archiv():
             ansicht.controls.clear()
-            ansicht.controls.append(nav_leiste("archiv")) # Markiert "Archiv" als aktiv
+            ansicht.controls.append(nav_leiste("archiv"))
             ansicht.controls.append(ft.Text("Archiv (Letzte 7 Tage)", size=20, weight="bold", color="white"))
             bereinige_archiv()
             email_val = "registration-mibi.ber@tentamus.com"
@@ -224,7 +225,7 @@ def main(page: ft.Page):
                                     bgcolor="#002200", padding=15, border_radius=15, width=380, 
                                     content=ft.Row([
                                         ft.Text(f[:18], color="white", size=12, expand=True), 
-                                        action_btn("📤 Senden", teilen_archiv, "#2196F3")
+                                        action_btn("📤 Send", teilen_archiv, "#2196F3")
                                     ])
                                 )
                             )
