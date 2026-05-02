@@ -15,7 +15,6 @@ def main(page: ft.Page):
     ansicht = ft.Column(spacing=20, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
     page.add(ft.SafeArea(ansicht))
 
-    # --- SHARE FUNKTION FÜR ANDROID/IOS ---
     share_obj = ft.Share() if page.platform in [ft.PagePlatform.ANDROID, ft.PagePlatform.IOS] else None
 
     def zeige_fehler(e):
@@ -28,15 +27,25 @@ def main(page: ft.Page):
         from pdf_generator import get_all_rewe_bases
         from formular import zeige_maske_ui
 
-        # Navigations-Buttons für das Hauptmenü
-        def nav_btn(text, on_click):
-            return ft.ElevatedButton(
-                text, on_click=on_click, bgcolor="#1a1a1a", color="white",
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=15), padding=10),
+        # NEON-BUTTON-DESIGN FÜR DAS HAUPTMENÜ
+        def nav_btn(text, on_click, is_active=False):
+            bg = "#39FF14" if is_active else "#333333"
+            txt_color = "black" if is_active else "white"
+            neon_shadow = ft.BoxShadow(spread_radius=1, blur_radius=10, color="#39FF14", offset=ft.Offset(0,0))
+            btn = ft.ElevatedButton(
+                text, on_click=on_click, bgcolor=bg, color=txt_color,
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=10),
                 expand=True
             )
+            return ft.Container(
+                content=ft.Row([btn]),
+                col={"xs": 4},
+                padding=2,
+                shadow=neon_shadow,
+                border_radius=10,
+                margin=ft.margin.symmetric(vertical=5, horizontal=2)
+            )
 
-        # Aktions-Buttons für Dashboard und Senden
         def action_btn(text, on_click, farbe):
             return ft.ElevatedButton(
                 content=ft.Text(text, size=14, weight="bold"),
@@ -48,22 +57,22 @@ def main(page: ft.Page):
                 )
             )
 
-        # Die obere Menüleiste in einer sauberen 3er-Reihe
-        def nav_leiste():
+        def nav_leiste(active_tab="touren"):
             return ft.ResponsiveRow(
                 alignment=ft.MainAxisAlignment.CENTER,
                 controls=[
-                    ft.Container(col={"xs": 4}, content=ft.Row([nav_btn("🚚 Touren", lambda e: zeige_dashboard())]), padding=2),
-                    ft.Container(col={"xs": 4}, content=ft.Row([nav_btn("📤 Senden", lambda e: zeige_postausgang())]), padding=2),
-                    ft.Container(col={"xs": 4}, content=ft.Row([nav_btn("🗄️ Archiv", lambda e: zeige_archiv())]), padding=2)
+                    nav_btn("🚚 Touren", lambda e: zeige_dashboard(), is_active=(active_tab=="touren")),
+                    nav_btn("📤 Senden", lambda e: zeige_postausgang(), is_active=(active_tab=="senden")),
+                    nav_btn("🗄️ Archiv", lambda e: zeige_archiv(), is_active=(active_tab=="archiv"))
                 ]
             )
 
         def zeige_startbildschirm():
             ansicht.controls.clear()
             v, z = lade_benutzer()
-            v_in = ft.TextField(label="Vorname", value=v, color="yellow", border_color="white", width=300, text_align="center")
-            z_in = ft.TextField(label="Nachname", value=z, color="yellow", border_color="white", width=300, text_align="center")
+            # HIER AUCH ETWAS HELLER!
+            v_in = ft.TextField(label="Vorname", value=v, bgcolor="#003D00", color="yellow", border_color="white", width=300, text_align="center")
+            z_in = ft.TextField(label="Nachname", value=z, bgcolor="#003D00", color="yellow", border_color="white", width=300, text_align="center")
             
             def start_klick(e):
                 speichere_benutzer(v_in.value, z_in.value)
@@ -82,14 +91,13 @@ def main(page: ft.Page):
         def zeige_dashboard():
             ansicht.controls.clear()
             maerkte = lade_maerkte()
-            ansicht.controls.append(nav_leiste())
+            ansicht.controls.append(nav_leiste("touren"))
             ansicht.controls.append(ft.Text("Meine heutigen Touren", size=20, weight="bold", color="white"))
             
             if not maerkte:
                 ansicht.controls.append(ft.Text("Noch keine Touren angelegt.", color="white54"))
             else:
                 for index, markt in enumerate(maerkte):
-                    # Adresse anzeigen, Fallback auf Marktnummer
                     anzeige_text = markt.get("adresse")
                     if not anzeige_text or str(anzeige_text).strip() == "":
                         anzeige_text = markt.get("marktnummer") or "Unbenannte Tour"
@@ -116,7 +124,7 @@ def main(page: ft.Page):
 
         def zeige_postausgang():
             ansicht.controls.clear()
-            ansicht.controls.append(nav_leiste())
+            ansicht.controls.append(nav_leiste("senden"))
             ansicht.controls.append(ft.Text("Postausgang (Heute)", size=20, weight="bold", color="white"))
             
             heute_ordner = datetime.datetime.now().strftime('%Y-%m-%d')
@@ -172,7 +180,7 @@ def main(page: ft.Page):
 
         def zeige_archiv():
             ansicht.controls.clear()
-            ansicht.controls.append(nav_leiste())
+            ansicht.controls.append(nav_leiste("archiv"))
             ansicht.controls.append(ft.Text("Archiv (Letzte 7 Tage)", size=20, weight="bold", color="white"))
             bereinige_archiv()
             email_val = "registration-mibi.ber@tentamus.com"
