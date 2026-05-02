@@ -15,7 +15,6 @@ def main(page: ft.Page):
     ansicht = ft.Column(spacing=20, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
     page.add(ft.SafeArea(ansicht))
 
-    # --- SHARE FUNKTION FÜR ANDROID/IOS ---
     share_obj = ft.Share() if page.platform in [ft.PagePlatform.ANDROID, ft.PagePlatform.IOS] else None
 
     def zeige_fehler(e):
@@ -28,15 +27,12 @@ def main(page: ft.Page):
         from pdf_generator import get_all_rewe_bases
         from formular import zeige_maske_ui
 
-        # Navigations-Buttons für das Hauptmenü
         def nav_btn(text, on_click):
             return ft.ElevatedButton(
                 text, on_click=on_click, bgcolor="#1a1a1a", color="white",
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=15), padding=10),
-                expand=True
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=10)
             )
 
-        # Große Aktions-Buttons für Dashboard und Senden
         def action_btn(text, on_click, farbe):
             return ft.ElevatedButton(
                 content=ft.Text(text, size=14, weight="bold"),
@@ -48,35 +44,36 @@ def main(page: ft.Page):
                 )
             )
 
-        # NEU: Kleine, runde Icon-Buttons (für Bearbeiten und Löschen)
         def small_btn(emoji, on_click, farbe):
             return ft.ElevatedButton(
                 content=ft.Text(emoji, size=16),
                 on_click=on_click, bgcolor="#0b1a0b", color=farbe,
                 style=ft.ButtonStyle(
-                    shape=ft.CircleBorder(), # Macht den Button perfekt rund
-                    padding=0,               # Nimmt das wuchtige Polster weg
+                    shape=ft.CircleBorder(),
+                    padding=0,
                     side=ft.BorderSide(width=2, color=farbe)
                 ),
-                width=45, height=45        # Feste, kleine Größe
+                width=45, height=45
             )
 
-        # Die obere Menüleiste in einer sauberen 3er-Reihe
+        # FIX: Exakt gedrittelte Reihe, kein Quetschen mehr!
         def nav_leiste():
-            return ft.ResponsiveRow(
+            return ft.Row(
                 alignment=ft.MainAxisAlignment.CENTER,
+                spacing=10,
                 controls=[
-                    ft.Container(col={"xs": 4}, content=ft.Row([nav_btn("🚚 Touren", lambda e: zeige_dashboard())]), padding=2),
-                    ft.Container(col={"xs": 4}, content=ft.Row([nav_btn("📤 Senden", lambda e: zeige_postausgang())]), padding=2),
-                    ft.Container(col={"xs": 4}, content=ft.Row([nav_btn("🗄️ Archiv", lambda e: zeige_archiv())]), padding=2)
+                    ft.Container(content=nav_btn("🚚 Touren", lambda e: zeige_dashboard()), expand=1),
+                    ft.Container(content=nav_btn("📤 Senden", lambda e: zeige_postausgang()), expand=1),
+                    ft.Container(content=nav_btn("🗄️ Archiv", lambda e: zeige_archiv()), expand=1)
                 ]
             )
 
         def zeige_startbildschirm():
             ansicht.controls.clear()
             v, z = lade_benutzer()
-            v_in = ft.TextField(label="Vorname", value=v, color="yellow", border_color="white", width=300, text_align="center")
-            z_in = ft.TextField(label="Nachname", value=z, color="yellow", border_color="white", width=300, text_align="center")
+            # FIX: Schriftfarbe explizit auf gelb gezwungen
+            v_in = ft.TextField(label="Vorname", value=v, color="yellow", text_style=ft.TextStyle(color="yellow"), label_style=ft.TextStyle(color="white54"), border_color="white", width=300, text_align="center")
+            z_in = ft.TextField(label="Nachname", value=z, color="yellow", text_style=ft.TextStyle(color="yellow"), label_style=ft.TextStyle(color="white54"), border_color="white", width=300, text_align="center")
             
             def start_klick(e):
                 speichere_benutzer(v_in.value, z_in.value)
@@ -102,7 +99,6 @@ def main(page: ft.Page):
                 ansicht.controls.append(ft.Text("Noch keine Touren angelegt.", color="white54"))
             else:
                 for index, markt in enumerate(maerkte):
-                    # Adresse anzeigen, Fallback auf Marktnummer
                     anzeige_text = markt.get("adresse")
                     if not anzeige_text or str(anzeige_text).strip() == "":
                         anzeige_text = markt.get("marktnummer") or "Unbenannte Tour"
@@ -114,9 +110,7 @@ def main(page: ft.Page):
                         ft.Container(
                             bgcolor="#002200", padding=15, border_radius=15, width=380,
                             content=ft.Row([
-                                # ANPASSUNG: Schriftgröße von 14 auf 12 reduziert
                                 ft.Text(f"{anzeige_text}", color="white", weight="bold", size=12, expand=True, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS),
-                                # ANPASSUNG: Neue kleine Buttons nutzen
                                 small_btn("✏️", lambda e, i=index: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, i), "#2196F3"),
                                 small_btn("🗑️", loesche_t, "#F44336")
                             ], alignment="spaceBetween")
@@ -163,7 +157,6 @@ def main(page: ft.Page):
                                     content=ft.Row([
                                         ft.Text(f[:18], color="white", size=12, expand=True),
                                         action_btn("📤 Senden", teilen_jetzt, "#2196F3"),
-                                        # ANPASSUNG: Mülleimer hier auch klein machen
                                         small_btn("🗑️", rm, "#F44336")
                                     ])
                                 )
