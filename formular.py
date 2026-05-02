@@ -36,14 +36,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             titel = f"Tour: {aktuelle_daten.get('marktnummer', 'Bearbeiten')}"
 
         def tf(label, val, hint="", w=320, oc=None, ob=None):
-            return ft.TextField(
-                label=label, value=val or "", hint_text=hint, 
-                hint_style=ft.TextStyle(color="white70", size=12), 
-                color="yellow", text_style=ft.TextStyle(size=12, color="yellow"), 
-                label_style=ft.TextStyle(color="white"), border_color="white", 
-                bgcolor="#003D00", 
-                content_padding=10, width=w, on_change=oc, on_blur=ob
-            )
+            return ft.TextField(label=label, value=val or "", hint_text=hint, hint_style=ft.TextStyle(color="white54", size=12), color="yellow", text_style=ft.TextStyle(size=12, color="yellow"), label_style=ft.TextStyle(color="white"), border_color="white", content_padding=10, width=w, on_change=oc, on_blur=ob)
 
         def cb(label, val, oc=None, bold=False):
             return ft.Checkbox(label=label, value=bool(val), on_change=oc, label_style=ft.TextStyle(color="white", size=16 if bold else 12, weight="bold" if bold else "normal"), fill_color="yellow", check_color="black")
@@ -52,12 +45,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             def intern_oc(e):
                 if oc: oc(e)
             echter_wert = val if val else (opts[0] if opts else "")
-            c = ft.TextField(
-                label=label, value=echter_wert, color="yellow", text_style=ft.TextStyle(size=12, color="yellow"), 
-                label_style=ft.TextStyle(color="white"), border_color="white", 
-                bgcolor="#003D00", 
-                dense=True, content_padding=10, width=w, on_change=intern_oc
-            )
+            c = ft.TextField(label=label, value=echter_wert, color="yellow", text_style=ft.TextStyle(size=12, color="yellow"), label_style=ft.TextStyle(color="white"), border_color="white", dense=True, content_padding=10, width=w, on_change=intern_oc)
             items = [ft.PopupMenuItem(content=ft.Text(o), on_click=lambda e, opt=o: (setattr(c, 'value', opt), c.update(), intern_oc(e))) for o in opts]
             c.suffix = ft.PopupMenuButton(items=items, content=ft.Text("▼", color="white"))
             return c
@@ -71,39 +59,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                     padding=ft.padding.symmetric(vertical=15),
                     side=ft.BorderSide(width=2, color=farbe)
                 ),
-                expand=True
-            )
-
-        def neon_tab_btn(text, active, on_click):
-            bg = "#004000" if active else "#222222"
-            txt_color = "#A3FFA3" if active else "white"
-            spread = 1 if active else 0
-            blur = 6 if active else 2
-            neon_shadow = ft.BoxShadow(spread_radius=spread, blur_radius=blur, color="#32CD32", offset=ft.Offset(0,0))
-            
-            btn = ft.ElevatedButton(
-                text, on_click=on_click, bgcolor=bg, color=txt_color,
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=10),
-                expand=True
-            )
-            return ft.Container(
-                content=ft.Row([btn]),
-                col={"xs": 6, "sm": 4},
-                padding=2,
-                shadow=neon_shadow,
-                border_radius=10,
-                margin=ft.margin.symmetric(vertical=5, horizontal=2)
-            )
-
-        def vorlagen_btn(text, oc, farbe):
-            return ft.ElevatedButton(
-                content=ft.Text(text, size=14, weight="bold"),
-                on_click=oc, bgcolor="#0b1a0b", color="white",
-                style=ft.ButtonStyle(
-                    shape=ft.RoundedRectangleBorder(radius=10), 
-                    padding=ft.padding.symmetric(horizontal=15, vertical=15),
-                    side=ft.BorderSide(width=2, color=farbe)
-                )
+                expand=True 
             )
 
         def parse_datum(d, dt="", dm="", dj=""):
@@ -140,12 +96,9 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         tage_opts = [""] + [f"{i:02d}" for i in range(1, 32)]
         mon_opts = [""] + [f"{i:02d}" for i in range(1, 13)]
         jahr_opts = [""] + [str(i) for i in range(2024, 2035)]
-        
-        # Diese Standard-Werte werden ignoriert, wenn der Haupt-Haken fehlt
         c_opts_s = ["z. Z. nicht vorrätig", "keine Eigenproduktion", "", "Kein Schweinehackfleisch"]
         c_opts_r = ["z. Z. nicht vorrätig", "keine Eigenproduktion", "", "Kein Rinderhackfleisch"]
         c_opts_g = ["z. Z. nicht vorrätig", "keine Eigenproduktion", "", "Kein Geflügel"]
-        
         ort_opts = ["Fischabteilung", "Produktionsraum", "Bedientheke", "Vorbereitungsraum", "Metzgerei", "Kühlraum", "SB-Theke"]
         verp_opts = ["steriler Probenbecher", "steriler Probenbeutel", "Transportverpackung", "Kunststoffbecher mit Anrolldeckel u. etikett", "Pappschale mit Kunststofffolie umwickelt", "tiefgezogene Kunststoffschale mit Anrollfolie", "Styroporschale mit Kunststofffolie umwickelt", "SB-Kunststoffverpackung"]
 
@@ -294,12 +247,12 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             og_okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0011_status_{idx}"), ["R+D", "R", "P", "-"], 100), "objekt": combo("Objekt", aktuelle_daten.get(f"0011_objekt_{idx}") or og_okz_def[i]["o"], og_okz_opts, 200), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0011_ort_{idx}", ""), ["Kühlraum", "Produktionsbereich", "Theke"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0011_abklatsch_{idx}", og_okz_def[i]["a"])), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0011_tupfer_{idx}", og_okz_def[i]["t"]))}
 
         # ==========================================
-        # VORLAGEN LOGIK 
+        # VORLAGEN LOGIK (DIREKT IN DER TOUR)
         # ==========================================
         alle_vorlagen = lade_vorlagen_lokal()
         vorlagen_status = ft.Text("", weight="bold", size=12) 
         vl_dd = ft.Dropdown(options=[ft.dropdown.Option(k) for k in alle_vorlagen.keys()], hint_text="Vorlage laden/löschen...", dense=True, content_padding=10, color="yellow", text_style=ft.TextStyle(color="yellow", size=12), border_color="white", expand=True)
-        vl_name_in = tf("Name der Vorlage", "", w=None)
+        vl_name_in = tf("Als neue Vorlage speichern", "", w=None)
         vl_name_in.expand = True
 
         def lade_v(e):
@@ -323,25 +276,13 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             vl_dd.options = [ft.dropdown.Option(k) for k in alle_vorlagen.keys()]
             vorlagen_status.value = f"✅ Vorlage gespeichert!"; vorlagen_status.color = "orange"; vl_name_in.value = ""; page.update()
 
-        vorlagen_content = ft.Column([
-            vorlagen_status,
-            ft.Row([vl_dd, vorlagen_btn("📥", lade_v, "#2196F3"), vorlagen_btn("🗑️", del_v, "#F44336")]),
-            ft.Row([vl_name_in, vorlagen_btn("💾 Speichern", save_v, "#FF9800")])
-        ], visible=False)
-
-        def toggle_vorlagen(e):
-            vorlagen_content.visible = not vorlagen_content.visible
-            btn_vorlagen_toggle.text = "🔽 Vorlagen schließen" if vorlagen_content.visible else "▶️ Vorlagen verwalten"
-            btn_vorlagen_toggle.bgcolor = "#004000" if vorlagen_content.visible else "#1a1a1a"
-            page.update()
-
-        btn_vorlagen_toggle = ft.ElevatedButton("▶️ Vorlagen verwalten", on_click=toggle_vorlagen, bgcolor="#1a1a1a", color="#A3FFA3", expand=True)
-
         vorlagen_card = ft.Container(
-            bgcolor="#001500", padding=10, border_radius=10, border=ft.border.all(1, "#32CD32"),
+            bgcolor="#002b00", padding=15, border_radius=10,
             content=ft.Column([
-                ft.Row([btn_vorlagen_toggle]),
-                vorlagen_content
+                ft.Text("📋 Vorlagen-Verwaltung", weight="bold", color="white", size=16),
+                vorlagen_status,
+                ft.Row([vl_dd, ft.IconButton(ft.icons.FILE_DOWNLOAD, icon_color="#2196F3", on_click=lade_v, tooltip="Laden"), ft.IconButton(ft.icons.DELETE, icon_color="#F44336", on_click=del_v, tooltip="Löschen")]),
+                ft.Row([vl_name_in, ft.IconButton(ft.icons.SAVE, icon_color="#FF9800", on_click=save_v, tooltip="Speichern")])
             ])
         )
 
@@ -362,13 +303,18 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             tabs = [("stamm", "Stammdaten"), ("tw", "Trinkwasser"), ("se", "Scherbeneis"), ("hfm", "HFM"), ("og", "Convenience")]
             
             for tid, tname in tabs:
-                top_nav.controls.append(neon_tab_btn(tname, active=(tid==tab_id), on_click=lambda e, t=tid: switch_tab(t)))
-
-            haupt_bereich.controls.append(vorlagen_card)
-            haupt_bereich.controls.append(ft.Divider(color="white24"))
+                bg = "#004400" if tid == tab_id else "#1a1a1a"
+                btn = ft.ElevatedButton(
+                    tname, 
+                    on_click=lambda e, t=tid: switch_tab(t), 
+                    bgcolor=bg, color="white", 
+                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=10),
+                    expand=True
+                )
+                top_nav.controls.append(ft.Container(col={"xs": 6, "sm": 4}, content=ft.Row([btn]), padding=2))
 
             if tab_id == "stamm":
-                haupt_bereich.controls.extend([ft.Text("Stammdaten", size=24, weight="bold", color="white"), datum_row, adr_in, nr_in, auft_in, ag_dd, name_in, typ_dd, bem_in])
+                haupt_bereich.controls.extend([vorlagen_card, ft.Divider(color="white24"), ft.Text("Stammdaten", size=24, weight="bold", color="white"), datum_row, adr_in, nr_in, auft_in, ag_dd, name_in, typ_dd, bem_in])
             elif tab_id == "tw":
                 haupt_bereich.controls.extend([ft.Text("Trinkwasser-Check", size=24, weight="bold", color="white"), tw_kalt_cb, tw_zeit_in, tw_temp_in, tw_tempkonst_in, ft.Divider(color="white24"), ft.Text("Probenahme / Zapfstelle:", color="white", weight="bold"), tw_entnahmeort_dd, tw_zapf_dd, tw_zapf_sonst_dd, tw_desinf_dd, ft.Row([cb_pn, cb_zwei, cb_sensor, cb_knie], wrap=True), ft.Row([cb_ein, cb_ein_g, cb_eck], wrap=True), ft.Divider(color="white24"), ft.Text("Sensorik & Analytik:", color="white", weight="bold"), tw_inaktiv_dd, tw_kurz1_dd, tw_kurz2_dd, tw_kurz3_dd, tw_kurz4_dd, ft.Divider(color="white24"), ft.Text("Auffälligkeiten:", color="white", weight="bold"), ft.Row([cb_auff_ja, cb_auff_nein], wrap=True), cb_auff_perl, cb_auff_verkalk, cb_auff_verbrueh, cb_auff_durchlauf, cb_auff_unterbau, cb_auff_eck_zu, cb_auff_nichtmoeglich, cb_auff_dusche, cb_auff_handbrause, cb_auff_sonst, tw_auff_sonstiges_in, ft.Divider(color="white24"), tw_zweck_dd, tw_inhalt_in, tw_verpackung_dd, tw_bemerkung_dd])
             elif tab_id == "se":
@@ -378,7 +324,8 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 def sw_se(sub):
                     sub_cont.controls.clear(); sub_nav.controls.clear()
                     for sid, sname in [("eis", "❄️ Eis"), ("okz", "🔬 OKZ")]:
-                        sub_nav.controls.append(neon_tab_btn(sname, active=(sid==sub), on_click=lambda e, s=sid: sw_se(s)))
+                        btn = ft.ElevatedButton(sname, on_click=lambda e, s=sid: sw_se(s), bgcolor="#004400" if sub==sid else "#1a1a1a", color="white", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=10), expand=True)
+                        sub_nav.controls.append(ft.Container(col={"xs": 6, "sm": 4}, content=ft.Row([btn]), padding=2))
                     if sub == "eis": sub_cont.controls.extend([se_kalt_cb, se_zeit_in, se_zapf_dd, ft.Text("Technik:", color="white", weight="bold"), ft.Row([se_cb_eiswanne, se_cb_fallprobe], wrap=True), se_tech_sonst_in, se_desinf_dd, ft.Text("Auffälligkeiten:", color="white", weight="bold"), se_cb_ozon, se_auff_sonst_in, se_inhalt_in, se_verpackung_dd, se_entnahmeort_dd, se_temp_in, se_bemerkung_dd])
                     elif sub == "okz":
                         sub_cont.controls.extend([ft.Text("⚠️ Haken prüfen!", color="orange", weight="bold"), se_okz_cb, ft.Divider(color="white24")])
@@ -395,7 +342,8 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 def sw_hfm(sub):
                     sub_cont.controls.clear(); sub_nav.controls.clear()
                     for sid, sname in [("hack", "🥩 Hack"), ("mett", "🍖 Mett"), ("fzs", "🐷 FZ Schwein"), ("fzg", "🐔 FZ Geflügel"), ("bio", "🥩 Bio"), ("okz", "🔬 OKZ")]:
-                        sub_nav.controls.append(neon_tab_btn(sname, active=(sid==sub), on_click=lambda e, s=sid: sw_hfm(s)))
+                        btn = ft.ElevatedButton(sname, on_click=lambda e, s=sid: sw_hfm(s), bgcolor="#004400" if sub==sid else "#1a1a1a", color="white", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=10), expand=True)
+                        sub_nav.controls.append(ft.Container(col={"xs": 6, "sm": 4}, content=ft.Row([btn]), padding=2))
                     if sub == "hack": sub_cont.controls.extend([hfm_hack_cb, hfm_hack_entnahmeort_dd, ft.Text("Herstellungsdatum:", color="white"), ft.Row([hfm_hack_herst_tag_dd, hfm_hack_herst_mon_dd, hfm_hack_herst_jahr_dd], wrap=True), hfm_hack_inhalt_in, hfm_hack_verpackung_dd, hfm_hack_lief_schwein_in, hfm_hack_lief_rind_in, ft.Text("MHD (Schwein):", color="yellow"), ft.Row([hfm_hack_mhd_s_tag_dd, hfm_hack_mhd_s_mon_dd, hfm_hack_mhd_s_jahr_dd], wrap=True), ft.Text("MHD (Rind):", color="yellow"), ft.Row([hfm_hack_mhd_r_tag_dd, hfm_hack_mhd_r_mon_dd, hfm_hack_mhd_r_jahr_dd], wrap=True), hfm_hack_charge_schwein_dd, hfm_hack_charge_rind_dd, hfm_hack_temp_in, hfm_hack_bemerkung_dd])
                     elif sub == "mett": sub_cont.controls.extend([hfm_mett_cb, hfm_mett_entnahmeort_dd, ft.Text("Herstellungsdatum:", color="white"), ft.Row([hfm_mett_herst_tag_dd, hfm_mett_herst_mon_dd, hfm_mett_herst_jahr_dd], wrap=True), hfm_mett_inhalt_in, hfm_mett_verpackung_dd, hfm_mett_lief_in, ft.Text("MHD:", color="white"), ft.Row([hfm_mett_mhd_tag_dd, hfm_mett_mhd_mon_dd, hfm_mett_mhd_jahr_dd], wrap=True), hfm_mett_charge_dd, hfm_mett_temp_in, hfm_mett_bemerkung_dd])
                     elif sub == "fzs": sub_cont.controls.extend([hfm_fzs_cb, hfm_fzs_entnahmeort_dd, hfm_fzs_produkt_in, hfm_fzs_marinade_in, ft.Text("Herstellungsdatum:", color="white"), ft.Row([hfm_fzs_herst_tag_dd, hfm_fzs_herst_mon_dd, hfm_fzs_herst_jahr_dd], wrap=True), hfm_fzs_inhalt_in, hfm_fzs_verpackung_dd, hfm_fzs_lief_in, ft.Text("MHD:", color="white"), ft.Row([hfm_fzs_mhd_tag_dd, hfm_fzs_mhd_mon_dd, hfm_fzs_mhd_jahr_dd], wrap=True), hfm_fzs_charge_dd, hfm_fzs_temp_in, hfm_fzs_bemerkung_dd])
@@ -415,8 +363,9 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 haupt_bereich.controls.extend([ft.Text("Convenience", size=24, weight="bold", color="white"), sub_nav, ft.Divider(color="white24"), sub_cont])
                 def sw_og(sub):
                     sub_cont.controls.clear(); sub_nav.controls.clear()
-                    for sid, sname in [("teil", "🥗 Proben"), ("okz", "🔬 OKZ")]:
-                        sub_nav.controls.append(neon_tab_btn(sname, active=(sid==sub), on_click=lambda e, s=sid: sw_og(s)))
+                    for sid, sname in [("teil", "🥗 Convenience"), ("okz", "🔬 OKZ")]:
+                        btn = ft.ElevatedButton(sname, on_click=lambda e, s=sid: sw_og(s), bgcolor="#004400" if sub==sid else "#1a1a1a", color="white", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=10), expand=True)
+                        sub_nav.controls.append(ft.Container(col={"xs": 6, "sm": 4}, content=ft.Row([btn]), padding=2))
                     if sub == "teil":
                         sub_cont.controls.extend([og_cb, ft.Divider(color="white24")])
                         for i in range(1, 6):
@@ -603,7 +552,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
             return d
 
-        # HIER WIRD SCHLAU GEPRÜFT, OB WIRKLICH WAS EINGEGEBEN WURDE
         def check_pflichtfelder():
             errors = []
             if not (nr_in.value or "").strip(): errors.append("- Marktnummer")
@@ -619,66 +567,30 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 if not (se_zeit_in.value or "").strip(): errors.append("- Scherbeneis: Uhrzeit")
                 if not (se_temp_in.value or "").strip(): errors.append("- Scherbeneis: Temperatur")
 
-            # --- HACKFLEISCH ---
-            hack_has_data = bool((hfm_hack_temp_in.value or "").strip()) or \
-                            bool((hfm_hack_lief_schwein_in.value or "").strip()) or \
-                            bool((hfm_hack_lief_rind_in.value or "").strip()) or \
-                            ((hfm_hack_charge_schwein_dd.value or "").strip() not in c_opts_s) or \
-                            ((hfm_hack_charge_rind_dd.value or "").strip() not in c_opts_r)
             if hfm_hack_cb.value:
                 if not (hfm_hack_temp_in.value or "").strip(): errors.append("- Hackfleisch: Temperatur")
                 if not (hfm_hack_charge_schwein_dd.value or "").strip() and not (hfm_hack_charge_rind_dd.value or "").strip(): errors.append("- Hackfleisch: Chargennummer")
                 if not (hfm_hack_mhd_s_tag_dd.value or "").strip() and not (hfm_hack_mhd_r_tag_dd.value or "").strip(): errors.append("- Hackfleisch: MHD")
-            elif hack_has_data:
-                errors.append("- HACKFLEISCH: Du hast Daten eingegeben, aber den HAKEN oben vergessen!")
 
-            # --- METT ---
-            mett_has_data = bool((hfm_mett_temp_in.value or "").strip()) or \
-                            bool((hfm_mett_lief_in.value or "").strip()) or \
-                            ((hfm_mett_charge_dd.value or "").strip() not in c_opts_s)
             if hfm_mett_cb.value:
                 if not (hfm_mett_temp_in.value or "").strip(): errors.append("- Mett: Temperatur")
                 if not (hfm_mett_charge_dd.value or "").strip(): errors.append("- Mett: Chargennummer")
                 if not (hfm_mett_mhd_tag_dd.value or "").strip(): errors.append("- Mett: MHD")
-            elif mett_has_data:
-                errors.append("- METT: Du hast Daten eingegeben, aber den HAKEN oben vergessen!")
 
-            # --- FZ SCHWEIN ---
-            fzs_has_data = bool((hfm_fzs_temp_in.value or "").strip()) or \
-                           bool((hfm_fzs_lief_in.value or "").strip()) or \
-                           bool((hfm_fzs_produkt_in.value or "").strip()) or \
-                           ((hfm_fzs_charge_dd.value or "").strip() not in c_opts_s)
             if hfm_fzs_cb.value:
                 if not (hfm_fzs_temp_in.value or "").strip(): errors.append("- FZ Schwein: Temperatur")
                 if not (hfm_fzs_charge_dd.value or "").strip(): errors.append("- FZ Schwein: Chargennummer")
                 if not (hfm_fzs_mhd_tag_dd.value or "").strip(): errors.append("- FZ Schwein: MHD")
-            elif fzs_has_data:
-                errors.append("- FZ SCHWEIN: Du hast Daten eingegeben, aber den HAKEN oben vergessen!")
 
-            # --- FZ GEFLÜGEL ---
-            fzg_has_data = bool((hfm_fzg_temp_in.value or "").strip()) or \
-                           bool((hfm_fzg_lief_in.value or "").strip()) or \
-                           bool((hfm_fzg_produkt_in.value or "").strip()) or \
-                           ((hfm_fzg_charge_dd.value or "").strip() not in c_opts_g)
             if hfm_fzg_cb.value:
                 if not (hfm_fzg_temp_in.value or "").strip(): errors.append("- FZ Geflügel: Temperatur")
                 if not (hfm_fzg_charge_dd.value or "").strip(): errors.append("- FZ Geflügel: Chargennummer")
                 if not (hfm_fzg_mhd_tag_dd.value or "").strip(): errors.append("- FZ Geflügel: MHD")
-            elif fzg_has_data:
-                errors.append("- FZ GEFLÜGEL: Du hast Daten eingegeben, aber den HAKEN oben vergessen!")
 
-            # --- BIO HACKFLEISCH ---
-            bio_has_data = bool((hfm_bio_temp_in.value or "").strip()) or \
-                           bool((hfm_bio_lief_schwein_in.value or "").strip()) or \
-                           bool((hfm_bio_lief_rind_in.value or "").strip()) or \
-                           ((hfm_bio_charge_schwein_dd.value or "").strip() not in c_opts_s) or \
-                           ((hfm_bio_charge_rind_dd.value or "").strip() not in c_opts_r)
             if hfm_bio_cb.value:
                 if not (hfm_bio_temp_in.value or "").strip(): errors.append("- Bio Hackfleisch: Temperatur")
                 if not (hfm_bio_charge_schwein_dd.value or "").strip() and not (hfm_bio_charge_rind_dd.value or "").strip(): errors.append("- Bio Hackfleisch: Chargennummer")
                 if not (hfm_bio_mhd_s_tag_dd.value or "").strip() and not (hfm_bio_mhd_r_tag_dd.value or "").strip(): errors.append("- Bio Hackfleisch: MHD")
-            elif bio_has_data:
-                errors.append("- BIO HACK: Du hast Daten eingegeben, aber den HAKEN oben vergessen!")
             
             return errors
 
@@ -686,16 +598,21 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, None)
 
         def nur_speichern(e):
+            # FIX: ZUERST die alten Texte unsichtbar machen und UI updaten!
+            fehler_text.visible = False
+            fehler_text.value = ""
+            status_text.value = ""
+            page.update()
+
             errs = check_pflichtfelder()
             if errs:
-                fehler_text.value = "⚠️ BITTE FOLGENDE FELDER AUSFÜLLEN ODER PRÜFEN:\n" + "\n".join(errs)
+                fehler_text.value = "⚠️ BITTE FOLGENDE FELDER AUSFÜLLEN:\n" + "\n".join(errs)
                 fehler_text.visible = True
-                status_text.value = ""
                 page.update()
                 return
 
             try:
-                fehler_text.visible = False; status_text.value = "⏳ Speichere Tour..."; status_text.color = "yellow"; page.update()
+                status_text.value = "⏳ Speichere Tour..."; status_text.color = "yellow"; page.update()
                 maerkte = lade_maerkte()
                 d = hole_aktuelle_daten()
                 tour_aktualisiert = False
@@ -708,16 +625,21 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 status_text.value = "❌ Fehler"; status_text.color = "red"; zeige_fehler(ex)
         
         def save_final(e):
+            # FIX: ZUERST die alten Texte unsichtbar machen und UI updaten!
+            fehler_text.visible = False
+            fehler_text.value = ""
+            status_text.value = ""
+            page.update()
+
             errs = check_pflichtfelder()
             if errs:
-                fehler_text.value = "⚠️ BITTE FOLGENDE FELDER AUSFÜLLEN ODER PRÜFEN:\n" + "\n".join(errs)
+                fehler_text.value = "⚠️ BITTE FOLGENDE FELDER AUSFÜLLEN:\n" + "\n".join(errs)
                 fehler_text.visible = True
-                status_text.value = ""
                 page.update()
                 return
 
             try:
-                fehler_text.visible = False; status_text.value = "⏳ Erstelle PDF..."; status_text.color = "yellow"; page.update()
+                status_text.value = "⏳ Erstelle PDF..."; status_text.color = "yellow"; page.update()
                 maerkte = lade_maerkte()
                 d = hole_aktuelle_daten()
                 if markt_index is None: maerkte.append(d)
