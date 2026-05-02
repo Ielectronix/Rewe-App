@@ -27,7 +27,6 @@ def main(page: ft.Page):
         from pdf_generator import get_all_rewe_bases
         from formular import zeige_maske_ui
 
-        # NEON-DESIGN: Immer dünn, leuchtend wenn aktiv
         def nav_btn(text, on_click, is_active=False):
             bg = "#004000" if is_active else "#222222"
             txt_color = "#A3FFA3" if is_active else "white"
@@ -49,6 +48,7 @@ def main(page: ft.Page):
                 margin=ft.margin.symmetric(vertical=5, horizontal=2)
             )
 
+        # Großer Button für "Neue Tour" oder "Tag starten"
         def action_btn(text, on_click, farbe):
             return ft.ElevatedButton(
                 content=ft.Text(text, size=14, weight="bold"),
@@ -57,6 +57,18 @@ def main(page: ft.Page):
                     shape=ft.RoundedRectangleBorder(radius=25), 
                     padding=ft.padding.symmetric(horizontal=20, vertical=15),
                     side=ft.BorderSide(width=2, color=farbe)
+                )
+            )
+
+        # NEU: Kleiner Button extra für Listen (Stift, Müll, Senden), um Platz zu sparen
+        def small_action_btn(text, on_click, farbe):
+            return ft.ElevatedButton(
+                content=ft.Text(text, size=12),
+                on_click=on_click, bgcolor="#0b1a0b", color=farbe,
+                style=ft.ButtonStyle(
+                    shape=ft.RoundedRectangleBorder(radius=15), 
+                    padding=ft.padding.symmetric(horizontal=8, vertical=10), # Sehr schmales Padding!
+                    side=ft.BorderSide(width=1.5, color=farbe)
                 )
             )
 
@@ -73,8 +85,10 @@ def main(page: ft.Page):
         def zeige_startbildschirm():
             ansicht.controls.clear()
             v, z = lade_benutzer()
-            v_in = ft.TextField(label="Vorname", value=v, bgcolor="#003D00", color="yellow", border_color="white", width=300, text_align="center")
-            z_in = ft.TextField(label="Nachname", value=z, bgcolor="#003D00", color="yellow", border_color="white", width=300, text_align="center")
+            
+            # HIER IST DER FIX: label_style=ft.TextStyle(color="white") macht den Info-Text gut lesbar
+            v_in = ft.TextField(label="Vorname", value=v, bgcolor="#003D00", color="yellow", border_color="white", label_style=ft.TextStyle(color="white"), width=300, text_align="center")
+            z_in = ft.TextField(label="Nachname", value=z, bgcolor="#003D00", color="yellow", border_color="white", label_style=ft.TextStyle(color="white"), width=300, text_align="center")
             
             def start_klick(e):
                 speichere_benutzer(v_in.value, z_in.value)
@@ -109,12 +123,13 @@ def main(page: ft.Page):
                     
                     ansicht.controls.append(
                         ft.Container(
-                            bgcolor="#002200", padding=15, border_radius=15, width=380,
+                            bgcolor="#002200", padding=10, border_radius=15, width=380,
                             content=ft.Row([
-                                ft.Text(f"{anzeige_text}", color="white", weight="bold", size=14, expand=True, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS),
-                                action_btn("✏️", lambda e, i=index: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, i), "#2196F3"),
-                                action_btn("🗑️", loesche_t, "#F44336")
-                            ], alignment="spaceBetween")
+                                # HIER IST DER FIX: size=12 und kompaktere Anordnung
+                                ft.Text(f"{anzeige_text}", color="white", weight="bold", size=12, expand=True, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS),
+                                small_action_btn("✏️", lambda e, i=index: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, i), "#2196F3"),
+                                small_action_btn("🗑️", loesche_t, "#F44336")
+                            ], alignment="spaceBetween", spacing=5) # spacing=5 rückt alles enger zusammen
                         )
                     )
             ansicht.controls.append(action_btn("➕ Neue Tour anlegen", lambda e: zeige_maske_ui(page, ansicht, nav_leiste, zeige_dashboard, zeige_fehler, None), "#2196F3"))
@@ -154,12 +169,12 @@ def main(page: ft.Page):
 
                             ansicht.controls.append(
                                 ft.Container(
-                                    bgcolor="#002200", padding=15, border_radius=15, width=380,
+                                    bgcolor="#002200", padding=10, border_radius=15, width=380,
                                     content=ft.Row([
                                         ft.Text(f[:18], color="white", size=12, expand=True),
-                                        action_btn("📤 Senden", teilen_jetzt, "#2196F3"),
-                                        action_btn("🗑️", rm, "#F44336")
-                                    ])
+                                        small_action_btn("📤 Senden", teilen_jetzt, "#2196F3"),
+                                        small_action_btn("🗑️", rm, "#F44336")
+                                    ], spacing=5)
                                 )
                             )
                 except: pass
@@ -215,11 +230,11 @@ def main(page: ft.Page):
 
                             ansicht.controls.append(
                                 ft.Container(
-                                    bgcolor="#002200", padding=15, border_radius=15, width=380, 
+                                    bgcolor="#002200", padding=10, border_radius=15, width=380, 
                                     content=ft.Row([
                                         ft.Text(f[:18], color="white", size=12, expand=True), 
-                                        action_btn("📤 Senden", teilen_archiv, "#2196F3")
-                                    ])
+                                        small_action_btn("📤 Senden", teilen_archiv, "#2196F3")
+                                    ], spacing=5)
                                 )
                             )
                         ansicht.controls.append(ft.Divider(color="white24"))
