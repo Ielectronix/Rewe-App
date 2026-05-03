@@ -20,7 +20,6 @@ def speichere_vorlagen_lokal(daten):
 def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboard, zeige_fehler, markt_index):
     try:
         ansicht.controls.clear()
-        # FIX: STRETCH zwingt die Elemente, den gesamten Bildschirm des Tablets zu nutzen!
         ansicht.horizontal_alignment = ft.CrossAxisAlignment.STRETCH 
         
         fehler_text = ft.Text("", color="red", weight="bold", visible=False, size=14, text_align=ft.TextAlign.CENTER)
@@ -31,13 +30,24 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         heute_str = datetime.datetime.now().strftime('%d.%m.%Y')
         aktuelle_daten = maerkte[markt_index] if (markt_index is not None and markt_index < len(maerkte)) else {"datum": heute_str, "mitarbeiter_name": f"{v} {z}".strip()}
 
-        # w=None bedeutet: Nimm dir so viel Platz, wie der Bildschirm hergibt!
+        # FIX: Schriftfarbe für Labels (Info-Schrift) ist wieder hart auf "white" gesetzt!
         def tf(label, val, hint="", w=None, oc=None, ob=None):
-            return ft.TextField(label=label, value=val or "", hint_text=hint, color="yellow", border_color="white", width=w, on_change=oc, on_blur=ob, text_style=ft.TextStyle(size=12))
+            return ft.TextField(
+                label=label, value=val or "", hint_text=hint, 
+                hint_style=ft.TextStyle(color="white54", size=12), 
+                color="yellow", text_style=ft.TextStyle(size=12, color="yellow"), 
+                label_style=ft.TextStyle(color="white"), # HIER IST DAS WEISS!
+                border_color="white", content_padding=10, width=w, on_change=oc, on_blur=ob
+            )
 
         def combo(label, val, opts, w=None, oc=None):
             echter_wert = val if val is not None else ""
-            c = ft.TextField(label=label, value=echter_wert, color="yellow", border_color="white", content_padding=10, width=w, on_change=oc, text_style=ft.TextStyle(size=12))
+            c = ft.TextField(
+                label=label, value=echter_wert, 
+                color="yellow", text_style=ft.TextStyle(size=12, color="yellow"), 
+                label_style=ft.TextStyle(color="white"), # HIER IST DAS WEISS!
+                border_color="white", dense=True, content_padding=10, width=w, on_change=oc
+            )
             items = [ft.PopupMenuItem(content=ft.Text(o), on_click=lambda e, opt=o: (setattr(c, 'value', opt), c.update())) for o in opts]
             c.suffix = ft.PopupMenuButton(items=items, content=ft.Text("▼", color="white"))
             return c
@@ -92,7 +102,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
         d_tag, d_mon, d_jahr = parse_datum(aktuelle_daten.get("datum", heute_str), heute_str.split(".")[0], heute_str.split(".")[1], heute_str.split(".")[2])
         tag_dd, mon_dd, jahr_dd = combo("Tag", d_tag, tage_opts, 90), combo("Mon", d_mon, mon_opts, 90), combo("Jahr", d_jahr, jahr_opts, 120)
-        # FIX: Alle Rows haben jetzt alignment=ft.MainAxisAlignment.CENTER!
         datum_row = ft.Column([ft.Text("Datum der Probenahme", color="white", weight="bold", text_align=ft.TextAlign.CENTER), ft.Row([tag_dd, mon_dd, jahr_dd], wrap=True, alignment=ft.MainAxisAlignment.CENTER)], horizontal_alignment=ft.CrossAxisAlignment.CENTER)
         
         adr_in = tf("Adresse Markt", aktuelle_daten.get("adresse", ""))
@@ -480,9 +489,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
             return d
 
-        # ==========================================
-        # RESTLICHE LOGIK (SPEICHERN & PFLICHTFELDER)
-        # ==========================================
         def check_pflichtfelder():
             errors = []
             if not (nr_in.value or "").strip(): errors.append("- Marktnummer")
@@ -586,7 +592,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             ], alignment=ft.MainAxisAlignment.CENTER)
         ], spacing=10, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
 
-        # STRETCH FÜR TABLET: Füllt die ganze Breite aus!
         haupt_bereich = ft.Column(spacing=15, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
         top_nav = ft.Row(wrap=True, alignment=ft.MainAxisAlignment.CENTER, spacing=5)
 
@@ -669,12 +674,18 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 sw_og("teil")
             page.update()
 
+        zentrierter_bereich = ft.Container(
+            content=haupt_bereich,
+            width=700, 
+            alignment=ft.alignment.center
+        )
+
         ansicht.controls.extend([
             top_nav, ft.Divider(color="white24"), 
-            haupt_bereich, 
+            zentrierter_bereich, 
             ft.Container(height=20),
             fehler_text, status_text, 
-            bottom_buttons
+            ft.Container(content=bottom_buttons, width=700, alignment=ft.alignment.center)
         ])
         
         switch_tab("stamm")
