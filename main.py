@@ -52,34 +52,29 @@ def main(page: ft.Page):
                             except: pass
                 except PermissionError: pass
 
-        # ==========================================
-        # UI ELEMENTE & NAVIGATION
-        # ==========================================
         def nav_leiste(active_tab="touren"):
             def make_btn(text, tab_id, on_click):
                 is_active = (active_tab == tab_id)
                 return ft.Container(
                     expand=1,
                     content=ft.ElevatedButton(
-                        content=ft.Text(text, size=13, weight="bold"), # FIX: Schriftgröße 13, damit es perfekt passt
+                        content=ft.Text(text, size=13, weight="bold"),
                         on_click=on_click,
                         bgcolor="#004400" if is_active else "#1a1a1a",
                         color="white",
                         style=ft.ButtonStyle(
                             shape=ft.RoundedRectangleBorder(radius=10),
-                            padding=ft.padding.symmetric(horizontal=2, vertical=10), # FIX: Weniger Randabstand
+                            padding=ft.padding.symmetric(horizontal=2, vertical=10),
                             side=ft.BorderSide(width=1.5, color="#4CAF50")
                         )
                     )
                 )
-            # FIX: Senden heißt wieder Senden
             return ft.Row(alignment=ft.MainAxisAlignment.CENTER, spacing=5, controls=[
                 make_btn("🚚 Touren", "touren", lambda e: zeige_dashboard()),
                 make_btn("📤 Senden", "senden", lambda e: zeige_postausgang()),
                 make_btn("🗄️ Archiv", "archiv", lambda e: zeige_archiv())
             ])
 
-        # Der große, dicke Button (Für Startbildschirm etc.)
         def action_btn(text, on_click, farbe):
             return ft.ElevatedButton(
                 content=ft.Text(text, size=14, weight="bold"),
@@ -91,14 +86,13 @@ def main(page: ft.Page):
                 )
             )
 
-        # FIX: Der neue, kompakte Button extra für die Listen im Postausgang/Archiv
         def list_action_btn(text, on_click, farbe):
             return ft.ElevatedButton(
                 content=ft.Text(text, size=12, weight="bold"),
                 on_click=on_click, bgcolor="#0b1a0b", color=farbe,
                 style=ft.ButtonStyle(
                     shape=ft.RoundedRectangleBorder(radius=15), 
-                    padding=ft.padding.symmetric(horizontal=12, vertical=8), # Sehr viel schlanker
+                    padding=ft.padding.symmetric(horizontal=12, vertical=8),
                     side=ft.BorderSide(width=1.5, color=farbe)
                 )
             )
@@ -107,15 +101,13 @@ def main(page: ft.Page):
             return ft.ElevatedButton(content=ft.Text(emoji, size=16), on_click=on_click, bgcolor="#0b1a0b", color=farbe,
                                      style=ft.ButtonStyle(shape=ft.CircleBorder(), padding=0, side=ft.BorderSide(width=2, color=farbe)), width=45, height=45)
 
-        # ==========================================
-        # SEITEN / TABS
-        # ==========================================
         def zeige_startbildschirm():
             ansicht.controls.clear()
             bereinige_archiv() 
             v, z = lade_benutzer()
-            v_in = ft.TextField(label="Vorname", value=v, color="yellow", text_style=ft.TextStyle(color="yellow"), label_style=ft.TextStyle(color="white54"), border_color="white", width=300, text_align="center")
-            z_in = ft.TextField(label="Nachname", value=z, color="yellow", text_style=ft.TextStyle(color="yellow"), label_style=ft.TextStyle(color="white54"), border_color="white", width=300, text_align="center")
+            # Startbildschirm-Felder auch breiter
+            v_in = ft.TextField(label="Vorname", value=v, color="yellow", text_style=ft.TextStyle(color="yellow"), label_style=ft.TextStyle(color="white54"), border_color="white", width=400, text_align="center")
+            z_in = ft.TextField(label="Nachname", value=z, color="yellow", text_style=ft.TextStyle(color="yellow"), label_style=ft.TextStyle(color="white54"), border_color="white", width=400, text_align="center")
             
             def start_klick(e):
                 speichere_benutzer(v_in.value, z_in.value)
@@ -141,7 +133,8 @@ def main(page: ft.Page):
             else:
                 for i, m in enumerate(maerkte):
                     txt = m.get("adresse") or m.get("marktnummer") or "Tour"
-                    ansicht.controls.append(ft.Container(bgcolor="#002200", padding=15, border_radius=15, width=380, content=ft.Row([
+                    # FIX: width=700 für das Tablet!
+                    ansicht.controls.append(ft.Container(bgcolor="#002200", padding=15, border_radius=15, width=700, content=ft.Row([
                         ft.Text(txt, color="white", weight="bold", size=12, expand=True, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS),
                         small_btn("✏️", lambda e, idx=i: zeige_maske_ui(page, ansicht, None, zeige_dashboard, None, idx), "#2196F3"),
                         small_btn("🗑️", lambda e, idx=i: (maerkte.pop(idx), speichere_maerkte(maerkte), zeige_dashboard()), "#F44336")
@@ -190,11 +183,9 @@ def main(page: ft.Page):
 
                             ansicht.controls.append(
                                 ft.Container(
-                                    # FIX: padding=10 spart Platz
-                                    bgcolor="#002200", padding=10, border_radius=15, width=380,
+                                    bgcolor="#002200", padding=10, border_radius=15, width=700, # FIX: width=700
                                     content=ft.Row([
                                         ft.Text(anzeige_text, color=farbe, size=12, expand=True, weight=text_gewicht, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS),
-                                        # FIX: Schlanker Senden-Button hier im Postausgang
                                         list_action_btn("📤 Senden", teilen_jetzt, "#2196F3"),
                                         small_btn("🗑️", rm, "#F44336")
                                     ])
@@ -210,7 +201,7 @@ def main(page: ft.Page):
             ansicht.controls.append(ft.Text("Archiv (Letzte 14 Tage)", size=20, weight="bold", color="white"))
             
             email_val = "registration-mibi.ber@tentamus.com"
-            ansicht.controls.append(ft.Container(bgcolor="#1a1a1a", padding=15, border_radius=15, width=380, content=ft.Column([
+            ansicht.controls.append(ft.Container(bgcolor="#1a1a1a", padding=15, border_radius=15, width=700, content=ft.Column([ # FIX: width=700
                 ft.Text("E-MAIL KOPIEREN:", color="#FF9800", weight="bold", size=14), 
                 ft.Text(email_val, color="white", size=13, selectable=True)
             ], horizontal_alignment="center")))
@@ -252,11 +243,9 @@ def main(page: ft.Page):
 
                             ansicht.controls.append(
                                 ft.Container(
-                                    # FIX: padding=10 spart Platz
-                                    bgcolor="#002200", padding=10, border_radius=15, width=380, 
+                                    bgcolor="#002200", padding=10, border_radius=15, width=700, # FIX: width=700
                                     content=ft.Row([
                                         ft.Text(anzeige_text, color=farbe, size=12, expand=True, weight=text_gewicht, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS), 
-                                        # FIX: Schlanker Senden-Button hier im Archiv
                                         list_action_btn("📤 Senden", teilen_archiv, "#2196F3")
                                     ])
                                 )
