@@ -259,9 +259,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             idx = f"{i:02d}"
             okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0010_status_{idx}", "R+D"), ["R+D", "R", "P", "-"]), "objekt": combo("Objekt", aktuelle_daten.get(f"0010_objekt_{idx}") or okz_def[i]["o"], okz_obj_opts), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0010_ort_{idx}", "Kühlraum"), ["Kühlraum", "Produktionsbereich", "Theke"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0010_abklatsch_{idx}", okz_def[i]["a"])), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0010_tupfer_{idx}", okz_def[i]["t"]))}
 
-        # ==========================================
-        # CONVENIENCE / PROBEN
-        # ==========================================
         og_cb = ft.Row([cb("Obst-/Gemüse Convenience", aktuelle_daten.get("og_cb", False), bold=True)], alignment=ft.MainAxisAlignment.CENTER)
         og_controls = {}
         for i in range(1, 6):
@@ -293,7 +290,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         # VORLAGEN LOGIK 
         # ==========================================
         alle_vorlagen = lade_vorlagen_lokal()
-        vorlagen_status = ft.Text("", weight="bold", size=12) 
+        vorlagen_status = ft.Text("", weight="bold", size=12, text_align=ft.TextAlign.CENTER) 
         vl_dd = ft.Dropdown(options=[ft.dropdown.Option(k) for k in alle_vorlagen.keys()], hint_text="Vorlage wählen...", dense=True, content_padding=10, color="yellow", text_style=ft.TextStyle(color="yellow", size=12), border_color="white")
         vl_name_in = tf("Als neue Vorlage speichern", "")
 
@@ -450,6 +447,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             errors = []
             if not (nr_in.value or "").strip(): errors.append("- Stammdaten: Marktnummer fehlt")
             if not (adr_in.value or "").strip(): errors.append("- Stammdaten: Adresse fehlt")
+            if not (auft_in.value or "").strip(): errors.append("- Stammdaten: Auftragsnummer fehlt")
             if not (name_in.value or "").strip(): errors.append("- Stammdaten: Name Probenehmer fehlt")
 
             # --- TRINKWASSER CHECK ---
@@ -606,7 +604,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 ft.Container(content=action_btn_form("💾 Speichern", lambda e: nur_speichern(e), "#FF9800"), expand=1),
                 ft.Container(content=action_btn_form("📄 Bericht", save_final, "#2196F3"), expand=1),
             ], alignment=ft.MainAxisAlignment.CENTER)
-        ], spacing=10, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
+        ], spacing=10)
 
         haupt_bereich = ft.Column(spacing=15, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
         top_nav = ft.Row(wrap=True, alignment=ft.MainAxisAlignment.CENTER, spacing=5)
@@ -690,10 +688,9 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 sw_og("teil")
             page.update()
 
-        zentrierter_bereich = ft.Container(
-            content=haupt_bereich,
-            width=700, 
-            alignment=ft.alignment.center
+        zentrierter_bereich = ft.Row(
+            controls=[ft.Container(content=haupt_bereich, width=700)],
+            alignment=ft.MainAxisAlignment.CENTER
         )
 
         ansicht.controls.extend([
@@ -701,7 +698,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             zentrierter_bereich, 
             ft.Container(height=20),
             fehler_text, status_text, 
-            ft.Container(content=bottom_buttons, width=700, alignment=ft.alignment.center)
+            ft.Row([ft.Container(content=bottom_buttons, width=700)], alignment=ft.MainAxisAlignment.CENTER)
         ])
         
         switch_tab("stamm")
