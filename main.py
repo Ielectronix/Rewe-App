@@ -2,7 +2,7 @@ import flet as ft
 import os
 import datetime
 import shutil
-import json # NEU: Für das Speichern der gesendeten Dateien
+import json 
 
 def main(page: ft.Page):
     page.title = "Rewe Monitoring"
@@ -18,9 +18,6 @@ def main(page: ft.Page):
         from pdf_generator import get_all_rewe_bases
         from formular import zeige_maske_ui
 
-        # ==========================================
-        # NEU: LOGIK FÜR GESENDETE DATEIEN
-        # ==========================================
         def lade_gesendet():
             try:
                 if os.path.exists("gesendet.json"):
@@ -37,10 +34,6 @@ def main(page: ft.Page):
                     json.dump(list(gesendet), f)
             except: pass
 
-
-        # ==========================================
-        # NEU: 14 TAGE LÖSCH-FUNKTION (Wird beim Start ausgeführt)
-        # ==========================================
         def get_erweiterte_bases():
             try: return get_all_rewe_bases() + ["/storage/emulated/0/Download/Rewe_Monitoring"]
             except: return []
@@ -55,11 +48,9 @@ def main(page: ft.Page):
                         if os.path.isdir(ordner_pfad) and ordner != "temp":
                             try:
                                 ordner_datum = datetime.datetime.strptime(ordner, '%Y-%m-%d')
-                                # FIX: Auf 14 Tage geändert!
                                 if (heute - ordner_datum).days > 14: shutil.rmtree(ordner_pfad)
                             except: pass
                 except PermissionError: pass
-
 
         # ==========================================
         # UI ELEMENTE & NAVIGATION
@@ -70,22 +61,25 @@ def main(page: ft.Page):
                 return ft.Container(
                     expand=1,
                     content=ft.ElevatedButton(
-                        text, on_click=on_click,
+                        content=ft.Text(text, size=13, weight="bold"), # FIX: Schriftgröße 13, damit es perfekt passt
+                        on_click=on_click,
                         bgcolor="#004400" if is_active else "#1a1a1a",
                         color="white",
                         style=ft.ButtonStyle(
                             shape=ft.RoundedRectangleBorder(radius=10),
-                            padding=10,
+                            padding=ft.padding.symmetric(horizontal=2, vertical=10), # FIX: Weniger Randabstand
                             side=ft.BorderSide(width=1.5, color="#4CAF50")
                         )
                     )
                 )
-            return ft.Row(alignment=ft.MainAxisAlignment.CENTER, spacing=10, controls=[
+            # FIX: Senden heißt wieder Senden
+            return ft.Row(alignment=ft.MainAxisAlignment.CENTER, spacing=5, controls=[
                 make_btn("🚚 Touren", "touren", lambda e: zeige_dashboard()),
-                make_btn("📤 Send", "senden", lambda e: zeige_postausgang()),
+                make_btn("📤 Senden", "senden", lambda e: zeige_postausgang()),
                 make_btn("🗄️ Archiv", "archiv", lambda e: zeige_archiv())
             ])
 
+        # Der große, dicke Button (Für Startbildschirm etc.)
         def action_btn(text, on_click, farbe):
             return ft.ElevatedButton(
                 content=ft.Text(text, size=14, weight="bold"),
@@ -94,6 +88,18 @@ def main(page: ft.Page):
                     shape=ft.RoundedRectangleBorder(radius=25), 
                     padding=ft.padding.symmetric(horizontal=20, vertical=15),
                     side=ft.BorderSide(width=2, color=farbe)
+                )
+            )
+
+        # FIX: Der neue, kompakte Button extra für die Listen im Postausgang/Archiv
+        def list_action_btn(text, on_click, farbe):
+            return ft.ElevatedButton(
+                content=ft.Text(text, size=12, weight="bold"),
+                on_click=on_click, bgcolor="#0b1a0b", color=farbe,
+                style=ft.ButtonStyle(
+                    shape=ft.RoundedRectangleBorder(radius=15), 
+                    padding=ft.padding.symmetric(horizontal=12, vertical=8), # Sehr viel schlanker
+                    side=ft.BorderSide(width=1.5, color=farbe)
                 )
             )
 
@@ -106,10 +112,7 @@ def main(page: ft.Page):
         # ==========================================
         def zeige_startbildschirm():
             ansicht.controls.clear()
-            
-            # AUTOMATISCHER 14-TAGE-CLEANUP IM HINTERGRUND BEIM START!
             bereinige_archiv() 
-            
             v, z = lade_benutzer()
             v_in = ft.TextField(label="Vorname", value=v, color="yellow", text_style=ft.TextStyle(color="yellow"), label_style=ft.TextStyle(color="white54"), border_color="white", width=300, text_align="center")
             z_in = ft.TextField(label="Nachname", value=z, color="yellow", text_style=ft.TextStyle(color="yellow"), label_style=ft.TextStyle(color="white54"), border_color="white", width=300, text_align="center")
@@ -139,7 +142,7 @@ def main(page: ft.Page):
                 for i, m in enumerate(maerkte):
                     txt = m.get("adresse") or m.get("marktnummer") or "Tour"
                     ansicht.controls.append(ft.Container(bgcolor="#002200", padding=15, border_radius=15, width=380, content=ft.Row([
-                        ft.Text(txt, color="white", weight="bold", size=12, expand=True, max_lines=2),
+                        ft.Text(txt, color="white", weight="bold", size=12, expand=True, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS),
                         small_btn("✏️", lambda e, idx=i: zeige_maske_ui(page, ansicht, None, zeige_dashboard, None, idx), "#2196F3"),
                         small_btn("🗑️", lambda e, idx=i: (maerkte.pop(idx), speichere_maerkte(maerkte), zeige_dashboard()), "#F44336")
                     ])))
@@ -159,7 +162,7 @@ def main(page: ft.Page):
                 such_ordner.append(os.path.join(base, heute_ordner))
                 such_ordner.append(base)
             
-            gesendet_set = lade_gesendet() # Lade die Liste der gesendeten PDFs
+            gesendet_set = lade_gesendet() 
             
             for ordner in list(set(such_ordner)):
                 if not os.path.exists(ordner): continue
@@ -169,17 +172,16 @@ def main(page: ft.Page):
                             pdfs_gefunden = True
                             pfad = os.path.join(ordner, f)
                             
-                            # HIER KOMMT DIE NEUE OPTIK INS SPIEL
                             ist_gesendet = pfad in gesendet_set
-                            farbe = "#4CAF50" if ist_gesendet else "white" # Grün, wenn versendet
+                            farbe = "#4CAF50" if ist_gesendet else "white"
                             text_gewicht = "bold" if ist_gesendet else "normal"
-                            anzeige_text = f"✅ {f[:18]}..." if ist_gesendet else f[:18]
+                            anzeige_text = f"✅ {f}" if ist_gesendet else f
                             
                             async def teilen_jetzt(e, p=pfad):
                                 if share_obj: 
                                     await share_obj.share_files([ft.ShareFile.from_path(p)], text="REWE Bericht")
-                                    markiere_als_gesendet(p) # Speichere als gesendet
-                                    zeige_postausgang() # Lade Seite neu für grünen Haken!
+                                    markiere_als_gesendet(p)
+                                    zeige_postausgang() 
                                 else: print("Share geht auf dem PC nicht.")
 
                             def rm(e, p=pfad):
@@ -188,10 +190,12 @@ def main(page: ft.Page):
 
                             ansicht.controls.append(
                                 ft.Container(
-                                    bgcolor="#002200", padding=15, border_radius=15, width=380,
+                                    # FIX: padding=10 spart Platz
+                                    bgcolor="#002200", padding=10, border_radius=15, width=380,
                                     content=ft.Row([
-                                        ft.Text(anzeige_text, color=farbe, size=12, expand=True, weight=text_gewicht),
-                                        action_btn("📤 Send", teilen_jetzt, "#2196F3"),
+                                        ft.Text(anzeige_text, color=farbe, size=12, expand=True, weight=text_gewicht, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS),
+                                        # FIX: Schlanker Senden-Button hier im Postausgang
+                                        list_action_btn("📤 Senden", teilen_jetzt, "#2196F3"),
                                         small_btn("🗑️", rm, "#F44336")
                                     ])
                                 )
@@ -222,7 +226,7 @@ def main(page: ft.Page):
                             if os.path.isdir(p) and o != "temp": such_ordner.append(p)
                     except: pass
             
-            gesendet_set = lade_gesendet() # Lade die Liste auch im Archiv!
+            gesendet_set = lade_gesendet() 
             
             for ordner in list(set(such_ordner)):
                 if not os.path.exists(ordner): continue
@@ -237,7 +241,7 @@ def main(page: ft.Page):
                             ist_gesendet = pfad in gesendet_set
                             farbe = "#4CAF50" if ist_gesendet else "white"
                             text_gewicht = "bold" if ist_gesendet else "normal"
-                            anzeige_text = f"✅ {f[:18]}..." if ist_gesendet else f[:18]
+                            anzeige_text = f"✅ {f}" if ist_gesendet else f
                             
                             async def teilen_archiv(e, p=pfad):
                                 if share_obj: 
@@ -248,10 +252,12 @@ def main(page: ft.Page):
 
                             ansicht.controls.append(
                                 ft.Container(
-                                    bgcolor="#002200", padding=15, border_radius=15, width=380, 
+                                    # FIX: padding=10 spart Platz
+                                    bgcolor="#002200", padding=10, border_radius=15, width=380, 
                                     content=ft.Row([
-                                        ft.Text(anzeige_text, color=farbe, size=12, expand=True, weight=text_gewicht), 
-                                        action_btn("📤 Send", teilen_archiv, "#2196F3")
+                                        ft.Text(anzeige_text, color=farbe, size=12, expand=True, weight=text_gewicht, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS), 
+                                        # FIX: Schlanker Senden-Button hier im Archiv
+                                        list_action_btn("📤 Senden", teilen_archiv, "#2196F3")
                                     ])
                                 )
                             )
