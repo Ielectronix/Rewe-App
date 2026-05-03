@@ -20,6 +20,7 @@ def speichere_vorlagen_lokal(daten):
 def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboard, zeige_fehler, markt_index):
     try:
         ansicht.controls.clear()
+        # FIX: Das STRETCH sorgt dafür, dass auf JEDEM Gerät 100% Breite genutzt wird. Keine festen Pixel mehr!
         ansicht.horizontal_alignment = ft.CrossAxisAlignment.STRETCH 
         
         fehler_text = ft.Text("", color="red", weight="bold", visible=False, size=14, text_align=ft.TextAlign.CENTER)
@@ -114,6 +115,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         ag_dd = combo("Auftraggeber", aktuelle_daten.get("auftraggeber", "03509 - REWE Hackfleischmonitoring"), ["03509 - REWE Hackfleischmonitoring", "3001767 - REWE Dortmund (Hackfleischmonitoring)"])
         typ_dd = combo("Typ der Probenahme", aktuelle_daten.get("typ_probenahme", "Standard"), ["Standard", "Nachkontrolle", "Mehrwöchig"])
 
+        # FIX: Checkboxen sind jetzt linksbündig wie der Rest (kein "alignment=CENTER" mehr!)
         tw_kalt_cb = cb("Trinkwasser kalt", aktuelle_daten.get("tw_kalt", False), bold=True)
         tw_zeit_in, tw_temp_in, tw_tempkonst_in = tf("Probenahmezeit", aktuelle_daten.get("tw_zeit", ""), ob=format_zeit), tf("Temp Probenahme", aktuelle_daten.get("tw_temp", ""), ob=format_temp), tf("Temp Konstante", aktuelle_daten.get("tw_tempkonst", ""), ob=format_temp)
         tw_desinf_dd = combo("Desinfektion", aktuelle_daten.get("tw_desinf", "Abflammen"), ["Abflammen", "Sprühdesinfektion", "ohne Desinfektion"])
@@ -670,20 +672,12 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 sw_og("teil")
             page.update()
 
-        zentrierter_bereich = ft.Row(
-            controls=[ft.Container(content=haupt_bereich, width=700)], 
-            alignment=ft.MainAxisAlignment.CENTER
-        )
-
         ansicht.controls.extend([
             top_nav, ft.Divider(color="white24"), 
-            zentrierter_bereich, 
+            haupt_bereich, 
             ft.Container(height=20),
             fehler_text, status_text, 
-            ft.Row(
-                controls=[ft.Container(content=bottom_buttons, width=700)], 
-                alignment=ft.MainAxisAlignment.CENTER
-            )
+            bottom_buttons
         ])
         
         switch_tab("stamm")
