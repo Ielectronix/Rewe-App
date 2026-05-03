@@ -24,6 +24,10 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         ansicht.controls.clear()
         ansicht.horizontal_alignment = ft.CrossAxisAlignment.CENTER 
         
+        # HIER SIND DIE TEXTE SICHER DEFINIERT!
+        fehler_text = ft.Text("", color="red", weight="bold", visible=False, size=14)
+        status_text = ft.Text("", color="yellow", weight="bold", size=16, text_align="center")
+
         maerkte = lade_maerkte()
         v, z = lade_benutzer()
         heute_str = datetime.datetime.now().strftime('%d.%m.%Y')
@@ -56,7 +60,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 on_click=oc, bgcolor="#0b1a0b", color=farbe,
                 style=ft.ButtonStyle(
                     shape=ft.RoundedRectangleBorder(radius=10), 
-                    padding=15,
+                    padding=ft.padding.symmetric(vertical=15, horizontal=20),
                     side=ft.BorderSide(width=2, color=farbe)
                 )
             )
@@ -255,7 +259,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             og_okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0011_status_{idx}"), ["R+D", "R", "P", "-"], 100), "objekt": combo("Objekt", aktuelle_daten.get(f"0011_objekt_{idx}") or og_okz_def[i]["o"], og_okz_opts, 200), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0011_ort_{idx}", ""), ["Kühlraum", "Produktionsbereich", "Theke"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0011_abklatsch_{idx}", og_okz_def[i]["a"])), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0011_tupfer_{idx}", og_okz_def[i]["t"]))}
 
         # ==========================================
-        # VORLAGEN LOGIK (KOMPAKT)
+        # VORLAGEN LOGIK (AUFKLAPPBAR)
         # ==========================================
         alle_vorlagen = lade_vorlagen_lokal()
         vorlagen_status = ft.Text("", weight="bold", size=12) 
@@ -283,7 +287,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             vl_dd.options = [ft.dropdown.Option(k) for k in alle_vorlagen.keys()]
             vorlagen_status.value = f"✅ Vorlage gespeichert!"; vorlagen_status.color = "orange"; vl_name_in.value = ""; page.update()
 
-        # FIX: Heißt jetzt nur noch "Vorlage"
         vorlagen_expansion = ft.ExpansionTile(
             title=ft.Text("📋 Vorlage", weight="bold", color="white"),
             collapsed_text_color="white",
@@ -301,7 +304,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         )
 
         # ==========================================
-        # DIE GIGANTISCHE DATEN-SAMMLUNG (KOMPLETT WIEDERHERGESTELLT!!!)
+        # DIE GIGANTISCHE DATEN-SAMMLUNG 
         # ==========================================
         def hole_aktuelle_daten():
             def get_val(ctrl, default_val):
@@ -575,7 +578,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             except Exception as ex: 
                 status_text.value = "❌ Fehler"; status_text.color = "red"; zeige_fehler(ex)
 
-        # FIX: Zwei gerade, harte Zeilen für die unteren Buttons, damit nie wieder ein grauer Balken kommt!
+        # HIER SIND DIE PERFEKTEN ZWEI REIHEN FÜR DIE BUTTONS
         bottom_buttons = ft.Column([
             ft.Row([
                 ft.Container(content=action_btn_form("🚚 Touren", lambda e: zeige_dashboard(), "#F44336"), expand=1),
