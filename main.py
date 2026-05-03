@@ -1,6 +1,8 @@
 import flet as ft
 import os
 import datetime
+import shutil
+import json # NEU: Für das Speichern der gesendeten Dateien
 
 def main(page: ft.Page):
     page.title = "Rewe Monitoring"
@@ -9,11 +11,59 @@ def main(page: ft.Page):
     ansicht = ft.Column(spacing=20, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
     page.add(ft.SafeArea(ansicht))
 
+    share_obj = ft.Share() if page.platform in [ft.PagePlatform.ANDROID, ft.PagePlatform.IOS] else None
+
     try:
         from datenverwaltung import lade_maerkte, speichere_maerkte, lade_benutzer, speichere_benutzer
         from pdf_generator import get_all_rewe_bases
         from formular import zeige_maske_ui
 
+        # ==========================================
+        # NEU: LOGIK FÜR GESENDETE DATEIEN
+        # ==========================================
+        def lade_gesendet():
+            try:
+                if os.path.exists("gesendet.json"):
+                    with open("gesendet.json", "r", encoding="utf-8") as f:
+                        return set(json.load(f))
+            except: pass
+            return set()
+
+        def markiere_als_gesendet(pfad):
+            gesendet = lade_gesendet()
+            gesendet.add(pfad)
+            try:
+                with open("gesendet.json", "w", encoding="utf-8") as f:
+                    json.dump(list(gesendet), f)
+            except: pass
+
+
+        # ==========================================
+        # NEU: 14 TAGE LÖSCH-FUNKTION (Wird beim Start ausgeführt)
+        # ==========================================
+        def get_erweiterte_bases():
+            try: return get_all_rewe_bases() + ["/storage/emulated/0/Download/Rewe_Monitoring"]
+            except: return []
+
+        def bereinige_archiv():
+            heute = datetime.datetime.now()
+            for base in get_erweiterte_bases():
+                if not os.path.exists(base): continue
+                try:
+                    for ordner in os.listdir(base):
+                        ordner_pfad = os.path.join(base, ordner)
+                        if os.path.isdir(ordner_pfad) and ordner != "temp":
+                            try:
+                                ordner_datum = datetime.datetime.strptime(ordner, '%Y-%m-%d')
+                                # FIX: Auf 14 Tage geändert!
+                                if (heute - ordner_datum).days > 14: shutil.rmtree(ordner_pfad)
+                            except: pass
+                except PermissionError: pass
+
+
+        # ==========================================
+        # UI ELEMENTE & NAVIGATION
+        # ==========================================
         def nav_leiste(active_tab="touren"):
             def make_btn(text, tab_id, on_click):
                 is_active = (active_tab == tab_id)
@@ -51,8 +101,15 @@ def main(page: ft.Page):
             return ft.ElevatedButton(content=ft.Text(emoji, size=16), on_click=on_click, bgcolor="#0b1a0b", color=farbe,
                                      style=ft.ButtonStyle(shape=ft.CircleBorder(), padding=0, side=ft.BorderSide(width=2, color=farbe)), width=45, height=45)
 
+        # ==========================================
+        # SEITEN / TABS
+        # ==========================================
         def zeige_startbildschirm():
             ansicht.controls.clear()
+            
+            # AUTOMATISCHER 14-TAGE-CLEANUP IM HINTERGRUND BEIM START!
+            bereinige_archiv() 
+            
             v, z = lade_benutzer()
             v_in = ft.TextField(label="Vorname", value=v, color="yellow", text_style=ft.TextStyle(color="yellow"), label_style=ft.TextStyle(color="white54"), border_color="white", width=300, text_align="center")
             z_in = ft.TextField(label="Nachname", value=z, color="yellow", text_style=ft.TextStyle(color="yellow"), label_style=ft.TextStyle(color="white54"), border_color="white", width=300, text_align="center")
@@ -86,12 +143,8 @@ def main(page: ft.Page):
                         small_btn("✏️", lambda e, idx=i: zeige_maske_ui(page, ansicht, None, zeige_dashboard, None, idx), "#2196F3"),
                         small_btn("🗑️", lambda e, idx=i: (maerkte.pop(idx), speichere_maerkte(maerkte), zeige_dashboard()), "#F44336")
                     ])))
-            ansicht.controls.append(action_btn("➕ Neue Tour anlegen", lambda e: zeige_maske_ui(page, ansicht, None, zeige_dashboard, zeige_fehler, None), "#2196F3"))
+            ansicht.controls.append(action_btn("➕ Neue Tour anlegen", lambda e: zeige_maske_ui(page, ansicht, None, zeige_dashboard, None, None), "#2196F3"))
             page.update()
-
-        def get_erweiterte_bases():
-            try: return get_all_rewe_bases() + ["/storage/emulated/0/Download/Rewe_Monitoring"]
-            except: return []
 
         def zeige_postausgang():
             ansicht.controls.clear()
@@ -101,9 +154,12 @@ def main(page: ft.Page):
             heute_ordner = datetime.datetime.now().strftime('%Y-%m-%d')
             pdfs_gefunden = False
             such_ordner = []
+            
             for base in get_erweiterte_bases():
                 such_ordner.append(os.path.join(base, heute_ordner))
                 such_ordner.append(base)
+            
+            gesendet_set = lade_gesendet() # Lade die Liste der gesendeten PDFs
             
             for ordner in list(set(such_ordner)):
                 if not os.path.exists(ordner): continue
@@ -112,11 +168,34 @@ def main(page: ft.Page):
                         if f.lower().endswith(".pdf"):
                             pdfs_gefunden = True
                             pfad = os.path.join(ordner, f)
-                            ansicht.controls.append(ft.Container(bgcolor="#002200", padding=15, border_radius=15, width=380, content=ft.Row([
-                                ft.Text(f[:18], color="white", size=12, expand=True),
-                                action_btn("📤 Send", lambda e, p=pfad: None, "#2196F3"),
-                                small_btn("🗑️", lambda e, p=pfad: (os.remove(p) if os.path.exists(p) else None, zeige_postausgang()), "#F44336")
-                            ])))
+                            
+                            # HIER KOMMT DIE NEUE OPTIK INS SPIEL
+                            ist_gesendet = pfad in gesendet_set
+                            farbe = "#4CAF50" if ist_gesendet else "white" # Grün, wenn versendet
+                            text_gewicht = "bold" if ist_gesendet else "normal"
+                            anzeige_text = f"✅ {f[:18]}..." if ist_gesendet else f[:18]
+                            
+                            async def teilen_jetzt(e, p=pfad):
+                                if share_obj: 
+                                    await share_obj.share_files([ft.ShareFile.from_path(p)], text="REWE Bericht")
+                                    markiere_als_gesendet(p) # Speichere als gesendet
+                                    zeige_postausgang() # Lade Seite neu für grünen Haken!
+                                else: print("Share geht auf dem PC nicht.")
+
+                            def rm(e, p=pfad):
+                                if os.path.exists(p): os.remove(p)
+                                zeige_postausgang()
+
+                            ansicht.controls.append(
+                                ft.Container(
+                                    bgcolor="#002200", padding=15, border_radius=15, width=380,
+                                    content=ft.Row([
+                                        ft.Text(anzeige_text, color=farbe, size=12, expand=True, weight=text_gewicht),
+                                        action_btn("📤 Send", teilen_jetzt, "#2196F3"),
+                                        small_btn("🗑️", rm, "#F44336")
+                                    ])
+                                )
+                            )
                 except: pass
             if not pdfs_gefunden: ansicht.controls.append(ft.Text("Keine Berichte zum Senden.", color="white54"))
             page.update()
@@ -124,10 +203,9 @@ def main(page: ft.Page):
         def zeige_archiv():
             ansicht.controls.clear()
             ansicht.controls.append(nav_leiste("archiv"))
-            ansicht.controls.append(ft.Text("Archiv (Letzte 7 Tage)", size=20, weight="bold", color="white"))
+            ansicht.controls.append(ft.Text("Archiv (Letzte 14 Tage)", size=20, weight="bold", color="white"))
             
             email_val = "registration-mibi.ber@tentamus.com"
-            # FIX: E-Mail in einer Zeile: Etwas breiterer Container, size=13, selectable=True
             ansicht.controls.append(ft.Container(bgcolor="#1a1a1a", padding=15, border_radius=15, width=380, content=ft.Column([
                 ft.Text("E-MAIL KOPIEREN:", color="#FF9800", weight="bold", size=14), 
                 ft.Text(email_val, color="white", size=13, selectable=True)
@@ -144,6 +222,8 @@ def main(page: ft.Page):
                             if os.path.isdir(p) and o != "temp": such_ordner.append(p)
                     except: pass
             
+            gesendet_set = lade_gesendet() # Lade die Liste auch im Archiv!
+            
             for ordner in list(set(such_ordner)):
                 if not os.path.exists(ordner): continue
                 try:
@@ -153,10 +233,28 @@ def main(page: ft.Page):
                         for f in p_list:
                             pdfs_gefunden = True
                             pfad = os.path.join(ordner, f)
-                            ansicht.controls.append(ft.Container(bgcolor="#002200", padding=15, border_radius=15, width=380, content=ft.Row([
-                                ft.Text(f[:18], color="white", size=12, expand=True), 
-                                action_btn("📤 Send", lambda e, p=pfad: None, "#2196F3")
-                            ])))
+                            
+                            ist_gesendet = pfad in gesendet_set
+                            farbe = "#4CAF50" if ist_gesendet else "white"
+                            text_gewicht = "bold" if ist_gesendet else "normal"
+                            anzeige_text = f"✅ {f[:18]}..." if ist_gesendet else f[:18]
+                            
+                            async def teilen_archiv(e, p=pfad):
+                                if share_obj: 
+                                    await share_obj.share_files([ft.ShareFile.from_path(p)], text="REWE Bericht")
+                                    markiere_als_gesendet(p)
+                                    zeige_archiv()
+                                else: print("Share geht auf dem PC nicht.")
+
+                            ansicht.controls.append(
+                                ft.Container(
+                                    bgcolor="#002200", padding=15, border_radius=15, width=380, 
+                                    content=ft.Row([
+                                        ft.Text(anzeige_text, color=farbe, size=12, expand=True, weight=text_gewicht), 
+                                        action_btn("📤 Send", teilen_archiv, "#2196F3")
+                                    ])
+                                )
+                            )
                         ansicht.controls.append(ft.Divider(color="white24"))
                 except: pass
             if not pdfs_gefunden: ansicht.controls.append(ft.Text("Keine Berichte im Archiv.", color="white54"))
