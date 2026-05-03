@@ -44,11 +44,10 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         def cb(label, val, oc=None, bold=False):
             return ft.Checkbox(label=label, value=bool(val), on_change=oc, label_style=ft.TextStyle(color="white", size=16 if bold else 12, weight="bold" if bold else "normal"), fill_color="yellow", check_color="black")
 
-        # FIX: Der Dropdown zwingt nicht mehr das 1. Element auf, sondern nimmt den echten Standard!
         def combo(label, val, opts, w=320, oc=None):
             def intern_oc(e):
                 if oc: oc(e)
-            echter_wert = val if val is not None else ""
+            echter_wert = val if val else (opts[0] if opts else "")
             c = ft.TextField(label=label, value=echter_wert, color="yellow", text_style=ft.TextStyle(size=12, color="yellow"), label_style=ft.TextStyle(color="white"), border_color="white", dense=True, content_padding=10, width=w, on_change=intern_oc)
             items = [ft.PopupMenuItem(content=ft.Text(o), on_click=lambda e, opt=o: (setattr(c, 'value', opt), c.update(), intern_oc(e))) for o in opts]
             c.suffix = ft.PopupMenuButton(items=items, content=ft.Text("▼", color="white"))
@@ -105,43 +104,37 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         tage_opts = [""] + [f"{i:02d}" for i in range(1, 32)]
         mon_opts = [""] + [f"{i:02d}" for i in range(1, 13)]
         jahr_opts = [""] + [str(i) for i in range(2024, 2035)]
-        
-        # Leerer String ganz vorn, damit es standardmäßig leer bleibt!
-        c_opts_s = ["", "z. Z. nicht vorrätig", "keine Eigenproduktion", "Kein Schweinehackfleisch"]
-        c_opts_r = ["", "z. Z. nicht vorrätig", "keine Eigenproduktion", "Kein Rinderhackfleisch"]
-        c_opts_g = ["", "z. Z. nicht vorrätig", "keine Eigenproduktion", "Kein Geflügel"]
-        ort_opts = ["", "Fischabteilung", "Produktionsraum", "Bedientheke", "Vorbereitungsraum", "Metzgerei", "Kühlraum", "SB-Theke"]
-        verp_opts = ["", "steriler Probenbecher", "steriler Probenbeutel", "Transportverpackung", "Kunststoffbecher mit Anrolldeckel u. etikett", "Pappschale mit Kunststofffolie umwickelt", "tiefgezogene Kunststoffschale mit Anrollfolie", "Styroporschale mit Kunststofffolie umwickelt", "SB-Kunststoffverpackung"]
+        c_opts_s = ["z. Z. nicht vorrätig", "keine Eigenproduktion", "", "Kein Schweinehackfleisch"]
+        c_opts_r = ["z. Z. nicht vorrätig", "keine Eigenproduktion", "", "Kein Rinderhackfleisch"]
+        c_opts_g = ["z. Z. nicht vorrätig", "keine Eigenproduktion", "", "Kein Geflügel"]
+        ort_opts = ["Fischabteilung", "Produktionsraum", "Bedientheke", "Vorbereitungsraum", "Metzgerei", "Kühlraum", "SB-Theke"]
+        verp_opts = ["steriler Probenbecher", "steriler Probenbeutel", "Transportverpackung", "Kunststoffbecher mit Anrolldeckel u. etikett", "Pappschale mit Kunststofffolie umwickelt", "tiefgezogene Kunststoffschale mit Anrollfolie", "Styroporschale mit Kunststofffolie umwickelt", "SB-Kunststoffverpackung"]
 
+        # ==========================================
+        # ALLE UI ELEMENTE INITIALISIEREN
+        # ==========================================
         lims_override_cb = cb("Trotzdem speichern", False)
 
         d_tag, d_mon, d_jahr = parse_datum(aktuelle_daten.get("datum", heute_str), heute_str.split(".")[0], heute_str.split(".")[1], heute_str.split(".")[2])
         tag_dd, mon_dd, jahr_dd = combo("Tag", d_tag, tage_opts, 90), combo("Mon", d_mon, mon_opts, 90), combo("Jahr", d_jahr, jahr_opts, 120)
         datum_row = ft.Column([ft.Text("Datum der Probenahme", color="white", weight="bold"), ft.Row([tag_dd, mon_dd, jahr_dd], wrap=True)])
         
-        # FIX: Echte Standardwerte ("Default") übergeben
         adr_in = tf("Adresse Markt", aktuelle_daten.get("adresse", ""))
         nr_in = tf("Marktnummer", aktuelle_daten.get("marktnummer", ""))
         auft_in = tf("Auftragsnummer", aktuelle_daten.get("auftragsnummer", ""), "Etikettenummer: XX-XXXXXXX")
         name_in = tf("Name Probenehmer", aktuelle_daten.get("mitarbeiter_name", ""))
         bem_in = tf("Zusätzliche Bemerkung", aktuelle_daten.get("bemerkung", ""))
-        ag_dd = combo("Auftraggeber", aktuelle_daten.get("auftraggeber", "03509 - REWE Hackfleischmonitoring"), ["03509 - REWE Hackfleischmonitoring", "3001767 - REWE Dortmund (Hackfleischmonitoring)"])
-        typ_dd = combo("Typ der Probenahme", aktuelle_daten.get("typ_probenahme", "Standard"), ["Standard", "Nachkontrolle", "Mehrwöchig"])
+        ag_dd = combo("Auftraggeber", aktuelle_daten.get("auftraggeber"), ["03509 - REWE Hackfleischmonitoring", "3001767 - REWE Dortmund (Hackfleischmonitoring)"])
+        typ_dd = combo("Typ der Probenahme", aktuelle_daten.get("typ_probenahme"), ["Standard", "Nachkontrolle", "Mehrwöchig"])
 
         tw_kalt_cb = cb("Trinkwasser kalt", aktuelle_daten.get("tw_kalt", False), bold=True)
         tw_zeit_in, tw_temp_in, tw_tempkonst_in = tf("Probenahmezeit", aktuelle_daten.get("tw_zeit", "")), tf("Temp Probenahme", aktuelle_daten.get("tw_temp", "")), tf("Temp Konstante", aktuelle_daten.get("tw_tempkonst", ""))
-        tw_desinf_dd = combo("Desinfektion", aktuelle_daten.get("tw_desinf", "Abflammen"), ["Abflammen", "Sprühdesinfektion", "ohne Desinfektion"])
-        tw_zapf_dd = combo("Zapfstelle", aktuelle_daten.get("tw_zapf", "Spülbecken"), ["Spülbecken", "Handwaschbecken"])
-        tw_zapf_sonst_dd = combo("Sonstiges Zapfstelle", aktuelle_daten.get("tw_zapf_sonst", ""), ["", "Schlaucharmatur", "Schlauchbrause", "Schlauch mit Brause"])
-        tw_inaktiv_dd = combo("Inaktivierung", aktuelle_daten.get("tw_inaktiv", "Na-Thiosulfat"), ["Na-Thiosulfat"])
-        tw_kurz1_dd = combo("Farbe", aktuelle_daten.get("tw_kurz1", "1 - nicht wahrnehmbar"), ["1 - nicht wahrnehmbar", "2 - wahrnehmbar", "3 - deutlich wahrnehmbar"])
-        tw_kurz2_dd = combo("Trübung", aktuelle_daten.get("tw_kurz2", "1 - nicht wahrnehmbar"), ["1 - nicht wahrnehmbar", "2 - wahrnehmbar", "3 - deutlich wahrnehmbar"])
-        tw_kurz3_dd = combo("Bodensatz", aktuelle_daten.get("tw_kurz3", "1 - nicht wahrnehmbar"), ["1 - nicht wahrnehmbar", "2 - wahrnehmbar", "3 - deutlich wahrnehmbar"])
-        tw_kurz4_dd = combo("Geruch", aktuelle_daten.get("tw_kurz4", "1 - nicht wahrnehmbar"), ["1 - nicht wahrnehmbar", "2 - wahrnehmbar", "3 - deutlich wahrnehmbar"])
-        tw_zweck_dd = combo("Zweck", aktuelle_daten.get("tw_zweck", "Zweck B"), ["Zweck A", "Zweck B", "Zweck C"])
-        tw_verpackung_dd = combo("Verpackung", aktuelle_daten.get("tw_verpackung", "500ml Kunststoff-Flasche mit Natriumthiosulfat"), ["500ml Kunststoff-Flasche mit Natriumthiosulfat"])
-        tw_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("tw_entnahmeort", "Metzgerei"), ort_opts)
-        tw_bemerkung_dd = combo("TW Bemerkung", aktuelle_daten.get("tw_bemerkung_2", ""), ["", "Keine Besonderheiten"])
+        tw_desinf_dd, tw_zapf_dd = combo("Desinfektion", aktuelle_daten.get("tw_desinf"), ["Abflammen", "Sprühdesinfektion", "ohne Desinfektion"]), combo("Zapfstelle", aktuelle_daten.get("tw_zapf"), ["Spülbecken", "Handwaschbecken"])
+        tw_zapf_sonst_dd, tw_inaktiv_dd = combo("Sonstiges Zapfstelle", aktuelle_daten.get("tw_zapf_sonst", ""), ["Schlaucharmatur", "Schlauchbrause", "Schlauch mit Brause"]), combo("Inaktivierung", aktuelle_daten.get("tw_inaktiv"), ["Na-Thiosulfat"])
+        tw_kurz1_dd, tw_kurz2_dd = combo("Farbe", aktuelle_daten.get("tw_kurz1"), ["1 - nicht wahrnehmbar", "2 - wahrnehmbar", "3 - deutlich wahrnehmbar"]), combo("Trübung", aktuelle_daten.get("tw_kurz2"), ["1 - nicht wahrnehmbar", "2 - wahrnehmbar", "3 - deutlich wahrnehmbar"])
+        tw_kurz3_dd, tw_kurz4_dd = combo("Bodensatz", aktuelle_daten.get("tw_kurz3"), ["1 - nicht wahrnehmbar", "2 - wahrnehmbar", "3 - deutlich wahrnehmbar"]), combo("Geruch", aktuelle_daten.get("tw_kurz4"), ["1 - nicht wahrnehmbar", "2 - wahrnehmbar", "3 - deutlich wahrnehmbar"])
+        tw_zweck_dd, tw_verpackung_dd = combo("Zweck", aktuelle_daten.get("tw_zweck"), ["Zweck A", "Zweck B", "Zweck C"]), combo("Verpackung", aktuelle_daten.get("tw_verpackung"), ["500ml Kunststoff-Flasche mit Natriumthiosulfat"])
+        tw_entnahmeort_dd, tw_bemerkung_dd = combo("Entnahmeort", aktuelle_daten.get("tw_entnahmeort"), ort_opts), combo("TW Bemerkung", aktuelle_daten.get("tw_bemerkung_2", ""), ["", "Keine Besonderheiten"])
         cb_pn, cb_zwei, cb_sensor, cb_knie = cb("PN-Hahn", aktuelle_daten.get("tw_cb_pn", False)), cb("Zweigriff", aktuelle_daten.get("tw_cb_zwei", False)), cb("Sensor", aktuelle_daten.get("tw_cb_sensor", False)), cb("Knie", aktuelle_daten.get("tw_cb_knie", False))
         cb_ein, cb_ein_g, cb_eck = cb("Einhebel", aktuelle_daten.get("tw_cb_ein", False)), cb("Eingriff", aktuelle_daten.get("tw_cb_ein_g", False)), cb("Eckventil", aktuelle_daten.get("tw_cb_eck", False))
         cb_auff_ja, cb_auff_nein, cb_auff_perl = cb("ja", aktuelle_daten.get("tw_auff_ja", False)), cb("nein", aktuelle_daten.get("tw_auff_nein", False)), cb("Perlator nicht entfernbar", aktuelle_daten.get("tw_auff_perlator", False))
@@ -151,17 +144,12 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         tw_auff_sonstiges_in, tw_inhalt_in = tf("Auffälligkeiten (Sonstiges)", aktuelle_daten.get("tw_auff_sonst_text", "")), tf("Inhalt", aktuelle_daten.get("tw_inhalt", ""))
 
         se_kalt_cb = cb("Scherbeneis Eigenkontrolle", aktuelle_daten.get("se_kalt", False), bold=True)
-        se_zeit_in = tf("Probenahmezeit", aktuelle_daten.get("se_zeit", ""))
-        se_zapf_dd = combo("Zapfstelle (Eis)", aktuelle_daten.get("se_zapf", "Eismaschine"), ["Eismaschine"])
+        se_zeit_in, se_zapf_dd = tf("Probenahmezeit", aktuelle_daten.get("se_zeit", "")), combo("Zapfstelle (Eis)", aktuelle_daten.get("se_zapf"), ["Eismaschine"])
         se_cb_eiswanne, se_cb_fallprobe = cb("Eiswanne/Schöpfprobe", aktuelle_daten.get("se_cb_eiswanne", False)), cb("Fallprobe", aktuelle_daten.get("se_cb_fallprobe", True))
-        se_tech_sonst_in = tf("Sonstiges (Technik)", aktuelle_daten.get("se_tech_sonst", ""))
-        se_desinf_dd = combo("Art der Desinfektion", aktuelle_daten.get("se_desinf", "ohne Desinfektion"), ["Abflammen", "Sprühdesinfektion", "ohne Desinfektion"])
-        se_cb_ozon = cb("Ozonsterilisator", aktuelle_daten.get("se_cb_ozon", False))
-        se_auff_sonst_in = tf("Sonstiges (Auffälligkeiten)", aktuelle_daten.get("se_auff_sonst", ""))
-        se_inhalt_in = tf("Inhalt", aktuelle_daten.get("se_inhalt", ""))
-        se_verpackung_dd = combo("Verpackung", aktuelle_daten.get("se_verpackung", "steriler Probenbeutel"), verp_opts)
-        se_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("se_entnahmeort", "Fischabteilung-Eismaschine"), ort_opts)
-        se_temp_in = tf("Probenahmetemperatur", aktuelle_daten.get("se_temp", ""))
+        se_tech_sonst_in, se_desinf_dd = tf("Sonstiges (Technik)", aktuelle_daten.get("se_tech_sonst", "")), combo("Art der Desinfektion", aktuelle_daten.get("se_desinf"), ["Abflammen", "Sprühdesinfektion", "ohne Desinfektion"])
+        se_cb_ozon, se_auff_sonst_in = cb("Ozonsterilisator", aktuelle_daten.get("se_cb_ozon", False)), tf("Sonstiges (Auffälligkeiten)", aktuelle_daten.get("se_auff_sonst", ""))
+        se_inhalt_in, se_verpackung_dd = tf("Inhalt", aktuelle_daten.get("se_inhalt", "")), combo("Verpackung", aktuelle_daten.get("se_verpackung"), ["steriler Probenbeutel"])
+        se_entnahmeort_dd, se_temp_in = combo("Entnahmeort", aktuelle_daten.get("se_entnahmeort"), ["Fischabteilung-Eismaschine", "Metzgerei", "Produktionsraum"]), tf("Probenahmetemperatur", aktuelle_daten.get("se_temp", ""))
         se_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("se_bemerkung", ""), ["", "Keine Besonderheiten"])
 
         se_okz_cb = cb("Abklatschproben Scherbeneis", aktuelle_daten.get("se_abklatsch_cb", False), bold=True)
@@ -171,10 +159,10 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         se_okz_controls = {}
         for i in range(1, 4):
             idx = f"{i:02d}"
-            se_okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0003_status_{idx}", "R+D"), ["R+D", "R", "P", "-"], 100), "objekt": combo("Objekt", aktuelle_daten.get(f"0003_objekt_{idx}") or se_okz_def[i], se_okz_opts, 200), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0003_ort_{idx}", "Fischabteilung"), ["Fischabteilung", "Metzgerei", "Produktionsbereich", "Kühlraum"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0003_abklatsch_{idx}", True)), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0003_tupfer_{idx}", True))}
+            se_okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0003_status_{idx}"), ["R+D", "R", "P", "-"], 100), "objekt": combo("Objekt", aktuelle_daten.get(f"0003_objekt_{idx}") or se_okz_def[i], se_okz_opts, 200), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0003_ort_{idx}", ""), ["Fischabteilung", "Metzgerei", "Produktionsbereich", "Kühlraum"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0003_abklatsch_{idx}", True)), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0003_tupfer_{idx}", True))}
 
         hfm_hack_cb = cb("Hackfleisch gemischt", aktuelle_daten.get("hfm_hack_cb", False), bold=True)
-        hfm_hack_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("hfm_hack_entnahmeort", "Kühlraum"), ort_opts)
+        hfm_hack_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("hfm_hack_entnahmeort"), ort_opts)
         t, m, j = get_herst("hfm_hack_herstelldatum")
         hfm_hack_herst_tag_dd, hfm_hack_herst_mon_dd, hfm_hack_herst_jahr_dd = combo("Tag", t, tage_opts, 90), combo("Mon", m, mon_opts, 90), combo("Jahr", j, jahr_opts, 120)
         t, m, j = parse_datum(aktuelle_daten.get("hfm_hack_mhd_schwein", ""))
@@ -182,72 +170,55 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         t, m, j = parse_datum(aktuelle_daten.get("hfm_hack_mhd_rind", ""))
         hfm_hack_mhd_r_tag_dd, hfm_hack_mhd_r_mon_dd, hfm_hack_mhd_r_jahr_dd = combo("Tag", t, tage_opts, 90), combo("Mon", m, mon_opts, 90), combo("Jahr", j, jahr_opts, 120)
         hfm_hack_inhalt_in = tf("Inhalt", aktuelle_daten.get("hfm_hack_inhalt", ""))
-        hfm_hack_verpackung_dd = combo("Verpackung", aktuelle_daten.get("hfm_hack_verpackung", "steriler Probenbeutel"), verp_opts)
+        hfm_hack_verpackung_dd = combo("Verpackung", aktuelle_daten.get("hfm_hack_verpackung"), verp_opts)
         hfm_hack_lief_schwein_in, hfm_hack_lief_rind_in = tf("Lieferant (Schwein)", aktuelle_daten.get("hfm_hack_lief_schwein", "")), tf("Lieferant (Rind)", aktuelle_daten.get("hfm_hack_lief_rind", ""))
-        hfm_hack_charge_schwein_dd = combo("Charge Schwein", aktuelle_daten.get("hfm_hack_charge_schwein", ""), c_opts_s)
-        hfm_hack_charge_rind_dd = combo("Charge Rind", aktuelle_daten.get("hfm_hack_charge_rind", ""), c_opts_r)
-        hfm_hack_temp_in = tf("Probenahmetemperatur", aktuelle_daten.get("hfm_hack_temp", ""))
-        hfm_hack_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("hfm_hack_bemerkung", ""), ["", "Keine Besonderheiten"])
+        hfm_hack_charge_schwein_dd, hfm_hack_charge_rind_dd = combo("Charge Schwein", aktuelle_daten.get("hfm_hack_charge_schwein", ""), c_opts_s), combo("Charge Rind", aktuelle_daten.get("hfm_hack_charge_rind", ""), c_opts_r)
+        hfm_hack_temp_in, hfm_hack_bemerkung_dd = tf("Probenahmetemperatur", aktuelle_daten.get("hfm_hack_temp", "")), combo("Bemerkungen", aktuelle_daten.get("hfm_hack_bemerkung", ""), ["", "Keine Besonderheiten"])
 
         hfm_mett_cb = cb("Gewürztes Schweinemett", aktuelle_daten.get("hfm_mett_cb", False), bold=True)
-        hfm_mett_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("hfm_mett_entnahmeort", "Kühlraum"), ort_opts)
+        hfm_mett_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("hfm_mett_entnahmeort"), ort_opts)
         t, m, j = get_herst("hfm_mett_herstelldatum")
         hfm_mett_herst_tag_dd, hfm_mett_herst_mon_dd, hfm_mett_herst_jahr_dd = combo("Tag", t, tage_opts, 90), combo("Mon", m, mon_opts, 90), combo("Jahr", j, jahr_opts, 120)
         t, m, j = parse_datum(aktuelle_daten.get("hfm_mett_mhd", ""))
         hfm_mett_mhd_tag_dd, hfm_mett_mhd_mon_dd, hfm_mett_mhd_jahr_dd = combo("Tag", t, tage_opts, 90), combo("Mon", m, mon_opts, 90), combo("Jahr", j, jahr_opts, 120)
-        hfm_mett_inhalt_in = tf("Inhalt", aktuelle_daten.get("hfm_mett_inhalt", ""))
-        hfm_mett_verpackung_dd = combo("Verpackung", aktuelle_daten.get("hfm_mett_verpackung", "steriler Probenbeutel"), verp_opts)
-        hfm_mett_lief_in = tf("Lieferant Rohware", aktuelle_daten.get("hfm_mett_lief", ""))
-        hfm_mett_charge_dd = combo("Charge Rohware", aktuelle_daten.get("hfm_mett_charge", ""), c_opts_s)
-        hfm_mett_temp_in = tf("Probenahmetemperatur", aktuelle_daten.get("hfm_mett_temp", ""))
-        hfm_mett_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("hfm_mett_bemerkung", ""), ["", "Keine Besonderheiten"])
+        hfm_mett_inhalt_in, hfm_mett_verpackung_dd = tf("Inhalt", aktuelle_daten.get("hfm_mett_inhalt", "")), combo("Verpackung", aktuelle_daten.get("hfm_mett_verpackung"), verp_opts)
+        hfm_mett_lief_in, hfm_mett_charge_dd = tf("Lieferant Rohware", aktuelle_daten.get("hfm_mett_lief", "")), combo("Charge Rohware", aktuelle_daten.get("hfm_mett_charge", ""), c_opts_s)
+        hfm_mett_temp_in, hfm_mett_bemerkung_dd = tf("Probenahmetemperatur", aktuelle_daten.get("hfm_mett_temp", "")), combo("Bemerkungen", aktuelle_daten.get("hfm_mett_bemerkung", ""), ["", "Keine Besonderheiten"])
 
         hfm_fzs_cb = cb("Fleischzubereitung Schwein", aktuelle_daten.get("hfm_fzs_cb", False), bold=True)
-        hfm_fzs_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("hfm_fzs_entnahmeort", "Kühlraum"), ort_opts)
-        hfm_fzs_produkt_in = tf("Produkt", aktuelle_daten.get("hfm_fzs_produkt", ""))
-        hfm_fzs_marinade_in = tf("Marinade", aktuelle_daten.get("hfm_fzs_marinade", ""))
+        hfm_fzs_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("hfm_fzs_entnahmeort"), ort_opts)
+        hfm_fzs_produkt_in, hfm_fzs_marinade_in = tf("Produkt", aktuelle_daten.get("hfm_fzs_produkt", "")), tf("Marinade", aktuelle_daten.get("hfm_fzs_marinade", ""))
         t, m, j = get_herst("hfm_fzs_herstelldatum")
         hfm_fzs_herst_tag_dd, hfm_fzs_herst_mon_dd, hfm_fzs_herst_jahr_dd = combo("Tag", t, tage_opts, 90), combo("Mon", m, mon_opts, 90), combo("Jahr", j, jahr_opts, 120)
         t, m, j = parse_datum(aktuelle_daten.get("hfm_fzs_mhd", ""))
         hfm_fzs_mhd_tag_dd, hfm_fzs_mhd_mon_dd, hfm_fzs_mhd_jahr_dd = combo("Tag", t, tage_opts, 90), combo("Mon", m, mon_opts, 90), combo("Jahr", j, jahr_opts, 120)
-        hfm_fzs_inhalt_in = tf("Inhalt", aktuelle_daten.get("hfm_fzs_inhalt", ""))
-        hfm_fzs_verpackung_dd = combo("Verpackung", aktuelle_daten.get("hfm_fzs_verpackung", "steriler Probenbeutel"), verp_opts)
-        hfm_fzs_lief_in = tf("Lieferant Rohware", aktuelle_daten.get("hfm_fzs_lief", ""))
-        hfm_fzs_charge_dd = combo("Charge Rohware", aktuelle_daten.get("hfm_fzs_charge", ""), c_opts_s)
-        hfm_fzs_temp_in = tf("Probenahmetemperatur", aktuelle_daten.get("hfm_fzs_temp", ""))
-        hfm_fzs_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("hfm_fzs_bemerkung", ""), ["", "Keine Besonderheiten"])
+        hfm_fzs_inhalt_in, hfm_fzs_verpackung_dd = tf("Inhalt", aktuelle_daten.get("hfm_fzs_inhalt", "")), combo("Verpackung", aktuelle_daten.get("hfm_fzs_verpackung"), verp_opts)
+        hfm_fzs_lief_in, hfm_fzs_charge_dd = tf("Lieferant Rohware", aktuelle_daten.get("hfm_fzs_lief", "")), combo("Charge Rohware", aktuelle_daten.get("hfm_fzs_charge", ""), c_opts_s)
+        hfm_fzs_temp_in, hfm_fzs_bemerkung_dd = tf("Probenahmetemperatur", aktuelle_daten.get("hfm_fzs_temp", "")), combo("Bemerkungen", aktuelle_daten.get("hfm_fzs_bemerkung", ""), ["", "Keine Besonderheiten"])
 
         hfm_fzg_cb = cb("Fleischzubereitung Geflügel", aktuelle_daten.get("hfm_fzg_cb", False), bold=True)
-        hfm_fzg_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("hfm_fzg_entnahmeort", "Kühlraum"), ort_opts)
-        hfm_fzg_produkt_in = tf("Produkt", aktuelle_daten.get("hfm_fzg_produkt", ""))
-        hfm_fzg_marinade_in = tf("Marinade", aktuelle_daten.get("hfm_fzg_marinade", ""))
+        hfm_fzg_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("hfm_fzg_entnahmeort"), ort_opts)
+        hfm_fzg_produkt_in, hfm_fzg_marinade_in = tf("Produkt", aktuelle_daten.get("hfm_fzg_produkt", "")), tf("Marinade", aktuelle_daten.get("hfm_fzg_marinade", ""))
         t, m, j = get_herst("hfm_fzg_herstelldatum")
         hfm_fzg_herst_tag_dd, hfm_fzg_herst_mon_dd, hfm_fzg_herst_jahr_dd = combo("Tag", t, tage_opts, 90), combo("Mon", m, mon_opts, 90), combo("Jahr", j, jahr_opts, 120)
         t, m, j = parse_datum(aktuelle_daten.get("hfm_fzg_mhd", ""))
         hfm_fzg_mhd_tag_dd, hfm_fzg_mhd_mon_dd, hfm_fzg_mhd_jahr_dd = combo("Tag", t, tage_opts, 90), combo("Mon", m, mon_opts, 90), combo("Jahr", j, jahr_opts, 120)
-        hfm_fzg_inhalt_in = tf("Inhalt", aktuelle_daten.get("hfm_fzg_inhalt", ""))
-        hfm_fzg_verpackung_dd = combo("Verpackung", aktuelle_daten.get("hfm_fzg_verpackung", "steriler Probenbeutel"), verp_opts)
-        hfm_fzg_lief_in = tf("Lieferant Rohware", aktuelle_daten.get("hfm_fzg_lief", ""))
-        hfm_fzg_charge_dd = combo("Charge Rohware", aktuelle_daten.get("hfm_fzg_charge", ""), c_opts_g)
-        hfm_fzg_temp_in = tf("Probenahmetemperatur", aktuelle_daten.get("hfm_fzg_temp", ""))
-        hfm_fzg_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("hfm_fzg_bemerkung", ""), ["", "Keine Besonderheiten"])
+        hfm_fzg_inhalt_in, hfm_fzg_verpackung_dd = tf("Inhalt", aktuelle_daten.get("hfm_fzg_inhalt", "")), combo("Verpackung", aktuelle_daten.get("hfm_fzg_verpackung"), verp_opts)
+        hfm_fzg_lief_in, hfm_fzg_charge_dd = tf("Lieferant Rohware", aktuelle_daten.get("hfm_fzg_lief", "")), combo("Charge Rohware", aktuelle_daten.get("hfm_fzg_charge", ""), c_opts_g)
+        hfm_fzg_temp_in, hfm_fzg_bemerkung_dd = tf("Probenahmetemperatur", aktuelle_daten.get("hfm_fzg_temp", "")), combo("Bemerkungen", aktuelle_daten.get("hfm_fzg_bemerkung", ""), ["", "Keine Besonderheiten"])
 
         hfm_bio_cb = cb("Bio-Hackfleisch", aktuelle_daten.get("hfm_bio_cb", False), bold=True)
-        hfm_bio_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("hfm_bio_entnahmeort", "Produktionsraum"), ort_opts)
+        hfm_bio_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("hfm_bio_entnahmeort"), ort_opts)
         t, m, j = get_herst("hfm_bio_herstelldatum")
         hfm_bio_herst_tag_dd, hfm_bio_herst_mon_dd, hfm_bio_herst_jahr_dd = combo("Tag", t, tage_opts, 90), combo("Mon", m, mon_opts, 90), combo("Jahr", j, jahr_opts, 120)
         t, m, j = parse_datum(aktuelle_daten.get("hfm_bio_mhd_schwein", ""))
         hfm_bio_mhd_s_tag_dd, hfm_bio_mhd_s_mon_dd, hfm_bio_mhd_s_jahr_dd = combo("Tag", t, tage_opts, 90), combo("Mon", m, mon_opts, 90), combo("Jahr", j, jahr_opts, 120)
         t, m, j = parse_datum(aktuelle_daten.get("hfm_bio_mhd_rind", ""))
         hfm_bio_mhd_r_tag_dd, hfm_bio_mhd_r_mon_dd, hfm_bio_mhd_r_jahr_dd = combo("Tag", t, tage_opts, 90), combo("Mon", m, mon_opts, 90), combo("Jahr", j, jahr_opts, 120)
-        hfm_bio_inhalt_in = tf("Inhalt", aktuelle_daten.get("hfm_bio_inhalt", ""))
-        hfm_bio_verpackung_dd = combo("Verpackung", aktuelle_daten.get("hfm_bio_verpackung", "steriler Probenbecher"), verp_opts)
-        hfm_bio_lief_schwein_in = tf("Lieferant (Schwein)", aktuelle_daten.get("hfm_bio_lief_schwein", ""))
-        hfm_bio_lief_rind_in = tf("Lieferant (Rind)", aktuelle_daten.get("hfm_bio_lief_rind", ""))
-        hfm_bio_charge_schwein_dd = combo("Charge Schwein", aktuelle_daten.get("hfm_bio_charge_schwein", ""), c_opts_s)
-        hfm_bio_charge_rind_dd = combo("Charge Rind", aktuelle_daten.get("hfm_bio_charge_rind", ""), c_opts_r)
-        hfm_bio_temp_in = tf("Probenahmetemperatur", aktuelle_daten.get("hfm_bio_temp", ""))
-        hfm_bio_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("hfm_bio_bemerkung", ""), ["", "Keine Besonderheiten"])
+        hfm_bio_inhalt_in, hfm_bio_verpackung_dd = tf("Inhalt", aktuelle_daten.get("hfm_bio_inhalt", "")), combo("Verpackung", aktuelle_daten.get("hfm_bio_verpackung"), verp_opts)
+        hfm_bio_lief_schwein_in, hfm_bio_lief_rind_in = tf("Lieferant (Schwein)", aktuelle_daten.get("hfm_bio_lief_schwein", "")), tf("Lieferant (Rind)", aktuelle_daten.get("hfm_bio_lief_rind", ""))
+        hfm_bio_charge_schwein_dd, hfm_bio_charge_rind_dd = combo("Charge Schwein", aktuelle_daten.get("hfm_bio_charge_schwein", ""), c_opts_s), combo("Charge Rind", aktuelle_daten.get("hfm_bio_charge_rind", ""), c_opts_r)
+        hfm_bio_temp_in, hfm_bio_bemerkung_dd = tf("Probenahmetemperatur", aktuelle_daten.get("hfm_bio_temp", "")), combo("Bemerkungen", aktuelle_daten.get("hfm_bio_bemerkung", ""), ["", "Keine Besonderheiten"])
 
         hfm_okz_cb = cb("Abklatschproben HFM", aktuelle_daten.get("hfm_abklatsch_cb", False), bold=True)
         hfm_okz_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("hfm_abklatsch_bemerkung", ""), ["", "Keine Besonderheiten"])
@@ -256,8 +227,9 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         okz_controls = {}
         for i in range(1, 11):
             idx = f"{i:02d}"
-            okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0010_status_{idx}", "R+D"), ["R+D", "R", "P", "-"], 100), "objekt": combo("Objekt", aktuelle_daten.get(f"0010_objekt_{idx}") or okz_def[i]["o"], okz_obj_opts, 200), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0010_ort_{idx}", ""), ["Kühlraum", "Produktionsbereich", "Theke"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0010_abklatsch_{idx}", okz_def[i]["a"])), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0010_tupfer_{idx}", okz_def[i]["t"]))}
+            okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0010_status_{idx}"), ["R+D", "R", "P", "-"], 100), "objekt": combo("Objekt", aktuelle_daten.get(f"0010_objekt_{idx}") or okz_def[i]["o"], okz_obj_opts, 200), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0010_ort_{idx}", ""), ["Kühlraum", "Produktionsbereich", "Theke"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0010_abklatsch_{idx}", okz_def[i]["a"])), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0010_tupfer_{idx}", okz_def[i]["t"]))}
 
+        # --- 5. CONVENIENCE / PROBEN ---
         og_cb = cb("Obst-/Gemüse Convenience", aktuelle_daten.get("og_cb", False), bold=True)
         og_controls = {}
         for i in range(1, 6):
@@ -283,7 +255,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         og_okz_controls = {}
         for i in range(1, 6):
             idx = f"{i:02d}"
-            og_okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0011_status_{idx}", "R+D"), ["R+D", "R", "P", "-"], 100), "objekt": combo("Objekt", aktuelle_daten.get(f"0011_objekt_{idx}") or og_okz_def[i]["o"], og_okz_opts, 200), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0011_ort_{idx}", ""), ["Kühlraum", "Produktionsbereich", "Theke"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0011_abklatsch_{idx}", og_okz_def[i]["a"])), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0011_tupfer_{idx}", og_okz_def[i]["t"]))}
+            og_okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0011_status_{idx}"), ["R+D", "R", "P", "-"], 100), "objekt": combo("Objekt", aktuelle_daten.get(f"0011_objekt_{idx}") or og_okz_def[i]["o"], og_okz_opts, 200), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0011_ort_{idx}", ""), ["Kühlraum", "Produktionsbereich", "Theke"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0011_abklatsch_{idx}", og_okz_def[i]["a"])), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0011_tupfer_{idx}", og_okz_def[i]["t"]))}
 
         # ==========================================
         # VORLAGEN LOGIK (AUFKLAPPBAR)
@@ -504,7 +476,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             return d
 
         # ==========================================
-        # RESTLICHE LOGIK (SPEICHERN & PFLICHTFELDER)
+        # RESTLICHE LOGIK (SPEICHERN OHNE PFLICHTFELD FÜR DRAFTS)
         # ==========================================
         def check_pflichtfelder():
             errors = []
@@ -556,12 +528,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             status_text.value = ""
             page.update()
 
-            errs = check_pflichtfelder()
-            if errs:
-                fehler_text.value = "⚠️ BITTE FOLGENDE FELDER AUSFÜLLEN:\n" + "\n".join(errs)
-                fehler_text.visible = True
-                page.update()
-                return
+            # KEINE Pflichtfeldprüfung hier! Einfach speichern.
 
             try:
                 status_text.value = "⏳ Speichere Tour..."; status_text.color = "yellow"; page.update()
@@ -581,6 +548,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             status_text.value = ""
             page.update()
 
+            # HIER BLEIBT DIE PRÜFUNG! Bericht nur wenn alles ausgefüllt ist.
             errs = check_pflichtfelder()
             if errs:
                 fehler_text.value = "⚠️ BITTE FOLGENDE FELDER AUSFÜLLEN:\n" + "\n".join(errs)
@@ -606,9 +574,20 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 status_text.value = "❌ Fehler"; status_text.color = "red"; zeige_fehler(ex)
 
         # ZUSAMMENBAU DES HAUPT-LAYOUTS
+        bottom_buttons = ft.Column([
+            ft.Row([
+                ft.Container(content=action_btn_form("🚚 Touren", lambda e: zeige_dashboard(), "#F44336"), expand=1),
+                ft.Container(content=action_btn_form("🔄 Reset", lambda e: reset_form(e), "#9C27B0"), expand=1),
+            ]),
+            ft.Row([
+                ft.Container(content=action_btn_form("💾 Speichern", lambda e: nur_speichern(e), "#FF9800"), expand=1),
+                ft.Container(content=action_btn_form("📄 Bericht", save_final, "#2196F3"), expand=1),
+            ])
+        ], spacing=10)
+
         top_nav = ft.Row(wrap=True, alignment=ft.MainAxisAlignment.CENTER, spacing=5)
         haupt_bereich = ft.Column(spacing=15)
-        
+
         def switch_tab(tab_id):
             haupt_bereich.controls.clear(); top_nav.controls.clear()
             tabs = [("stamm", "Stammdaten"), ("tw", "Trinkwasser"), ("se", "Scherbeneis"), ("hfm", "HFM"), ("og", "Convenience")]
@@ -690,11 +669,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
         ansicht.controls.extend([
             top_nav, ft.Divider(color="white24"), haupt_bereich, ft.Container(height=20),
-            fehler_text, status_text, 
-            ft.Column([
-                ft.Row([ft.Container(content=action_btn_form("🚚 Touren", lambda e: zeige_dashboard(), "#F44336"), expand=1), ft.Container(content=action_btn_form("🔄 Reset", lambda e: reset_form(e), "#9C27B0"), expand=1)]),
-                ft.Row([ft.Container(content=action_btn_form("💾 Speichern", lambda e: nur_speichern(e), "#FF9800"), expand=1), ft.Container(content=action_btn_form("📄 Bericht", save_final, "#2196F3"), expand=1)])
-            ], spacing=10)
+            fehler_text, status_text, bottom_buttons
         ])
         
         switch_tab("stamm")
