@@ -284,7 +284,7 @@ def sammle_alle_daten(daten):
 
     return w
 
-# --- HAUPT-FUNKTION (Mit Uhrzeit-Retter und Panzerknacker) ---
+# --- HAUPT-FUNKTION (LIMS Panzerknacker FIX) ---
 
 def erstelle_bericht(daten):
     master_pfad = os.path.join("assets", "Rewe_PDF.pdf")
@@ -292,7 +292,6 @@ def erstelle_bericht(daten):
     
     if not os.path.exists(master_pfad): return f"FEHLER: {master_pfad} fehlt!"
 
-    # FIX: Dateiname bekommt IMMER die genaue Uhrzeit, um Errno 17 zu verhindern!
     zeit_jetzt = datetime.datetime.now().strftime('%H-%M-%S')
     datum_heute = datetime.datetime.now().strftime('%Y-%m-%d')
     dateiname = f"REWE_{daten.get('marktnummer', 'Unbekannt')}_{datum_heute}_{zeit_jetzt}.pdf"
@@ -310,38 +309,37 @@ def erstelle_bericht(daten):
     else:
         writer.append(reader_master)
     
-    if "/AcroForm" not in writer.root_object:
-        if "/AcroForm" in reader_master.trailer["/Root"]:
-            writer.root_object.update({NameObject("/AcroForm"): reader_master.trailer["/Root"]["/AcroForm"]})
-        else:
-            writer.root_object.update({NameObject("/AcroForm"): DictionaryObject()})
-            
-    writer.root_object["/AcroForm"].update({NameObject("/NeedAppearances"): BooleanObject(True)})
+    # WICHTIG: KEIN manuelles Überschreiben des AcroForm-Root-Objekts mehr! 
+    # Das hatte die Verknüpfung der LIMS-IDs zerstört. Nur noch NeedAppearances setzen:
+    if "/AcroForm" in writer.root_object:
+        writer.root_object["/AcroForm"].update({NameObject("/NeedAppearances"): BooleanObject(True)})
 
     mapping = sammle_alle_daten(daten)
     text_mapping = {k: str(v) for k, v in mapping.items() if not isinstance(v, bool)}
     
     for page in writer.pages:
-        # Normales Schreiben
+        # Normales Schreiben der Textfelder durch pypdf
         writer.update_page_form_field_values(page, text_mapping)
         
-        # PANZERKNACKER FÜR KAPUTTE FELDER (Bio, Mett, Hack)
+        # PANZERKNACKER FÜR KAPUTTE FELDER UND KONTROLLKÄSTCHEN (LIMS-Gerecht!)
         if "/Annots" in page:
             for annot_ref in page["/Annots"]:
                 annot = annot_ref.get_object()
                 current_obj = annot
                 f_id = None
                 
-                # Wir klettern den Baum hoch
+                # Wir klettern den Baum hoch, um das ECHTE Feld zu finden (das braucht LIMS!)
                 while current_obj:
                     if "/T" in current_obj:
                         f_id = clean_id(str(current_obj["/T"]).strip("()"))
                         break
-                    if "/Parent" in current_obj: current_obj = current_obj["/Parent"].get_object()
-                    else: break
+                    if "/Parent" in current_obj: 
+                        current_obj = current_obj["/Parent"].get_object()
+                    else: 
+                        break
                 if not f_id: continue
 
-                # Haken knacken
+                # HAKEN / CHECKBOXEN KNACKEN
                 if f_id in mapping and isinstance(mapping[f_id], bool):
                     val = mapping[f_id]
                     on_state = NameObject("/Yes")
@@ -349,15 +347,21 @@ def erstelle_bericht(daten):
                         for k in annot["/AP"]["/N"].keys():
                             if k != "/Off": on_state = NameObject(k); break
                     state = on_state if val else NameObject("/Off")
-                    annot.update({NameObject("/V"): state, NameObject("/AS"): state})
+                    
+                    # 1. Für LIMS: Den Wert (/V) direkt im echten Formularfeld-Objekt speichern!
+                    current_obj.update({NameObject("/V"): state})
+                    
+                    # 2. Für PDF-Viewer: Das Aussehen (/AS) auf dem Zeichnungs-Widget (Annot) aktualisieren!
+                    annot.update({NameObject("/AS"): state})
                 
-                # Textfelder knacken
+                # TEXTFELDER (Falls pypdf sie ausgelassen hat)
                 elif f_id in mapping and not isinstance(mapping[f_id], bool):
                     val = str(mapping[f_id])
                     if val and val != "..":
-                        annot.update({NameObject("/V"): create_string_object(val)})
-                        if "/Parent" in annot:
-                            annot["/Parent"].get_object().update({NameObject("/V"): create_string_object(val)})
+                        current_obj.update({NameObject("/V"): create_string_object(val)})
+                        # Acrobat Render-Flag löschen, damit er den Text neu zeichnet
+                        if "/AP" in annot:
+                            del annot["/AP"]
 
     with open(ziel_pfad, "wb") as f: writer.write(f)
     print(f"✅ Bericht erstellt: {ziel_pfad}")
