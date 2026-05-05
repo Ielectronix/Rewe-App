@@ -12,6 +12,7 @@ def main(page: ft.Page):
     page.bgcolor = "#050a05" 
     page.scroll = "auto"
     page.padding = 0
+    # Wir nutzen hier nur noch Strings ("center") statt ft.CrossAxisAlignment
     ansicht = ft.Column(spacing=20, horizontal_alignment="center")
     page.add(ft.SafeArea(ansicht))
 
@@ -58,7 +59,6 @@ def main(page: ft.Page):
                             except: pass
                 except: pass
 
-        # SICHERHEITS-FIX: Wir nutzen nur noch einfache Strings für "fit" und "alignment"
         def get_logo_bild(w=150, h=80):
             if os.path.exists(LOGO_PFAD):
                 try:
@@ -66,11 +66,15 @@ def main(page: ft.Page):
                 except: pass
             return ft.Container(content=ft.Text("🏢 [LOGO]", color="white54", size=20, weight="bold"), width=w, height=h, border=ft.border.all(1, "white24"), border_radius=10)
 
-        def leucht_button(text, icon, on_click, color="#4CAF50"):
+        def leucht_button(text, icon_name, on_click, color="#4CAF50"):
             return ft.ElevatedButton(
-                content=ft.Row([ft.Icon(icon, color=color), ft.Text(text, color=color, weight="bold", size=16)], alignment="center"),
+                content=ft.Row([ft.Icon(icon_name, color=color), ft.Text(text, color=color, weight="bold", size=16)], alignment="center"),
                 on_click=on_click, bgcolor="#0b1a0b",
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), side={"": ft.BorderSide(width=2, color=color)}, padding=20),
+                style=ft.ButtonStyle(
+                    shape=ft.RoundedRectangleBorder(radius=12), 
+                    side=ft.BorderSide(width=2, color=color), 
+                    padding=20
+                ),
             )
 
         def nav_leiste(active_tab="touren"):
@@ -192,7 +196,6 @@ def main(page: ft.Page):
             ansicht.controls.append(ft.Container(content=header_content, padding=ft.padding.only(top=10, left=15, right=15)))
             ansicht.controls.append(ft.Divider(color="white24"))
             ansicht.controls.append(nav_leiste("senden"))
-            ansicht.controls.append(ft.Text("Heute erstellt", size=20, weight="bold", color="white"))
             
             heute_ordner = datetime.datetime.now().strftime('%Y-%m-%d')
             pdfs_gefunden = False
@@ -228,7 +231,6 @@ def main(page: ft.Page):
                                 )
                             )
                 except: pass
-            if not pdfs_gefunden: ansicht.controls.append(ft.Text("Leer", color="white54"))
             page.update()
 
         def zeige_archiv():
@@ -260,11 +262,15 @@ def main(page: ft.Page):
                         for f in p_list:
                             pdfs_gefunden = True
                             pfad = os.path.join(ordner, f)
+                            
+                            async def teilen_archiv(e, p=pfad):
+                                if share_obj: await share_obj.share_files([ft.ShareFile(p)])
+
                             ansicht.controls.append(
                                 ft.Container(bgcolor="#111a11", padding=10, border_radius=15, width=700, border=ft.border.all(1, "#333333"),
                                     content=ft.Row([
                                         ft.Text(f, color="white", size=12, expand=True), 
-                                        list_action_btn("📤 Senden", lambda e, p=pfad: share_obj.share_files([ft.ShareFile(p)]), "#2196F3")
+                                        list_action_btn("📤 Senden", teilen_archiv, "#2196F3")
                                     ])
                                 )
                             )
