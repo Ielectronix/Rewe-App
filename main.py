@@ -58,10 +58,10 @@ def main(page: ft.Page):
                             except: pass
                 except PermissionError: pass
 
-        # FEHLER BEHOBEN: "alignment=ft.alignment.center" wurde hier restlos entfernt!
+        # FEHLER BEHOBEN: fit="contain" anstatt ft.ImageFit.CONTAIN
         def get_logo_bild(w=150, h=80):
             if os.path.exists(LOGO_PFAD):
-                return ft.Image(src=LOGO_PFAD, width=w, height=h, fit=ft.ImageFit.CONTAIN)
+                return ft.Image(src=LOGO_PFAD, width=w, height=h, fit="contain")
             return ft.Container(content=ft.Text("🏢 [LOGO]", color="white54", size=20, weight="bold"), width=w, height=h, border=ft.border.all(1, "white24"), border_radius=10)
 
         def leucht_button(text, icon, on_click, color="#4CAF50"):
@@ -104,7 +104,6 @@ def main(page: ft.Page):
         # ==========================================
         def zeige_registrierung():
             ansicht.controls.clear()
-            # FEHLER BEHOBEN: Auch hier wurde "alignment=ft.alignment.center" entfernt.
             logo_bild = ft.Container(content=get_logo_bild(w=200, h=100), margin=ft.margin.only(bottom=20))
             
             name_in = ft.TextField(label="Vorname Nachname", border_color="white", color="yellow")
