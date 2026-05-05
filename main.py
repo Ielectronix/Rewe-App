@@ -5,12 +5,11 @@ import shutil
 import json 
 
 # --- KONFIGURATION DES LOGOS ---
-# Lege dein transparentes Logo ('bilacon_logo_transparent.png') in einen Ordner namens 'assets'
 LOGO_PFAD = os.path.join("assets", "bilacon_logo_transparent.png")
 
 def main(page: ft.Page):
     page.title = "Bilacon Monitoring"
-    page.bgcolor = "#050a05" # Neues, dunkleres Cyber-Grün
+    page.bgcolor = "#050a05" 
     page.scroll = "auto"
     page.padding = 0
     ansicht = ft.Column(spacing=20, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
@@ -19,7 +18,6 @@ def main(page: ft.Page):
     share_obj = ft.Share() if page.platform in [ft.PagePlatform.ANDROID, ft.PagePlatform.IOS] else None
 
     try:
-        # Hier sind jetzt auch die neuen PIN-Funktionen aus deiner datenverwaltung.py importiert!
         from datenverwaltung import (lade_maerkte, speichere_maerkte, lade_benutzer, 
                                      speichere_benutzer, hole_alle_benutzer, 
                                      registriere_neuen_benutzer, authentifiziere_benutzer)
@@ -60,7 +58,6 @@ def main(page: ft.Page):
                             except: pass
                 except PermissionError: pass
 
-        # --- HILFSFUNKTIONEN FÜR DAS DESIGN ---
         def get_logo_bild(w=150, h=80):
             if os.path.exists(LOGO_PFAD):
                 return ft.Image(src=LOGO_PFAD, width=w, height=h, fit=ft.ImageFit.CONTAIN)
@@ -83,11 +80,7 @@ def main(page: ft.Page):
                         on_click=on_click,
                         bgcolor="#004400" if is_active else "#111a11",
                         color="white",
-                        style=ft.ButtonStyle(
-                            shape=ft.RoundedRectangleBorder(radius=10),
-                            padding=ft.padding.symmetric(horizontal=2, vertical=10),
-                            side=ft.BorderSide(width=1.5, color="#4CAF50")
-                        )
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=ft.padding.symmetric(horizontal=2, vertical=10), side=ft.BorderSide(width=1.5, color="#4CAF50"))
                     )
                 )
             return ft.Row(alignment=ft.MainAxisAlignment.CENTER, spacing=5, controls=[
@@ -97,29 +90,20 @@ def main(page: ft.Page):
             ])
 
         def action_btn(text, on_click, farbe):
-            return ft.ElevatedButton(
-                content=ft.Text(text, size=14, weight="bold"),
-                on_click=on_click, bgcolor="#0b1a0b", color=farbe,
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=25), padding=ft.padding.symmetric(horizontal=20, vertical=15), side=ft.BorderSide(width=2, color=farbe))
-            )
+            return ft.ElevatedButton(content=ft.Text(text, size=14, weight="bold"), on_click=on_click, bgcolor="#0b1a0b", color=farbe, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=25), padding=ft.padding.symmetric(horizontal=20, vertical=15), side=ft.BorderSide(width=2, color=farbe)))
 
         def list_action_btn(text, on_click, farbe):
-            return ft.ElevatedButton(
-                content=ft.Text(text, size=12, weight="bold"),
-                on_click=on_click, bgcolor="#0b1a0b", color=farbe,
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=15), padding=ft.padding.symmetric(horizontal=12, vertical=8), side=ft.BorderSide(width=1.5, color=farbe))
-            )
+            return ft.ElevatedButton(content=ft.Text(text, size=12, weight="bold"), on_click=on_click, bgcolor="#0b1a0b", color=farbe, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=15), padding=ft.padding.symmetric(horizontal=12, vertical=8), side=ft.BorderSide(width=1.5, color=farbe)))
 
         def small_btn(emoji, on_click, farbe):
             return ft.ElevatedButton(content=ft.Text(emoji, size=16), on_click=on_click, bgcolor="#0b1a0b", color=farbe, style=ft.ButtonStyle(shape=ft.CircleBorder(), padding=0, side=ft.BorderSide(width=2, color=farbe)), width=45, height=45)
 
-
         # ==========================================
-        # 1. REGISTRIERUNG (ERSTER START)
+        # 1. REGISTRIERUNG (MIT LOGO)
         # ==========================================
         def zeige_registrierung():
             ansicht.controls.clear()
-            logo_bild = ft.Container(content=get_logo_bild(), alignment=ft.alignment.center, margin=ft.margin.only(bottom=20))
+            logo_bild = ft.Container(content=get_logo_bild(w=200, h=100), alignment=ft.alignment.center, margin=ft.margin.only(bottom=20))
             name_in = ft.TextField(label="Vorname Nachname", border_color="white", color="yellow")
             pin_in = ft.TextField(label="Wunsch-PIN (4 Zahlen)", password=True, can_reveal_password=True, keyboard_type=ft.KeyboardType.NUMBER, border_color="white", color="yellow", max_length=4)
             fehler_text = ft.Text("", color="red", weight="bold")
@@ -133,7 +117,7 @@ def main(page: ft.Page):
 
             reg_card = ft.Container(
                 content=ft.Column([
-                    logo_bild, ft.Text("Bilacon Monitoring", size=28, weight="bold", color="#4CAF50"),
+                    logo_bild, ft.Text("Monitoring App", size=24, weight="bold", color="#4CAF50"),
                     ft.Text("Erstmalige Einrichtung", size=18, color="white70"),
                     ft.Text("Bitte lege dein persönliches Profil an.", color="white54"),
                     ft.Divider(height=20, color="white24"), name_in, pin_in, fehler_text,
@@ -144,21 +128,18 @@ def main(page: ft.Page):
             ansicht.controls.append(ft.Container(content=reg_card, padding=ft.padding.only(top=50)))
             page.update()
 
-
         # ==========================================
-        # 2. LOGIN (NORMALER START)
+        # 2. LOGIN (OHNE LOGO - DIREKT PIN EINGEBEN)
         # ==========================================
         def zeige_login():
             ansicht.controls.clear()
             bereinige_archiv() 
-            logo_bild = ft.Container(content=get_logo_bild(), alignment=ft.alignment.center, margin=ft.margin.only(bottom=20))
             pin_in = ft.TextField(label="Deine PIN", password=True, keyboard_type=ft.KeyboardType.NUMBER, border_color="#4CAF50", color="yellow", text_align=ft.TextAlign.CENTER, text_size=20, max_length=4)
             fehler_text = ft.Text("", color="red", weight="bold")
 
             def do_login(e):
                 name = authentifiziere_benutzer(pin_in.value)
                 if name:
-                    # Name zerlegen und für die Formulare (formular.py) zwischenspeichern
                     teile = name.split(" ", 1)
                     v = teile[0] if len(teile) > 0 else name
                     z = teile[1] if len(teile) > 1 else ""
@@ -169,34 +150,30 @@ def main(page: ft.Page):
 
             login_card = ft.Container(
                 content=ft.Column([
-                    logo_bild, ft.Text("Bilacon Monitoring", size=28, weight="bold", color="#4CAF50"),
+                    ft.Text("Monitoring App", size=24, weight="bold", color="#4CAF50"),
                     ft.Text("Mitarbeiter Login", size=18, color="white70"),
                     ft.Divider(height=20, color="white24"), ft.Text("Bitte gib deine 4-stellige PIN ein:", color="white54"),
                     pin_in, fehler_text, leucht_button("Einloggen", ft.icons.LOCK_OPEN, do_login)
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=15),
                 bgcolor="#111a11", padding=30, border_radius=15, border=ft.border.all(2, "#4CAF50"), width=400
             )
-            ansicht.controls.append(ft.Container(content=login_card, padding=ft.padding.only(top=50)))
+            ansicht.controls.append(ft.Container(content=login_card, padding=ft.padding.only(top=100)))
             page.update()
 
-
         # ==========================================
-        # 3. DASHBOARD
+        # 3. DASHBOARD (OHNE LOGO)
         # ==========================================
         def zeige_dashboard():
             ansicht.controls.clear()
-            # Kopfzeile mit Logo und Name
             user_info = lade_benutzer()
             name_str = f"{user_info[0]} {user_info[1]}".strip()
             header_content = ft.Row([
-                get_logo_bild(w=100, h=50),
                 ft.Text("Bilacon Monitoring", size=20, weight="bold", color="#4CAF50"),
                 ft.Row([ft.Icon(ft.icons.ACCOUNT_CIRCLE, color="white54"), ft.Text(name_str, color="white54", weight="bold")], spacing=5)
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
             
             ansicht.controls.append(ft.Container(content=header_content, padding=ft.padding.only(top=10, left=15, right=15)))
             ansicht.controls.append(ft.Divider(color="white24"))
-            
             ansicht.controls.append(nav_leiste("touren"))
             ansicht.controls.append(ft.Text("Meine heutigen Touren", size=20, weight="bold", color="white"))
             
@@ -214,32 +191,28 @@ def main(page: ft.Page):
             ansicht.controls.append(ft.Container(content=action_btn("➕ Neue Tour anlegen", lambda e: zeige_maske_ui(page, ansicht, None, zeige_dashboard, None, None), "#2196F3"), padding=ft.padding.only(bottom=20)))
             page.update()
 
-
         # ==========================================
-        # 4. POSTAUSGANG
+        # 4. POSTAUSGANG (OHNE LOGO)
         # ==========================================
         def zeige_postausgang():
             ansicht.controls.clear()
             user_info = lade_benutzer()
             name_str = f"{user_info[0]} {user_info[1]}".strip()
-            header_content = ft.Row([get_logo_bild(w=100, h=50), ft.Text("Postausgang", size=20, weight="bold", color="#4CAF50"), ft.Row([ft.Icon(ft.icons.ACCOUNT_CIRCLE, color="white54"), ft.Text(name_str, color="white54", weight="bold")], spacing=5)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
+            header_content = ft.Row([ft.Text("Postausgang", size=20, weight="bold", color="#4CAF50"), ft.Row([ft.Icon(ft.icons.ACCOUNT_CIRCLE, color="white54"), ft.Text(name_str, color="white54", weight="bold")], spacing=5)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
             
             ansicht.controls.append(ft.Container(content=header_content, padding=ft.padding.only(top=10, left=15, right=15)))
             ansicht.controls.append(ft.Divider(color="white24"))
-            
             ansicht.controls.append(nav_leiste("senden"))
             ansicht.controls.append(ft.Text("Postausgang (Heute)", size=20, weight="bold", color="white"))
             
             heute_ordner = datetime.datetime.now().strftime('%Y-%m-%d')
             pdfs_gefunden = False
             such_ordner = []
-            
             for base in get_erweiterte_bases():
                 such_ordner.append(os.path.join(base, heute_ordner))
                 such_ordner.append(base)
             
             gesendet_set = lade_gesendet() 
-            
             for ordner in list(set(such_ordner)):
                 if not os.path.exists(ordner): continue
                 try:
@@ -247,7 +220,6 @@ def main(page: ft.Page):
                         if f.lower().endswith(".pdf"):
                             pdfs_gefunden = True
                             pfad = os.path.join(ordner, f)
-                            
                             ist_gesendet = pfad in gesendet_set
                             farbe = "#4CAF50" if ist_gesendet else "white"
                             text_gewicht = "bold" if ist_gesendet else "normal"
@@ -278,19 +250,17 @@ def main(page: ft.Page):
             if not pdfs_gefunden: ansicht.controls.append(ft.Text("Keine Berichte zum Senden.", color="white54"))
             page.update()
 
-
         # ==========================================
-        # 5. ARCHIV
+        # 5. ARCHIV (OHNE LOGO)
         # ==========================================
         def zeige_archiv():
             ansicht.controls.clear()
             user_info = lade_benutzer()
             name_str = f"{user_info[0]} {user_info[1]}".strip()
-            header_content = ft.Row([get_logo_bild(w=100, h=50), ft.Text("Archiv", size=20, weight="bold", color="#4CAF50"), ft.Row([ft.Icon(ft.icons.ACCOUNT_CIRCLE, color="white54"), ft.Text(name_str, color="white54", weight="bold")], spacing=5)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
+            header_content = ft.Row([ft.Text("Archiv", size=20, weight="bold", color="#4CAF50"), ft.Row([ft.Icon(ft.icons.ACCOUNT_CIRCLE, color="white54"), ft.Text(name_str, color="white54", weight="bold")], spacing=5)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
             
             ansicht.controls.append(ft.Container(content=header_content, padding=ft.padding.only(top=10, left=15, right=15)))
             ansicht.controls.append(ft.Divider(color="white24"))
-            
             ansicht.controls.append(nav_leiste("archiv"))
             ansicht.controls.append(ft.Text("Archiv (Letzte 14 Tage)", size=20, weight="bold", color="white"))
             
@@ -312,7 +282,6 @@ def main(page: ft.Page):
                     except: pass
             
             gesendet_set = lade_gesendet() 
-            
             for ordner in list(set(such_ordner)):
                 if not os.path.exists(ordner): continue
                 try:
@@ -322,7 +291,6 @@ def main(page: ft.Page):
                         for f in p_list:
                             pdfs_gefunden = True
                             pfad = os.path.join(ordner, f)
-                            
                             ist_gesendet = pfad in gesendet_set
                             farbe = "#4CAF50" if ist_gesendet else "white"
                             text_gewicht = "bold" if ist_gesendet else "normal"
