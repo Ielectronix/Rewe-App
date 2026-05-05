@@ -58,10 +58,11 @@ def main(page: ft.Page):
                             except: pass
                 except PermissionError: pass
 
+        # FEHLER BEHOBEN: "alignment=ft.alignment.center" wurde hier restlos entfernt!
         def get_logo_bild(w=150, h=80):
             if os.path.exists(LOGO_PFAD):
                 return ft.Image(src=LOGO_PFAD, width=w, height=h, fit=ft.ImageFit.CONTAIN)
-            return ft.Container(content=ft.Text("🏢 [LOGO]", color="white54", size=20, weight="bold"), width=w, height=h, border=ft.border.all(1, "white24"), border_radius=10, alignment=ft.alignment.center)
+            return ft.Container(content=ft.Text("🏢 [LOGO]", color="white54", size=20, weight="bold"), width=w, height=h, border=ft.border.all(1, "white24"), border_radius=10)
 
         def leucht_button(text, icon, on_click, color="#4CAF50"):
             return ft.ElevatedButton(
@@ -103,7 +104,9 @@ def main(page: ft.Page):
         # ==========================================
         def zeige_registrierung():
             ansicht.controls.clear()
-            logo_bild = ft.Container(content=get_logo_bild(w=200, h=100), alignment=ft.alignment.center, margin=ft.margin.only(bottom=20))
+            # FEHLER BEHOBEN: Auch hier wurde "alignment=ft.alignment.center" entfernt.
+            logo_bild = ft.Container(content=get_logo_bild(w=200, h=100), margin=ft.margin.only(bottom=20))
+            
             name_in = ft.TextField(label="Vorname Nachname", border_color="white", color="yellow")
             pin_in = ft.TextField(label="Wunsch-PIN (4 Zahlen)", password=True, can_reveal_password=True, keyboard_type=ft.KeyboardType.NUMBER, border_color="white", color="yellow", max_length=4)
             fehler_text = ft.Text("", color="red", weight="bold")
