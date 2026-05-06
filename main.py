@@ -7,14 +7,15 @@ import json
 LOGO_PFAD = os.path.join("assets", "bilacon_logo_transparent.png")
 
 def main(page: ft.Page):
-    page.title = "Bilacon Monitoring"
-    page.bgcolor = "#050a05"
-    page.padding = 20
+    page.title = "Rewe Monitoring"
+    page.bgcolor = "#001a00"
     page.scroll = "auto"
+    page.padding = 20
 
-    share_obj = ft.Share() if page.platform in ["android", "ios"] else None
+    share_obj = ft.Share() if page.platform in [ft.PagePlatform.ANDROID, ft.PagePlatform.IOS] else None
 
     try:
+        # HIER die nötigen Login-Funktionen mit importiert!
         from datenverwaltung import (lade_maerkte, speichere_maerkte, lade_benutzer, 
                                      speichere_benutzer, hole_alle_benutzer, 
                                      registriere_neuen_benutzer, authentifiziere_benutzer)
@@ -53,7 +54,7 @@ def main(page: ft.Page):
                                 ordner_datum = datetime.datetime.strptime(ordner, '%Y-%m-%d')
                                 if (heute - ordner_datum).days > 14: shutil.rmtree(ordner_pfad)
                             except: pass
-                except: pass
+                except PermissionError: pass
 
         def get_logo_bild():
             if os.path.exists(LOGO_PFAD):
@@ -61,83 +62,75 @@ def main(page: ft.Page):
             return ft.Text("LOGO", color="white")
 
         # ==========================================
-        # DEIN DESIGN: BUTTONS & NEON
+        # DEINE BUTTON-DESIGNS
         # ==========================================
         def leucht_button(text_inhalt, on_click, color="#4CAF50"):
+            # Spezieller Button für den Login
             return ft.ElevatedButton(
                 content=ft.Text(text_inhalt, color=color, weight="bold", size=16),
-                on_click=on_click,
-                bgcolor="#0b1a0b",
-                style=ft.ButtonStyle(
-                    shape=ft.RoundedRectangleBorder(radius=12),
-                    side=ft.BorderSide(width=2, color=color),
-                    padding=20
-                ),
+                on_click=on_click, bgcolor="#0b1a0b",
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), side=ft.BorderSide(width=2, color=color), padding=20)
             )
 
         def nav_leiste(active_tab="touren"):
-            def make_btn(text_inhalt, tab_id, on_click):
+            def make_btn(text, tab_id, on_click):
                 is_active = (active_tab == tab_id)
-                rand_farbe = "#4CAF50" if is_active else "#333333"
-                hintergrund = "#0b1a0b" if is_active else "#111a11"
-                return ft.ElevatedButton(
-                    content=ft.Text(text_inhalt, size=11, weight="bold", color="white"),
-                    on_click=on_click,
-                    bgcolor=hintergrund,
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=10, side=ft.BorderSide(width=1.5, color=rand_farbe))
+                return ft.Container(
+                    expand=1,
+                    content=ft.ElevatedButton(
+                        content=ft.Text(text, size=13, weight="bold"),
+                        on_click=on_click,
+                        bgcolor="#004400" if is_active else "#1a1a1a",
+                        color="white",
+                        style=ft.ButtonStyle(
+                            shape=ft.RoundedRectangleBorder(radius=10),
+                            padding=ft.padding.symmetric(horizontal=2, vertical=10),
+                            side=ft.BorderSide(width=1.5, color="#4CAF50")
+                        )
+                    )
                 )
-            # WICHTIG: wrap=True verhindert den grauen Balken, falls das Handy schmal ist!
-            return ft.Row(
-                alignment=ft.MainAxisAlignment.CENTER, 
-                spacing=5, 
-                wrap=True, 
-                controls=[
-                    make_btn("🚚 TOUREN", "touren", lambda e: zeige_dashboard()),
-                    make_btn("📤 SENDEN", "senden", lambda e: zeige_postausgang()),
-                    make_btn("🗄️ ARCHIV", "archiv", lambda e: zeige_archiv())
-                ]
-            )
+            # WICHTIG: wrap=True schützt vor dem grauen Balken auf schmalen Handys!
+            return ft.Row(alignment=ft.MainAxisAlignment.CENTER, spacing=5, wrap=True, controls=[
+                make_btn("🚚 Touren", "touren", lambda e: zeige_dashboard()),
+                make_btn("📤 Senden", "senden", lambda e: zeige_postausgang()),
+                make_btn("🗄️ Archiv", "archiv", lambda e: zeige_archiv())
+            ])
 
-        def action_btn(text_inhalt, on_click, farbe):
+        def action_btn(text, on_click, farbe):
             return ft.ElevatedButton(
-                content=ft.Text(text_inhalt, size=15, weight="bold", color=farbe),
-                on_click=on_click, bgcolor="#0b1a0b",
+                content=ft.Text(text, size=14, weight="bold"),
+                on_click=on_click, bgcolor="#0b1a0b", color=farbe,
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=25), padding=ft.padding.symmetric(horizontal=20, vertical=15), side=ft.BorderSide(width=2, color=farbe))
             )
 
-        def list_action_btn(text_inhalt, on_click, farbe):
+        def list_action_btn(text, on_click, farbe):
             return ft.ElevatedButton(
-                content=ft.Text(text_inhalt, size=11, weight="bold", color=farbe),
-                on_click=on_click, bgcolor="#0b1a0b",
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=15), padding=ft.padding.symmetric(horizontal=10, vertical=8), side=ft.BorderSide(width=1.5, color=farbe))
+                content=ft.Text(text, size=12, weight="bold"),
+                on_click=on_click, bgcolor="#0b1a0b", color=farbe,
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=15), padding=ft.padding.symmetric(horizontal=12, vertical=8), side=ft.BorderSide(width=1.5, color=farbe))
             )
 
         def small_btn(emoji, on_click, farbe):
-            return ft.ElevatedButton(content=ft.Text(emoji, size=14), on_click=on_click, bgcolor="#0b1a0b", color=farbe, style=ft.ButtonStyle(shape=ft.CircleBorder(), padding=0, side=ft.BorderSide(width=2, color=farbe)), width=40, height=40)
-
+            return ft.ElevatedButton(content=ft.Text(emoji, size=16), on_click=on_click, bgcolor="#0b1a0b", color=farbe, style=ft.ButtonStyle(shape=ft.CircleBorder(), padding=0, side=ft.BorderSide(width=2, color=farbe)), width=45, height=45)
 
         # ==========================================
         # 1. REGISTRIERUNG
         # ==========================================
         def zeige_registrierung():
-            page.clean()
-            name_in = ft.TextField(label="Vorname Nachname", color="white", border_color="#4CAF50")
-            pin_in = ft.TextField(label="Wunsch-PIN (4 Zahlen)", password=True, keyboard_type="number", color="white", border_color="#4CAF50", max_length=4)
+            page.clean() # PAPIER WIRD GEREINIGT
+            ansicht = ft.Column(horizontal_alignment="center", spacing=20)
+            
+            name_in = ft.TextField(label="Vorname Nachname", color="white", border_color="#4CAF50", text_align="center")
+            pin_in = ft.TextField(label="Wunsch-PIN (4 Zahlen)", password=True, keyboard_type="number", color="white", border_color="#4CAF50", max_length=4, text_align="center")
             fehler = ft.Text("", color="red", weight="bold")
 
             def do_reg(e):
                 if not name_in.value or not pin_in.value:
-                    fehler.value = "⚠️ Bitte alles ausfüllen!"
-                    page.update()
-                    return
+                    fehler.value = "⚠️ Bitte alles ausfüllen!"; page.update(); return
                 success, msg = registriere_neuen_benutzer(name_in.value, pin_in.value)
-                if success:
-                    zeige_login()
-                else:
-                    fehler.value = msg
-                    page.update()
+                if success: zeige_login()
+                else: fehler.value = msg; page.update()
 
-            ansicht = ft.Column(horizontal_alignment="center", spacing=20)
             ansicht.controls.append(ft.Container(height=20))
             ansicht.controls.append(get_logo_bild())
             ansicht.controls.append(ft.Text("Profil einrichten", size=20, color="#4CAF50", weight="bold"))
@@ -146,14 +139,16 @@ def main(page: ft.Page):
             ansicht.controls.append(fehler)
             ansicht.controls.append(leucht_button("PROFIL ERSTELLEN", do_reg, "#4CAF50"))
 
-            page.add(ansicht)
+            page.add(ft.SafeArea(ansicht))
 
         # ==========================================
         # 2. LOGIN
         # ==========================================
         def zeige_login():
-            page.clean()
-            bereinige_archiv()
+            page.clean() # PAPIER WIRD GEREINIGT
+            ansicht = ft.Column(horizontal_alignment="center", spacing=20)
+            bereinige_archiv() 
+            
             pin_in = ft.TextField(label="Deine PIN", password=True, keyboard_type="number", color="white", border_color="#4CAF50", text_align="center", max_length=4)
             fehler = ft.Text("", color="red", weight="bold")
 
@@ -164,10 +159,8 @@ def main(page: ft.Page):
                     speichere_benutzer(v, z)
                     zeige_dashboard()
                 else:
-                    fehler.value = "⚠️ PIN falsch!"
-                    page.update()
+                    fehler.value = "⚠️ PIN falsch!"; page.update()
 
-            ansicht = ft.Column(horizontal_alignment="center", spacing=20)
             ansicht.controls.append(ft.Container(height=40))
             ansicht.controls.append(get_logo_bild())
             ansicht.controls.append(ft.Text("Mitarbeiter Login", size=20, color="#4CAF50", weight="bold"))
@@ -175,77 +168,67 @@ def main(page: ft.Page):
             ansicht.controls.append(fehler)
             ansicht.controls.append(leucht_button("EINLOGGEN", do_login, "#4CAF50"))
 
-            page.add(ansicht)
+            page.add(ft.SafeArea(ansicht))
 
         # ==========================================
-        # 3. DASHBOARD (Vollständig & Absturzsicher)
+        # 3. DASHBOARD (Voll flexibel)
         # ==========================================
         def zeige_dashboard():
-            page.clean()
+            page.clean() # PAPIER WIRD GEREINIGT
+            # "stretch" zieht die Container automatisch auf die richtige Breite, ohne Absturz!
+            ansicht = ft.Column(spacing=20, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
+            
             v, z = lade_benutzer()
-            name_str = f"{v} {z}".strip()
             
-            # WICHTIG: wrap=True verhindert Absturz bei zu langen Namen!
             header = ft.Row([
-                ft.Text("BILACON", size=20, weight="bold", color="#4CAF50"),
-                ft.Row([ft.Icon("person", color="#2196F3", size=18), ft.Text(name_str, color="white", weight="bold")], wrap=True)
+                ft.Text("REWE Monitoring", size=20, weight="bold", color="#4CAF50"),
+                ft.Row([ft.Icon("person", color="#2196F3", size=18), ft.Text(f"{v} {z}".strip(), color="white", weight="bold")], wrap=True)
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, wrap=True)
-            
-            ansicht = ft.Column(spacing=20)
-            ansicht.controls.append(ft.Container(height=5))
+
             ansicht.controls.append(header)
             ansicht.controls.append(nav_leiste("touren"))
-            ansicht.controls.append(ft.Text("Meine heutigen Touren", size=18, weight="bold", color="white"))
+            ansicht.controls.append(ft.Text("Meine heutigen Touren", size=20, weight="bold", color="white"))
             
             maerkte = lade_maerkte()
             if not maerkte:
-                ansicht.controls.append(ft.Text("Keine Touren geplant.", color="white54", italic=True))
+                ansicht.controls.append(ft.Text("Noch keine Touren angelegt.", color="white54"))
             else:
                 for i, m in enumerate(maerkte):
                     txt = m.get("adresse") or m.get("marktnummer") or "Tour"
-                    ansicht.controls.append(ft.Container(
-                        bgcolor="#111a11", padding=15, border_radius=15, border=ft.border.all(1, "#333333"), 
-                        content=ft.Row([
-                            ft.Text(txt, color="white", weight="bold", size=13, expand=True, max_lines=2),
-                            small_btn("✏️", lambda e, idx=i: zeige_maske_ui(page, ansicht, None, zeige_dashboard, None, idx), "#2196F3"),
-                            small_btn("🗑️", lambda e, idx=i: (maerkte.pop(idx), speichere_maerkte(maerkte), zeige_dashboard()), "#F44336")
-                        ])
-                    ))
+                    # HIER WURDE width=700 ENTFERNT! Der Container passt sich jetzt von allein an!
+                    ansicht.controls.append(ft.Container(bgcolor="#002200", padding=15, border_radius=15, content=ft.Row([
+                        ft.Text(txt, color="white", weight="bold", size=12, expand=True, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS),
+                        small_btn("✏️", lambda e, idx=i: zeige_maske_ui(page, ansicht, None, zeige_dashboard, None, idx), "#2196F3"),
+                        small_btn("🗑️", lambda e, idx=i: (maerkte.pop(idx), speichere_maerkte(maerkte), zeige_dashboard()), "#F44336")
+                    ])))
                     
             ansicht.controls.append(ft.Container(height=10))
             ansicht.controls.append(ft.Row([
-                action_btn("➕ NEUEN TAG STARTEN", lambda e: zeige_maske_ui(page, ansicht, None, zeige_dashboard, None, None), "#2196F3")
+                action_btn("➕ Neue Tour anlegen", lambda e: zeige_maske_ui(page, ansicht, None, zeige_dashboard, None, None), "#2196F3")
             ], alignment=ft.MainAxisAlignment.CENTER))
             
-            page.add(ansicht)
+            page.add(ft.SafeArea(ansicht))
 
         # ==========================================
         # 4. POSTAUSGANG
         # ==========================================
         def zeige_postausgang():
-            page.clean()
-            v, z = lade_benutzer()
-            name_str = f"{v} {z}".strip()
+            page.clean() # PAPIER WIRD GEREINIGT
+            ansicht = ft.Column(spacing=20, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
             
-            header = ft.Row([
-                ft.Text("POSTAUSGANG", size=20, weight="bold", color="#4CAF50"),
-                ft.Row([ft.Icon("person", color="#2196F3", size=18), ft.Text(name_str, color="white", weight="bold")], wrap=True)
-            ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, wrap=True)
-            
-            ansicht = ft.Column(spacing=20)
-            ansicht.controls.append(ft.Container(height=5))
-            ansicht.controls.append(header)
             ansicht.controls.append(nav_leiste("senden"))
-            ansicht.controls.append(ft.Text("Postausgang (Heute)", size=18, weight="bold", color="white"))
+            ansicht.controls.append(ft.Text("Postausgang (Heute)", size=20, weight="bold", color="white"))
             
             heute_ordner = datetime.datetime.now().strftime('%Y-%m-%d')
             pdfs_gefunden = False
             such_ordner = []
+            
             for base in get_erweiterte_bases():
                 such_ordner.append(os.path.join(base, heute_ordner))
                 such_ordner.append(base)
             
             gesendet_set = lade_gesendet() 
+            
             for ordner in list(set(such_ordner)):
                 if not os.path.exists(ordner): continue
                 try:
@@ -253,17 +236,18 @@ def main(page: ft.Page):
                         if f.lower().endswith(".pdf"):
                             pdfs_gefunden = True
                             pfad = os.path.join(ordner, f)
+                            
                             ist_gesendet = pfad in gesendet_set
                             farbe = "#4CAF50" if ist_gesendet else "white"
                             text_gewicht = "bold" if ist_gesendet else "normal"
                             anzeige_text = f"✅ {f}" if ist_gesendet else f
                             
-                            def teilen_jetzt(e, p=pfad):
+                            async def teilen_jetzt(e, p=pfad):
                                 if share_obj: 
-                                    try: page.run_task(lambda: share_obj.share_files([ft.ShareFile(p)], text="Bilacon Bericht"))
-                                    except: pass
+                                    await share_obj.share_files([ft.ShareFile.from_path(p)], text="REWE Bericht")
                                     markiere_als_gesendet(p)
                                     zeige_postausgang() 
+                                else: print("Share geht auf dem PC nicht.")
 
                             def rm(e, p=pfad):
                                 if os.path.exists(p): os.remove(p)
@@ -271,9 +255,9 @@ def main(page: ft.Page):
 
                             ansicht.controls.append(
                                 ft.Container(
-                                    bgcolor="#111a11", padding=10, border_radius=15, border=ft.border.all(1, "#333333"),
+                                    bgcolor="#002200", padding=10, border_radius=15, 
                                     content=ft.Row([
-                                        ft.Text(anzeige_text, color=farbe, size=11, expand=True, weight=text_gewicht, max_lines=2),
+                                        ft.Text(anzeige_text, color=farbe, size=12, expand=True, weight=text_gewicht, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS),
                                         list_action_btn("📤 Senden", teilen_jetzt, "#2196F3"),
                                         small_btn("🗑️", rm, "#F44336")
                                     ])
@@ -282,32 +266,23 @@ def main(page: ft.Page):
                 except: pass
             if not pdfs_gefunden: ansicht.controls.append(ft.Text("Keine Berichte zum Senden.", color="white54"))
             
-            page.add(ansicht)
+            page.add(ft.SafeArea(ansicht))
 
         # ==========================================
         # 5. ARCHIV
         # ==========================================
         def zeige_archiv():
-            page.clean()
-            v, z = lade_benutzer()
-            name_str = f"{v} {z}".strip()
+            page.clean() # PAPIER WIRD GEREINIGT
+            ansicht = ft.Column(spacing=20, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
             
-            header = ft.Row([
-                ft.Text("ARCHIV", size=20, weight="bold", color="#4CAF50"),
-                ft.Row([ft.Icon("person", color="#2196F3", size=18), ft.Text(name_str, color="white", weight="bold")], wrap=True)
-            ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, wrap=True)
-            
-            ansicht = ft.Column(spacing=20)
-            ansicht.controls.append(ft.Container(height=5))
-            ansicht.controls.append(header)
             ansicht.controls.append(nav_leiste("archiv"))
-            ansicht.controls.append(ft.Text("Archiv (Letzte 14 Tage)", size=18, weight="bold", color="white"))
+            ansicht.controls.append(ft.Text("Archiv (Letzte 14 Tage)", size=20, weight="bold", color="white"))
             
             email_val = "registration-mibi.ber@tentamus.com"
-            ansicht.controls.append(ft.Container(bgcolor="#111a11", padding=15, border_radius=15, border=ft.border.all(1, "#333333"), content=ft.Column([ 
-                ft.Text("E-MAIL KOPIEREN:", color="#FF9800", weight="bold", size=13), 
-                ft.Text(email_val, color="white", size=12, selectable=True)
-            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER)))
+            ansicht.controls.append(ft.Container(bgcolor="#1a1a1a", padding=15, border_radius=15, content=ft.Column([ 
+                ft.Text("E-MAIL KOPIEREN:", color="#FF9800", weight="bold", size=14), 
+                ft.Text(email_val, color="white", size=13, selectable=True)
+            ], horizontal_alignment="center")))
             
             pdfs_gefunden = False
             such_ordner = []
@@ -321,43 +296,47 @@ def main(page: ft.Page):
                     except: pass
             
             gesendet_set = lade_gesendet() 
+            
             for ordner in list(set(such_ordner)):
                 if not os.path.exists(ordner): continue
                 try:
                     p_list = [f for f in os.listdir(ordner) if f.lower().endswith(".pdf")]
                     if p_list:
-                        ansicht.controls.append(ft.Text(f"{os.path.basename(ordner)}", color="yellow", weight="bold", size=12))
+                        ansicht.controls.append(ft.Text(f"{ordner}", color="yellow", weight="bold", size=12))
                         for f in p_list:
                             pdfs_gefunden = True
                             pfad = os.path.join(ordner, f)
+                            
                             ist_gesendet = pfad in gesendet_set
                             farbe = "#4CAF50" if ist_gesendet else "white"
                             text_gewicht = "bold" if ist_gesendet else "normal"
                             anzeige_text = f"✅ {f}" if ist_gesendet else f
                             
-                            def teilen_archiv(e, p=pfad):
+                            async def teilen_archiv(e, p=pfad):
                                 if share_obj: 
-                                    try: page.run_task(lambda: share_obj.share_files([ft.ShareFile(p)], text="Bilacon Bericht"))
-                                    except: pass
+                                    await share_obj.share_files([ft.ShareFile.from_path(p)], text="REWE Bericht")
                                     markiere_als_gesendet(p)
                                     zeige_archiv()
+                                else: print("Share geht auf dem PC nicht.")
 
                             ansicht.controls.append(
                                 ft.Container(
-                                    bgcolor="#111a11", padding=10, border_radius=15, border=ft.border.all(1, "#333333"),
+                                    bgcolor="#002200", padding=10, border_radius=15,
                                     content=ft.Row([
-                                        ft.Text(anzeige_text, color=farbe, size=11, expand=True, weight=text_gewicht, max_lines=2), 
+                                        ft.Text(anzeige_text, color=farbe, size=12, expand=True, weight=text_gewicht, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS), 
                                         list_action_btn("📤 Senden", teilen_archiv, "#2196F3")
                                     ])
                                 )
                             )
+                        ansicht.controls.append(ft.Divider(color="white24"))
                 except: pass
             if not pdfs_gefunden: ansicht.controls.append(ft.Text("Keine Berichte im Archiv.", color="white54"))
             
-            page.add(ansicht)
+            page.add(ft.SafeArea(ansicht))
 
-
+        # ==========================================
         # START LOGIK
+        # ==========================================
         mitarbeiter = hole_alle_benutzer()
         if not mitarbeiter:
             zeige_registrierung()
@@ -365,7 +344,7 @@ def main(page: ft.Page):
             zeige_login()
 
     except Exception as e:
-        page.add(ft.Text(f"Systemfehler: {e}", color="red"))
+        page.add(ft.Text(f"Fehler: {e}", color="red"))
 
 if __name__ == "__main__":
     ft.app(target=main)
