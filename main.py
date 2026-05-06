@@ -4,6 +4,10 @@ import datetime
 import shutil
 import json 
 
+LOGO_PFAD = os.path.join("assets", "bilacon_logo_transparent.png")
+# --- NEU: Pfad für das Startseiten-Logo ---
+START_LOGO_PFAD = os.path.join("assets", "bilacon_logo_transparent1.png")
+
 def main(page: ft.Page):
     page.title = "Rewe Monitoring"
     page.bgcolor = "#001a00"
@@ -52,6 +56,18 @@ def main(page: ft.Page):
                             except: pass
                 except PermissionError: pass
 
+        def get_logo_bild():
+            if os.path.exists(LOGO_PFAD):
+                return ft.Image(src=LOGO_PFAD, width=200, height=100, fit="contain")
+            return ft.Text("LOGO", color="white")
+
+        # --- NEU: Funktion für das Startseiten-Logo ---
+        def get_start_logo_bild():
+            if os.path.exists(START_LOGO_PFAD):
+                # Höhe auf 80 begrenzt, damit es den Rahmen der alten Überschrift nicht sprengt
+                return ft.Image(src=START_LOGO_PFAD, height=80, fit="contain")
+            return ft.Text("REWE Monitoring", color="white", weight="bold", size=28)
+
         # ==========================================
         # DEINE ORIGINALEN BUTTONS & NAVIGATION
         # ==========================================
@@ -72,7 +88,6 @@ def main(page: ft.Page):
                         )
                     )
                 )
-            # HIER IST DER FIX FÜR DEN PC/TABLET ABSTURZ: width=700 hinzugefügt!
             return ft.Container(
                 width=700, 
                 content=ft.Row(alignment=ft.MainAxisAlignment.CENTER, spacing=5, controls=[
@@ -112,7 +127,7 @@ def main(page: ft.Page):
         # 1. REGISTRIERUNG
         # ==========================================
         def zeige_registrierung():
-            page.clean() # Seite restlos säubern!
+            page.clean() 
             ansicht = ft.Column(spacing=20, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
             
             name_in = ft.TextField(label="Vorname Nachname", color="yellow", label_style=ft.TextStyle(color="white54"), border_color="white", width=400, text_align="center")
@@ -128,7 +143,7 @@ def main(page: ft.Page):
 
             ansicht.controls.extend([
                 ft.Container(height=30),
-                ft.Text("REWE Monitoring", color="white", weight="bold", size=28),
+                get_start_logo_bild(), # <--- HIER IST DAS NEUE LOGO!
                 ft.Text("Profil einrichten", color="#4CAF50", size=18),
                 ft.Container(height=10),
                 name_in, pin_in, fehler,
@@ -140,7 +155,7 @@ def main(page: ft.Page):
         # 2. LOGIN
         # ==========================================
         def zeige_login():
-            page.clean() # Seite restlos säubern!
+            page.clean() 
             ansicht = ft.Column(spacing=20, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
             bereinige_archiv() 
             
@@ -158,7 +173,7 @@ def main(page: ft.Page):
 
             ansicht.controls.extend([
                 ft.Container(height=30),
-                ft.Text("REWE Monitoring", color="white", weight="bold", size=28),
+                get_start_logo_bild(), # <--- HIER IST DAS NEUE LOGO!
                 ft.Text("Mitarbeiter Login", color="#4CAF50", size=18),
                 ft.Container(height=10),
                 pin_in, fehler,
@@ -167,10 +182,10 @@ def main(page: ft.Page):
             page.add(ft.SafeArea(ansicht))
 
         # ==========================================
-        # 3. DASHBOARD (Dein Original-Code!)
+        # 3. DASHBOARD
         # ==========================================
         def zeige_dashboard():
-            page.clean() # Seite restlos säubern!
+            page.clean() 
             ansicht = ft.Column(spacing=20, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
             
             ansicht.controls.append(nav_leiste("touren"))
@@ -192,7 +207,7 @@ def main(page: ft.Page):
             page.add(ft.SafeArea(ansicht))
 
         # ==========================================
-        # 4. POSTAUSGANG (Dein Original-Code!)
+        # 4. POSTAUSGANG
         # ==========================================
         def zeige_postausgang():
             page.clean()
@@ -250,7 +265,7 @@ def main(page: ft.Page):
             page.add(ft.SafeArea(ansicht))
 
         # ==========================================
-        # 5. ARCHIV (Dein Original-Code!)
+        # 5. ARCHIV
         # ==========================================
         def zeige_archiv():
             page.clean()
