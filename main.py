@@ -10,11 +10,7 @@ def main(page: ft.Page):
     page.title = "Bilacon Diagnose"
     page.bgcolor = "#050a05" 
     page.scroll = "auto"
-    page.padding = 15
-    
-    # Absolute Basis-Ansicht ohne jeden Schnickschnack
-    ansicht = ft.Column(spacing=15)
-    page.add(ansicht)
+    page.padding = 20
 
     share_obj = ft.Share() if page.platform in ["android", "ios"] else None
 
@@ -42,11 +38,12 @@ def main(page: ft.Page):
             return ft.ElevatedButton(content=ft.Text(emoji), bgcolor="#0b1a0b", color=farbe, width=45, height=45)
 
         # ==========================================
-        # 1. LOGIN (Standard)
+        # 1. LOGIN (Startpunkt)
         # ==========================================
         def zeige_login():
-            ansicht.controls.clear()
-            pin_in = ft.TextField(label="Deine PIN", password=True, keyboard_type="number", color="white")
+            page.clean() # LÖSCHT ALLES RADIKAL VOM BILDSCHIRM
+            
+            pin_in = ft.TextField(label="Deine PIN", password=True, keyboard_type="number", color="white", text_align="center")
             fehler = ft.Text("", color="red")
 
             def do_login(e):
@@ -55,28 +52,34 @@ def main(page: ft.Page):
                     if name:
                         v, z = (name.split(" ", 1) + [""])[:2]
                         speichere_benutzer(v, z)
-                        zeige_diagnose_menue() # HIER STARTET JETZT DER SCANNER!
+                        zeige_diagnose_menue() # HIER STARTET DER SCANNER!
                     else:
                         fehler.value = "PIN falsch!"; page.update()
                 except Exception as ex:
                     fehler.value = f"Fehler beim Einloggen: {ex}"; page.update()
 
+            ansicht = ft.Column(horizontal_alignment="center", spacing=20)
+            ansicht.controls.append(ft.Container(height=50))
             ansicht.controls.append(get_logo_bild())
             ansicht.controls.append(ft.Text("Mitarbeiter Login", size=20, color="#4CAF50"))
             ansicht.controls.append(pin_in)
             ansicht.controls.append(fehler)
             ansicht.controls.append(ft.ElevatedButton("EINLOGGEN", on_click=do_login, bgcolor="#4CAF50", color="white"))
+            
+            page.add(ansicht)
             page.update()
 
         # ==========================================
-        # 2. DER DIAGNOSE-SCANNER (NEU!)
+        # 2. DER DIAGNOSE-SCANNER
         # ==========================================
         def zeige_diagnose_menue():
-            ansicht.controls.clear()
-            ansicht.controls.append(ft.Text("🛠️ DIAGNOSE-MODUS AKTIV", color="orange", size=20, weight="bold"))
-            ansicht.controls.append(ft.Text("Bitte klicke nacheinander auf die Buttons. Sag mir, bei welchem Schritt der Bildschirm grau wird oder ein Fehler erscheint.", color="white"))
+            page.clean() # LÖSCHT DEN LOGIN-BILDSCHIRM RESTLOS
             
-            log_ausgabe = ft.Text("Warte auf Eingabe...", color="yellow")
+            ansicht = ft.Column(spacing=15)
+            ansicht.controls.append(ft.Text("🛠️ DIAGNOSE-MODUS AKTIV", color="orange", size=20, weight="bold"))
+            ansicht.controls.append(ft.Text("Klicke nacheinander auf die Buttons. Bei welchem stürzt es ab?", color="white"))
+            
+            log_ausgabe = ft.Text("Warte auf Eingabe...", color="yellow", weight="bold")
 
             # --- TEST 1: KOPFZEILE ---
             def test_1_header(e):
@@ -105,7 +108,7 @@ def main(page: ft.Page):
             def test_3_daten(e):
                 try:
                     maerkte = lade_maerkte()
-                    log_ausgabe.value = f"Schritt 3 (Daten) erfolgreich! {len(maerkte)} Touren gefunden."
+                    log_ausgabe.value = f"Schritt 3 (Daten laden) erfolgreich! {len(maerkte)} Touren gefunden."
                     page.update()
                 except Exception as ex:
                     log_ausgabe.value = f"FEHLER IN SCHRITT 3: {ex}"; page.update()
@@ -138,13 +141,20 @@ def main(page: ft.Page):
             ansicht.controls.append(ft.Divider(color="white"))
             ansicht.controls.append(log_ausgabe)
             
+            page.add(ansicht)
             page.update()
 
         # START
-        zeige_login()
+        benutzer_liste = hole_alle_benutzer()
+        if not benutzer_liste:
+            # Falls noch keine PINs da sind, rufen wir provisorisch auch die Diagnose auf
+            # (In der echten Version wäre hier zeige_registrierung)
+            zeige_diagnose_menue()
+        else:
+            zeige_login()
 
     except Exception as e:
-        ansicht.controls.append(ft.Text(f"Kritischer Start-Fehler: {e}", color="red"))
+        page.add(ft.Text(f"Kritischer Start-Fehler: {e}", color="red"))
         page.update()
 
 if __name__ == "__main__":
