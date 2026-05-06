@@ -4,17 +4,17 @@ import datetime
 import shutil
 import json 
 
-# --- KONFIGURATION DES LOGOS ---
 LOGO_PFAD = os.path.join("assets", "bilacon_logo_transparent.png")
 
 def main(page: ft.Page):
     page.title = "Bilacon Monitoring"
     page.bgcolor = "#050a05" 
     page.scroll = "auto"
-    page.padding = 10
+    page.padding = 15
     
-    # Komplett flexibler Haupt-Container
-    ansicht = ft.Column(spacing=20, horizontal_alignment="center")
+    # DER ENTSCHEIDENDE FIX: Kein "horizontal_alignment" mehr! 
+    # Dadurch darf die App die volle Breite nutzen und reißt nicht mehr ab.
+    ansicht = ft.Column(spacing=20)
     page.add(ansicht)
 
     share_obj = ft.Share() if page.platform in ["android", "ios"] else None
@@ -65,9 +65,7 @@ def main(page: ft.Page):
                 return ft.Image(src=LOGO_PFAD, width=200, height=100, fit="contain")
             return ft.Container(content=ft.Text("🏢 [LOGO]", color="white54", size=20, weight="bold"), width=200, height=100)
 
-        # ==========================================
-        # DIE SICHEREN, FLEXIBLEN BUTTONS
-        # ==========================================
+        # --- DEINE ORIGINALEN SICHEREN BUTTONS ---
         def leucht_button(text_inhalt, on_click, color="#4CAF50"):
             return ft.ElevatedButton(
                 content=ft.Text(text_inhalt, color=color, weight="bold", size=16),
@@ -79,24 +77,20 @@ def main(page: ft.Page):
         def nav_leiste(active_tab="touren"):
             def make_btn(text_inhalt, tab_id, on_click):
                 is_active = (active_tab == tab_id)
-                return ft.ElevatedButton(
-                    content=ft.Text(text_inhalt, size=11, weight="bold", color="white"),
-                    on_click=on_click,
-                    bgcolor="#1b5e20" if is_active else "#111a11",
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=10)
+                return ft.Container(
+                    expand=1,
+                    content=ft.ElevatedButton(
+                        content=ft.Text(text_inhalt, size=11, weight="bold", color="white"),
+                        on_click=on_click,
+                        bgcolor="#1b5e20" if is_active else "#111a11",
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=10)
+                    )
                 )
-            # FIX: wrap=True verhindert den grauen Balken endgültig! 
-            # Wenn der Bildschirm zu klein ist, rutscht der Button einfach runter.
-            return ft.Row(
-                alignment="center", 
-                spacing=5, 
-                wrap=True, 
-                controls=[
-                    make_btn("🚚 TOUREN", "touren", lambda e: zeige_dashboard()),
-                    make_btn("📤 SENDEN", "senden", lambda e: zeige_postausgang()),
-                    make_btn("🗄️ ARCHIV", "archiv", lambda e: zeige_archiv())
-                ]
-            )
+            return ft.Row(alignment=ft.MainAxisAlignment.CENTER, spacing=5, controls=[
+                make_btn("🚚 TOUREN", "touren", lambda e: zeige_dashboard()),
+                make_btn("📤 SENDEN", "senden", lambda e: zeige_postausgang()),
+                make_btn("🗄️ ARCHIV", "archiv", lambda e: zeige_archiv())
+            ])
 
         def action_btn(text_inhalt, on_click, farbe):
             return ft.ElevatedButton(
@@ -121,7 +115,7 @@ def main(page: ft.Page):
         def zeige_registrierung():
             ansicht.controls.clear()
             name_in = ft.TextField(label="Vorname Nachname", border_color="white", color="yellow", bgcolor="#000000", label_style=ft.TextStyle(color="white"))
-            pin_in = ft.TextField(label="Wunsch-PIN (4 Zahlen)", password=True, keyboard_type="number", border_color="white", color="yellow", bgcolor="#000000", max_length=4, label_style=ft.TextStyle(color="white"))
+            pin_in = ft.TextField(label="Wunsch-PIN (4 Zahlen)", password=True, keyboard_type=ft.KeyboardType.NUMBER, border_color="white", color="yellow", bgcolor="#000000", max_length=4, label_style=ft.TextStyle(color="white"))
             fehler = ft.Text("", color="red", weight="bold")
 
             def do_reg(e):
@@ -131,16 +125,18 @@ def main(page: ft.Page):
                 if success: zeige_login()
                 else: fehler.value = msg; page.update()
 
-            ansicht.controls.append(ft.Container(height=20))
-            ansicht.controls.append(get_logo_bild())
-            ansicht.controls.append(ft.Container(
-                bgcolor="#111a11", padding=20, border_radius=15, border=ft.border.all(2, "#4CAF50"),
+            # Wir zentrieren nur diese Karte sicher in der Mitte!
+            reg_card = ft.Container(
+                bgcolor="#111a11", padding=25, border_radius=15, border=ft.border.all(2, "#4CAF50"), width=340,
                 content=ft.Column([
+                    get_logo_bild(),
                     ft.Text("Profil einrichten", size=20, color="#4CAF50", weight="bold"),
                     name_in, pin_in, fehler,
                     leucht_button("PROFIL ERSTELLEN", do_reg, "#4CAF50")
-                ], horizontal_alignment="center", spacing=15)
-            ))
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=15)
+            )
+            ansicht.controls.append(ft.Container(height=30))
+            ansicht.controls.append(ft.Row([reg_card], alignment=ft.MainAxisAlignment.CENTER))
             page.update()
 
         # ==========================================
@@ -149,7 +145,7 @@ def main(page: ft.Page):
         def zeige_login():
             ansicht.controls.clear()
             bereinige_archiv() 
-            pin_in = ft.TextField(label="Deine PIN", password=True, keyboard_type="number", border_color="#4CAF50", color="yellow", bgcolor="#000000", text_align="center", max_length=4, label_style=ft.TextStyle(color="white"))
+            pin_in = ft.TextField(label="Deine PIN", password=True, keyboard_type=ft.KeyboardType.NUMBER, border_color="#4CAF50", color="yellow", bgcolor="#000000", text_align=ft.TextAlign.CENTER, max_length=4, label_style=ft.TextStyle(color="white"))
             fehler = ft.Text("", color="red", weight="bold")
 
             def do_login(e):
@@ -164,34 +160,34 @@ def main(page: ft.Page):
                 except Exception as ex:
                     fehler.value = f"Systemfehler: {ex}"; page.update()
 
-            ansicht.controls.append(ft.Container(height=40))
-            ansicht.controls.append(get_logo_bild())
-            ansicht.controls.append(ft.Container(
-                bgcolor="#111a11", padding=20, border_radius=15, border=ft.border.all(2, "#4CAF50"),
+            # Wir zentrieren nur diese Karte sicher in der Mitte!
+            login_card = ft.Container(
+                bgcolor="#111a11", padding=25, border_radius=15, border=ft.border.all(2, "#4CAF50"), width=340,
                 content=ft.Column([
+                    get_logo_bild(),
                     ft.Text("Mitarbeiter Login", size=20, color="#4CAF50", weight="bold"),
                     ft.Text("Bitte gib deine 4-stellige PIN ein:", color="white54", size=12),
                     pin_in, fehler,
                     leucht_button("EINLOGGEN", do_login, "#4CAF50")
-                ], horizontal_alignment="center", spacing=15)
-            ))
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=15)
+            )
+            ansicht.controls.append(ft.Container(height=40))
+            ansicht.controls.append(ft.Row([login_card], alignment=ft.MainAxisAlignment.CENTER))
             page.update()
 
         # ==========================================
-        # 3. DASHBOARD
+        # 3. DASHBOARD (Wieder 100% dein Original)
         # ==========================================
         def zeige_dashboard():
             ansicht.controls.clear()
             v, z = lade_benutzer()
             name_str = f"{v} {z}".strip()
             
-            # FIX: Sicherer Platzhalter (expand=True) statt fehleranfälligem "spaceBetween"
+            # Das funktioniert jetzt perfekt, da die Hauptseite volle Breite hat!
             header = ft.Row([
                 ft.Text("BILACON", size=20, weight="bold", color="#4CAF50"),
-                ft.Container(expand=True), # Drückt den Text sicher auseinander
-                ft.Icon("person", color="#2196F3", size=18),
-                ft.Text(name_str, color="white", weight="bold")
-            ])
+                ft.Row([ft.Icon("person", color="#2196F3", size=18), ft.Text(name_str, color="white", weight="bold")])
+            ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
             
             ansicht.controls.append(ft.Container(height=10))
             ansicht.controls.append(header)
@@ -214,7 +210,8 @@ def main(page: ft.Page):
                     ))
                     
             ansicht.controls.append(ft.Container(height=10))
-            ansicht.controls.append(action_btn("➕ NEUEN TAG STARTEN", lambda e: zeige_maske_ui(page, ansicht, None, zeige_dashboard, None, None), "#2196F3"))
+            # Button wieder zentriert
+            ansicht.controls.append(ft.Row([action_btn("➕ NEUEN TAG STARTEN", lambda e: zeige_maske_ui(page, ansicht, None, zeige_dashboard, None, None), "#2196F3")], alignment=ft.MainAxisAlignment.CENTER))
             page.update()
 
         # ==========================================
@@ -227,10 +224,8 @@ def main(page: ft.Page):
             
             header = ft.Row([
                 ft.Text("POSTAUSGANG", size=20, weight="bold", color="#4CAF50"),
-                ft.Container(expand=True),
-                ft.Icon("person", color="#2196F3", size=18),
-                ft.Text(name_str, color="white", weight="bold")
-            ])
+                ft.Row([ft.Icon("person", color="#2196F3", size=18), ft.Text(name_str, color="white", weight="bold")])
+            ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
             
             ansicht.controls.append(ft.Container(height=10))
             ansicht.controls.append(header)
@@ -292,10 +287,8 @@ def main(page: ft.Page):
             
             header = ft.Row([
                 ft.Text("ARCHIV", size=20, weight="bold", color="#4CAF50"),
-                ft.Container(expand=True),
-                ft.Icon("person", color="#2196F3", size=18),
-                ft.Text(name_str, color="white", weight="bold")
-            ])
+                ft.Row([ft.Icon("person", color="#2196F3", size=18), ft.Text(name_str, color="white", weight="bold")])
+            ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
             
             ansicht.controls.append(ft.Container(height=10))
             ansicht.controls.append(header)
@@ -306,7 +299,7 @@ def main(page: ft.Page):
             ansicht.controls.append(ft.Container(bgcolor="#111a11", padding=15, border_radius=15, border=ft.border.all(1, "#333333"), content=ft.Column([ 
                 ft.Text("E-MAIL KOPIEREN:", color="#FF9800", weight="bold", size=13), 
                 ft.Text(email_val, color="white", size=12, selectable=True)
-            ], horizontal_alignment="center")))
+            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER)))
             
             pdfs_gefunden = False
             such_ordner = []
@@ -360,7 +353,7 @@ def main(page: ft.Page):
         else: zeige_login()
 
     except Exception as e:
-        ansicht.controls.append(ft.Text(f"Fehler: {e}", color="red"))
+        ansicht.controls.append(ft.Text(f"Kritischer Fehler: {e}", color="red"))
         page.update()
 
 if __name__ == "__main__":
