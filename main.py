@@ -81,7 +81,7 @@ def main(page: ft.Page):
                     color="white",
                     style=ft.ButtonStyle(
                         shape=ft.RoundedRectangleBorder(radius=10),
-                        padding=ft.padding.only(left=15, right=15, top=10, bottom=10),
+                        padding=10,
                         side=ft.BorderSide(width=1.5, color="#4CAF50")
                     )
                 )
@@ -102,7 +102,7 @@ def main(page: ft.Page):
                 on_click=on_click, bgcolor="#0b1a0b", color=farbe,
                 style=ft.ButtonStyle(
                     shape=ft.RoundedRectangleBorder(radius=25), 
-                    padding=ft.padding.only(left=20, right=20, top=15, bottom=15),
+                    padding=15,
                     side=ft.BorderSide(width=2, color=farbe)
                 )
             )
@@ -113,7 +113,7 @@ def main(page: ft.Page):
                 on_click=on_click, bgcolor="#0b1a0b", color=farbe,
                 style=ft.ButtonStyle(
                     shape=ft.RoundedRectangleBorder(radius=15), 
-                    padding=ft.padding.only(left=12, right=12, top=8, bottom=8),
+                    padding=8,
                     side=ft.BorderSide(width=1.5, color=farbe)
                 )
             )
