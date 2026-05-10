@@ -302,23 +302,250 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         def lade_v(e):
             if not vl_dd.value: return
             v = alle_vorlagen.get(vl_dd.value, {})
-            if "name_in" in v: name_in.value = v["name_in"]
-            if "ag_dd" in v: ag_dd.value = v["ag_dd"]
-            if "typ_dd" in v: typ_dd.value = v["typ_dd"]
-            vorlagen_status.value = f"✅ '{vl_dd.value}' geladen!"; vorlagen_status.color = "green"; page.update()
             
+            # --- HILFSFUNKTIONEN ZUM VERTEILEN DER DATEN ---
+            def setze_wert_safe(ctrl, val):
+                if ctrl is None: return
+                new_val = bool(val) if isinstance(ctrl, ft.Checkbox) else (str(val) if val is not None else "")
+                
+                # DER MAGISCHE FLET-HACK: 
+                # Verhindert, dass Flet versucht, unsichtbare Felder zu rendern und abstürzt!
+                p = getattr(ctrl, "_page", None)
+                if p: ctrl._page = None  # Kurz vom System abkoppeln
+                
+                ctrl.value = new_val  # Wert heimlich eintragen
+                
+                if p: ctrl._page = p  # Wieder ankoppeln
+                
+                # Nur wenn das Element wirklich sichtbar auf dem Bildschirm ist, wird es gezeichnet
+                if p and hasattr(p, "_index") and ctrl.uid in p._index:
+                    try: ctrl.update()
+                    except: pass
+
+            def setze_wert(ctrl, key, default=""):
+                setze_wert_safe(ctrl, v.get(key, default))
+
+            def setze_datum(key, t_ctrl, m_ctrl, j_ctrl):
+                t, m, j = parse_datum(v.get(key, ""))
+                setze_wert_safe(t_ctrl, t)
+                setze_wert_safe(m_ctrl, m)
+                setze_wert_safe(j_ctrl, j)
+
+            # ==========================================
+            # DATEN IN DIE UI LADEN
+            # ==========================================
+            # Stammdaten
+            setze_datum("datum", tag_dd, mon_dd, jahr_dd)
+            setze_wert(adr_in, "adresse")
+            setze_wert(nr_in, "marktnummer")
+            setze_wert(auft_in, "auftragsnummer")
+            setze_wert(name_in, "mitarbeiter_name")
+            setze_wert(ag_dd, "auftraggeber")
+            setze_wert(typ_dd, "typ_probenahme")
+            setze_wert(bem_in, "bemerkung")
+
+            # Trinkwasser
+            setze_wert(tw_kalt_cb, "tw_kalt", False)
+            setze_wert(lims_override_cb, "tw_lims_override", False)
+            setze_wert(tw_zeit_in, "tw_zeit")
+            setze_wert(tw_temp_in, "tw_temp")
+            setze_wert(tw_tempkonst_in, "tw_tempkonst")
+            setze_wert(tw_desinf_dd, "tw_desinf")
+            setze_wert(tw_zapf_dd, "tw_zapf")
+            setze_wert(cb_pn, "tw_cb_pn", False)
+            setze_wert(cb_zwei, "tw_cb_zwei", False)
+            setze_wert(cb_sensor, "tw_cb_sensor", False)
+            setze_wert(cb_knie, "tw_cb_knie", False)
+            setze_wert(cb_ein, "tw_cb_ein", False)
+            setze_wert(cb_ein_g, "tw_cb_ein_g", False)
+            setze_wert(cb_eck, "tw_cb_eck", False)
+            setze_wert(tw_zapf_sonst_dd, "tw_zapf_sonst")
+            setze_wert(tw_inaktiv_dd, "tw_inaktiv")
+            setze_wert(tw_kurz1_dd, "tw_kurz1")
+            setze_wert(tw_kurz2_dd, "tw_kurz2")
+            setze_wert(tw_kurz3_dd, "tw_kurz3")
+            setze_wert(tw_kurz4_dd, "tw_kurz4")
+            setze_wert(cb_auff_ja, "tw_auff_ja", False)
+            setze_wert(cb_auff_nein, "tw_auff_nein", False)
+            setze_wert(cb_auff_perl, "tw_auff_perlator", False)
+            setze_wert(cb_auff_verkalk, "tw_auff_kalk", False)
+            setze_wert(cb_auff_verbrueh, "tw_auff_verbrueh", False)
+            setze_wert(cb_auff_durchlauf, "tw_auff_durchlauf", False)
+            setze_wert(cb_auff_eck_zu, "tw_auff_eckventil", False)
+            setze_wert(cb_auff_unterbau, "tw_auff_unterbau", False)
+            setze_wert(cb_auff_nichtmoeglich, "tw_auff_unmoeglich", False)
+            setze_wert(cb_auff_dusche, "tw_auff_dusche", False)
+            setze_wert(cb_auff_handbrause, "tw_auff_handbrause", False)
+            setze_wert(cb_auff_sonst, "tw_auff_sonstiges", False)
+            setze_wert(tw_auff_sonstiges_in, "tw_auff_sonst_text")
+            setze_wert(tw_zweck_dd, "tw_zweck")
+            setze_wert(tw_inhalt_in, "tw_inhalt")
+            setze_wert(tw_verpackung_dd, "tw_verpackung")
+            setze_wert(tw_entnahmeort_dd, "tw_entnahmeort")
+            setze_wert(tw_bemerkung_dd, "tw_bemerkung_2")
+
+            # Scherbeneis
+            setze_wert(se_kalt_cb, "se_kalt", False)
+            setze_wert(se_zeit_in, "se_zeit")
+            setze_wert(se_zapf_dd, "se_zapf")
+            setze_wert(se_cb_eiswanne, "se_cb_eiswanne", False)
+            setze_wert(se_cb_fallprobe, "se_cb_fallprobe", False)
+            setze_wert(se_tech_sonst_in, "se_tech_sonst")
+            setze_wert(se_desinf_dd, "se_desinf")
+            setze_wert(se_cb_ozon, "se_cb_ozon", False)
+            setze_wert(se_auff_sonst_in, "se_auff_sonst")
+            setze_wert(se_inhalt_in, "se_inhalt")
+            setze_wert(se_verpackung_dd, "se_verpackung")
+            setze_wert(se_entnahmeort_dd, "se_entnahmeort")
+            setze_wert(se_temp_in, "se_temp")
+            setze_wert(se_bemerkung_dd, "se_bemerkung")
+            setze_wert(se_okz_cb, "se_abklatsch_cb", False)
+            setze_wert(se_okz_bemerkung_dd, "se_abklatsch_bemerkung")
+            
+            for idx, c in se_okz_controls.items():
+                setze_wert(c["status"], f"0003_status_{idx}")
+                setze_wert(c["objekt"], f"0003_objekt_{idx}")
+                setze_wert(c["ort"], f"0003_ort_{idx}")
+                setze_wert(c["abklatsch"], f"0003_abklatsch_{idx}", False)
+                setze_wert(c["tupfer"], f"0003_tupfer_{idx}", False)
+
+            # HFM Hack
+            setze_wert(hfm_hack_cb, "hfm_hack_cb", False)
+            setze_wert(hfm_hack_entnahmeort_dd, "hfm_hack_entnahmeort")
+            setze_datum("hfm_hack_herstelldatum", hfm_hack_herst_tag_dd, hfm_hack_herst_mon_dd, hfm_hack_herst_jahr_dd)
+            setze_wert(hfm_hack_inhalt_in, "hfm_hack_inhalt")
+            setze_wert(hfm_hack_verpackung_dd, "hfm_hack_verpackung")
+            setze_wert(hfm_hack_lief_schwein_in, "hfm_hack_lief_schwein")
+            setze_wert(hfm_hack_lief_rind_in, "hfm_hack_lief_rind")
+            setze_datum("hfm_hack_mhd_schwein", hfm_hack_mhd_s_tag_dd, hfm_hack_mhd_s_mon_dd, hfm_hack_mhd_s_jahr_dd)
+            setze_datum("hfm_hack_mhd_rind", hfm_hack_mhd_r_tag_dd, hfm_hack_mhd_r_mon_dd, hfm_hack_mhd_r_jahr_dd)
+            setze_wert(hfm_hack_charge_schwein_dd, "hfm_hack_charge_schwein")
+            setze_wert(hfm_hack_charge_rind_dd, "hfm_hack_charge_rind")
+            setze_wert(hfm_hack_temp_in, "hfm_hack_temp")
+            setze_wert(hfm_hack_bemerkung_dd, "hfm_hack_bemerkung")
+
+            # HFM Mett
+            setze_wert(hfm_mett_cb, "hfm_mett_cb", False)
+            setze_wert(hfm_mett_entnahmeort_dd, "hfm_mett_entnahmeort")
+            setze_datum("hfm_mett_herstelldatum", hfm_mett_herst_tag_dd, hfm_mett_herst_mon_dd, hfm_mett_herst_jahr_dd)
+            setze_wert(hfm_mett_inhalt_in, "hfm_mett_inhalt")
+            setze_wert(hfm_mett_verpackung_dd, "hfm_mett_verpackung")
+            setze_wert(hfm_mett_lief_in, "hfm_mett_lief")
+            setze_datum("hfm_mett_mhd", hfm_mett_mhd_tag_dd, hfm_mett_mhd_mon_dd, hfm_mett_mhd_jahr_dd)
+            setze_wert(hfm_mett_charge_dd, "hfm_mett_charge")
+            setze_wert(hfm_mett_temp_in, "hfm_mett_temp")
+            setze_wert(hfm_mett_bemerkung_dd, "hfm_mett_bemerkung")
+
+            # HFM FZS
+            setze_wert(hfm_fzs_cb, "hfm_fzs_cb", False)
+            setze_wert(hfm_fzs_entnahmeort_dd, "hfm_fzs_entnahmeort")
+            setze_wert(hfm_fzs_produkt_in, "hfm_fzs_produkt")
+            setze_wert(hfm_fzs_marinade_in, "hfm_fzs_marinade")
+            setze_datum("hfm_fzs_herstelldatum", hfm_fzs_herst_tag_dd, hfm_fzs_herst_mon_dd, hfm_fzs_herst_jahr_dd)
+            setze_wert(hfm_fzs_inhalt_in, "hfm_fzs_inhalt")
+            setze_wert(hfm_fzs_verpackung_dd, "hfm_fzs_verpackung")
+            setze_wert(hfm_fzs_lief_in, "hfm_fzs_lief")
+            setze_datum("hfm_fzs_mhd", hfm_fzs_mhd_tag_dd, hfm_fzs_mhd_mon_dd, hfm_fzs_mhd_jahr_dd)
+            setze_wert(hfm_fzs_charge_dd, "hfm_fzs_charge")
+            setze_wert(hfm_fzs_temp_in, "hfm_fzs_temp")
+            setze_wert(hfm_fzs_bemerkung_dd, "hfm_fzs_bemerkung")
+
+            # HFM FZG
+            setze_wert(hfm_fzg_cb, "hfm_fzg_cb", False)
+            setze_wert(hfm_fzg_entnahmeort_dd, "hfm_fzg_entnahmeort")
+            setze_wert(hfm_fzg_produkt_in, "hfm_fzg_produkt")
+            setze_wert(hfm_fzg_marinade_in, "hfm_fzg_marinade")
+            setze_datum("hfm_fzg_herstelldatum", hfm_fzg_herst_tag_dd, hfm_fzg_herst_mon_dd, hfm_fzg_herst_jahr_dd)
+            setze_wert(hfm_fzg_inhalt_in, "hfm_fzg_inhalt")
+            setze_wert(hfm_fzg_verpackung_dd, "hfm_fzg_verpackung")
+            setze_wert(hfm_fzg_lief_in, "hfm_fzg_lief")
+            setze_datum("hfm_fzg_mhd", hfm_fzg_mhd_tag_dd, hfm_fzg_mhd_mon_dd, hfm_fzg_mhd_jahr_dd)
+            setze_wert(hfm_fzg_charge_dd, "hfm_fzg_charge")
+            setze_wert(hfm_fzg_temp_in, "hfm_fzg_temp")
+            setze_wert(hfm_fzg_bemerkung_dd, "hfm_fzg_bemerkung")
+
+            # HFM BIO
+            setze_wert(hfm_bio_cb, "hfm_bio_cb", False)
+            setze_wert(hfm_bio_entnahmeort_dd, "hfm_bio_entnahmeort")
+            setze_datum("hfm_bio_herstelldatum", hfm_bio_herst_tag_dd, hfm_bio_herst_mon_dd, hfm_bio_herst_jahr_dd)
+            setze_wert(hfm_bio_inhalt_in, "hfm_bio_inhalt")
+            setze_wert(hfm_bio_verpackung_dd, "hfm_bio_verpackung")
+            setze_wert(hfm_bio_lief_schwein_in, "hfm_bio_lief_schwein")
+            setze_wert(hfm_bio_lief_rind_in, "hfm_bio_lief_rind")
+            setze_datum("hfm_bio_mhd_schwein", hfm_bio_mhd_s_tag_dd, hfm_bio_mhd_s_mon_dd, hfm_bio_mhd_s_jahr_dd)
+            setze_datum("hfm_bio_mhd_rind", hfm_bio_mhd_r_tag_dd, hfm_bio_mhd_r_mon_dd, hfm_bio_mhd_r_jahr_dd)
+            setze_wert(hfm_bio_charge_schwein_dd, "hfm_bio_charge_schwein")
+            setze_wert(hfm_bio_charge_rind_dd, "hfm_bio_charge_rind")
+            setze_wert(hfm_bio_temp_in, "hfm_bio_temp")
+            setze_wert(hfm_bio_bemerkung_dd, "hfm_bio_bemerkung")
+
+            # HFM OKZ (Abklatsch)
+            setze_wert(hfm_okz_cb, "hfm_abklatsch_cb", False)
+            setze_wert(hfm_okz_bemerkung_dd, "hfm_abklatsch_bemerkung")
+            for idx, c in okz_controls.items():
+                setze_wert(c["status"], f"0010_status_{idx}")
+                setze_wert(c["objekt"], f"0010_objekt_{idx}")
+                setze_wert(c["ort"], f"0010_ort_{idx}")
+                setze_wert(c["abklatsch"], f"0010_abklatsch_{idx}", False)
+                setze_wert(c["tupfer"], f"0010_tupfer_{idx}", False)
+
+            # OBST/GEMÜSE CONVENIENCE
+            setze_wert(og_cb, "og_cb", False)
+            for i in range(1, 6):
+                idx = f"{i:02d}"
+                c = og_controls[i]
+                setze_wert(c["name"], f"og_name_{idx}")
+                setze_wert(c["ort"], f"og_ort_{idx}")
+                setze_wert(c["inhalt"], f"og_inhalt_{idx}")
+                setze_wert(c["verpackung"], f"og_verp_{idx}")
+                setze_wert(c["temp"], f"og_temp_{idx}")
+                setze_datum(f"og_herst_{idx}", c["h_t"], c["h_m"], c["h_j"])
+                setze_datum(f"og_verb_{idx}", c["v_t"], c["v_m"], c["v_j"])
+
+            # OG OKZ
+            setze_wert(og_okz_cb, "og_abklatsch_cb", False)
+            setze_wert(og_okz_bemerkung_dd, "og_abklatsch_bemerkung_1")
+            setze_wert(og_okz_anmerkung_in, "og_abklatsch_bemerkung_2")
+            for idx, c in og_okz_controls.items():
+                setze_wert(c["status"], f"0011_status_{idx}")
+                setze_wert(c["objekt"], f"0011_objekt_{idx}")
+                setze_wert(c["ort"], f"0011_ort_{idx}")
+                setze_wert(c["abklatsch"], f"0011_abklatsch_{idx}", False)
+                setze_wert(c["tupfer"], f"0011_tupfer_{idx}", False)
+
+            # Erfolgsmeldung
+            vorlagen_status.value = f"✅ '{vl_dd.value}' komplett geladen!"
+            vorlagen_status.color = "green"
+            vorlagen_status.update()
+
         def del_v(e):
             if vl_dd.value in alle_vorlagen:
-                del alle_vorlagen[vl_dd.value]; speichere_vorlagen_lokal(alle_vorlagen)
+                del alle_vorlagen[vl_dd.value]
+                speichere_vorlagen_lokal(alle_vorlagen)
                 vl_dd.options = [ft.dropdown.Option(k) for k in alle_vorlagen.keys()]
-                vorlagen_status.value = f"🗑️ Gelöscht!"; vorlagen_status.color = "red"; vl_dd.value = None; page.update()
-                
+                vorlagen_status.value = f"🗑️ Gelöscht!"
+                vorlagen_status.color = "red"
+                vl_dd.value = None
+                page.update()
+
         def save_v(e):
             if not (vl_name_in.value or "").strip(): return
-            alle_vorlagen[vl_name_in.value] = {"name_in": name_in.value, "ag_dd": ag_dd.value, "typ_dd": typ_dd.value}
+            
+            # MAGIE: Zieht sich automatisch alle Felder, Dropdowns und Checkboxen!
+            alle_vorlagen[vl_name_in.value] = hole_aktuelle_daten()
+            
             speichere_vorlagen_lokal(alle_vorlagen)
+            
             vl_dd.options = [ft.dropdown.Option(k) for k in alle_vorlagen.keys()]
-            vorlagen_status.value = f"✅ Vorlage gespeichert!"; vorlagen_status.color = "orange"; vl_name_in.value = ""; page.update()
+            vl_dd.update() 
+            
+            vorlagen_status.value = f"✅ Vorlage gespeichert!"
+            vorlagen_status.color = "orange"
+            vorlagen_status.update()
+            
+            vl_name_in.value = ""
+            vl_name_in.update()
+            page.update()
 
         vorlagen_expansion = ft.ExpansionTile(
             title=ft.Text("📋 Vorlage", weight="bold", color="white"),
