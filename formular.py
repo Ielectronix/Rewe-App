@@ -303,33 +303,21 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             if not vl_dd.value: return
             v = alle_vorlagen.get(vl_dd.value, {})
             
-            # --- HILFSFUNKTIONEN ZUM VERTEILEN DER DATEN ---
-            def setze_wert_safe(ctrl, val):
-                if ctrl is None: return
-                new_val = bool(val) if isinstance(ctrl, ft.Checkbox) else (str(val) if val is not None else "")
-                
-                # DER MAGISCHE FLET-HACK: 
-                # Verhindert, dass Flet versucht, unsichtbare Felder zu rendern und abstürzt!
-                p = getattr(ctrl, "_page", None)
-                if p: ctrl._page = None  # Kurz vom System abkoppeln
-                
-                ctrl.value = new_val  # Wert heimlich eintragen
-                
-                if p: ctrl._page = p  # Wieder ankoppeln
-                
-                # Nur wenn das Element wirklich sichtbar auf dem Bildschirm ist, wird es gezeichnet
-                if p and hasattr(p, "_index") and ctrl.uid in p._index:
-                    try: ctrl.update()
-                    except: pass
-
+            # --- SAUBERE HILFSFUNKTIONEN (OHNE HACKS) ---
             def setze_wert(ctrl, key, default=""):
-                setze_wert_safe(ctrl, v.get(key, default))
+                if ctrl is None: return
+                val = v.get(key, default)
+                if isinstance(ctrl, ft.Checkbox):
+                    ctrl.value = bool(val)
+                else:
+                    ctrl.value = str(val) if val is not None else ""
+                # WICHTIG: Kein explizites ctrl.update() mehr! Wir ändern nur den Wert im Hintergrund.
 
             def setze_datum(key, t_ctrl, m_ctrl, j_ctrl):
                 t, m, j = parse_datum(v.get(key, ""))
-                setze_wert_safe(t_ctrl, t)
-                setze_wert_safe(m_ctrl, m)
-                setze_wert_safe(j_ctrl, j)
+                if t_ctrl: t_ctrl.value = t
+                if m_ctrl: m_ctrl.value = m
+                if j_ctrl: j_ctrl.value = j
 
             # ==========================================
             # DATEN IN DIE UI LADEN
@@ -513,10 +501,10 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 setze_wert(c["abklatsch"], f"0011_abklatsch_{idx}", False)
                 setze_wert(c["tupfer"], f"0011_tupfer_{idx}", False)
 
-            # Erfolgsmeldung
+            # Erfolgsmeldung und EINZIGES Update am Ende!
             vorlagen_status.value = f"✅ '{vl_dd.value}' komplett geladen!"
             vorlagen_status.color = "green"
-            vorlagen_status.update()
+            page.update()  # <-- Das aktualisiert ganz sauber alles, ohne abzustürzen!
 
         def del_v(e):
             if vl_dd.value in alle_vorlagen:
