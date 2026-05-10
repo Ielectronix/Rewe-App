@@ -74,7 +74,6 @@ def main(page: ft.Page):
         def nav_leiste(active_tab="touren"):
             def make_btn(text, tab_id, on_click):
                 is_active = (active_tab == tab_id)
-                # Expand entfernt, Padding hinzugefügt -> Buttons passen sich an Text an
                 return ft.ElevatedButton(
                     content=ft.Text(text, size=13, weight="bold"),
                     on_click=on_click,
@@ -82,15 +81,14 @@ def main(page: ft.Page):
                     color="white",
                     style=ft.ButtonStyle(
                         shape=ft.RoundedRectangleBorder(radius=10),
-                        padding=ft.padding.symmetric(horizontal=15, vertical=10),
+                        padding=ft.padding.only(left=15, right=15, top=10, bottom=10),
                         side=ft.BorderSide(width=1.5, color="#4CAF50")
                     )
                 )
-            # Row ist zentriert und umbricht sicher, KEIN width=700 mehr nötig!
             return ft.Row(
                 alignment=ft.MainAxisAlignment.CENTER, 
                 spacing=5, 
-                wrap=True, # Verhindert den grauen Balken-Absturz
+                wrap=True, 
                 controls=[
                     make_btn("🚚 Touren", "touren", lambda e: zeige_dashboard()),
                     make_btn("📤 Senden", "senden", lambda e: zeige_postausgang()),
@@ -104,7 +102,7 @@ def main(page: ft.Page):
                 on_click=on_click, bgcolor="#0b1a0b", color=farbe,
                 style=ft.ButtonStyle(
                     shape=ft.RoundedRectangleBorder(radius=25), 
-                    padding=ft.padding.symmetric(horizontal=20, vertical=15),
+                    padding=ft.padding.only(left=20, right=20, top=15, bottom=15),
                     side=ft.BorderSide(width=2, color=farbe)
                 )
             )
@@ -115,7 +113,7 @@ def main(page: ft.Page):
                 on_click=on_click, bgcolor="#0b1a0b", color=farbe,
                 style=ft.ButtonStyle(
                     shape=ft.RoundedRectangleBorder(radius=15), 
-                    padding=ft.padding.symmetric(horizontal=12, vertical=8),
+                    padding=ft.padding.only(left=12, right=12, top=8, bottom=8),
                     side=ft.BorderSide(width=1.5, color=farbe)
                 )
             )
@@ -201,7 +199,6 @@ def main(page: ft.Page):
             else:
                 for i, m in enumerate(maerkte):
                     txt = m.get("adresse") or m.get("marktnummer") or "Tour"
-                    # width=700 GELÖSCHT! Container passt sich jetzt automatisch an.
                     ansicht.controls.append(ft.Container(bgcolor="#002200", padding=15, border_radius=15, content=ft.Row([
                         ft.Text(txt, color="white", weight="bold", size=12, expand=True, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS),
                         small_btn("✏️", lambda e, idx=i: zeige_maske_ui(page, ansicht, None, zeige_dashboard, None, idx), "#2196F3"),
@@ -260,7 +257,6 @@ def main(page: ft.Page):
                                 if os.path.exists(p): os.remove(p)
                                 zeige_postausgang()
 
-                            # width=700 GELÖSCHT! Container passt sich an
                             ansicht.controls.append(
                                 ft.Container(
                                     bgcolor="#002200", padding=10, border_radius=15, 
@@ -287,7 +283,6 @@ def main(page: ft.Page):
             ansicht.controls.append(ft.Text("Archiv (Letzte 14 Tage)", size=20, weight="bold", color="white", text_align="center"))
             
             email_val = "registration-mibi.ber@tentamus.com"
-            # width=700 GELÖSCHT!
             ansicht.controls.append(ft.Container(bgcolor="#1a1a1a", padding=15, border_radius=15, content=ft.Column([ 
                 ft.Text("E-MAIL KOPIEREN:", color="#FF9800", weight="bold", size=14), 
                 ft.Text(email_val, color="white", size=13, selectable=True)
@@ -328,7 +323,6 @@ def main(page: ft.Page):
                                     zeige_archiv()
                                 else: print("Share geht auf dem PC nicht.")
 
-                            # width=700 GELÖSCHT!
                             ansicht.controls.append(
                                 ft.Container(
                                     bgcolor="#002200", padding=10, border_radius=15,
