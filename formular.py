@@ -22,48 +22,49 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         ansicht.controls.clear()
         ansicht.horizontal_alignment = ft.CrossAxisAlignment.STRETCH 
         
-        fehler_text = ft.Text("", color="red", weight="bold", visible=False, size=14, text_align=ft.TextAlign.CENTER)
-        status_text = ft.Text("", color="yellow", weight="bold", size=16, text_align=ft.TextAlign.CENTER)
+        fehler_text = ft.Text("", color="red", weight="bold", visible=False, size=16, text_align=ft.TextAlign.CENTER)
+        status_text = ft.Text("", color="yellow", weight="bold", size=18, text_align=ft.TextAlign.CENTER)
 
         maerkte = lade_maerkte()
         v, z = lade_benutzer()
         heute_str = datetime.datetime.now().strftime('%d.%m.%Y')
         aktuelle_daten = maerkte[markt_index] if (markt_index is not None and markt_index < len(maerkte)) else {"datum": heute_str, "mitarbeiter_name": f"{v} {z}".strip()}
 
+        # --- ÄNDERUNG: Schriften auf 16, Padding auf 15, Label auf 14 ---
         def tf(label, val, hint="", w=None, oc=None, ob=None):
             return ft.TextField(
                 label=label, value=val or "", hint_text=hint, 
-                hint_style=ft.TextStyle(color="white54", size=12), 
-                color="yellow", text_style=ft.TextStyle(size=12, color="yellow"), 
-                label_style=ft.TextStyle(color="white"), 
-                border_color="white", content_padding=10, width=w, on_change=oc, on_blur=ob
+                hint_style=ft.TextStyle(color="white54", size=14), 
+                color="yellow", text_style=ft.TextStyle(size=16, color="yellow"), 
+                label_style=ft.TextStyle(color="white", size=14), 
+                border_color="white", content_padding=15, width=w, on_change=oc, on_blur=ob
             )
 
+        # --- ÄNDERUNG: Schriften auf 16, Padding auf 15, Popup-Texte auf 16 ---
         def combo(label, val, opts, w=None, oc=None):
             echter_wert = val if val is not None else ""
             c = ft.TextField(
                 label=label, value=echter_wert, 
-                color="yellow", text_style=ft.TextStyle(size=12, color="yellow"), 
-                label_style=ft.TextStyle(color="white"), 
-                border_color="white", dense=True, content_padding=10, width=w, on_change=oc
+                color="yellow", text_style=ft.TextStyle(size=16, color="yellow"), 
+                label_style=ft.TextStyle(color="white", size=14), 
+                border_color="white", dense=True, content_padding=15, width=w, on_change=oc
             )
-            items = [ft.PopupMenuItem(content=ft.Text(o), on_click=lambda e, opt=o: (setattr(c, 'value', opt), c.update())) for o in opts]
+            items = [ft.PopupMenuItem(content=ft.Text(o, size=16), on_click=lambda e, opt=o: (setattr(c, 'value', opt), c.update())) for o in opts]
             
-            # --- ÄNDERUNG: Pfeil vergrößert & riesige unsichtbare Trefferzone (padding=10) ---
             c.suffix = ft.PopupMenuButton(
                 items=items, 
                 content=ft.Container(
-                    content=ft.Text("▼", color="white", size=22), 
-                    padding=10 
+                    content=ft.Text("▼", color="white", size=24), 
+                    padding=15 
                 )
             )
             return c
             
         def action_btn_form(text, oc, farbe):
-            return ft.ElevatedButton(content=ft.Text(text, size=14, weight="bold"), on_click=oc, bgcolor="#0b1a0b", color=farbe, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=15, side=ft.BorderSide(width=2, color=farbe)))
+            return ft.ElevatedButton(content=ft.Text(text, size=16, weight="bold"), on_click=oc, bgcolor="#0b1a0b", color=farbe, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=20, side=ft.BorderSide(width=2, color=farbe)))
             
         def emoji_btn(text, oc, farbe):
-            return ft.ElevatedButton(text, on_click=oc, bgcolor="#1a1a1a", color=farbe, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=10, side=ft.BorderSide(width=1.5, color=farbe)))
+            return ft.ElevatedButton(text, on_click=oc, bgcolor="#1a1a1a", color=farbe, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=15, side=ft.BorderSide(width=1.5, color=farbe)))
 
         def parse_datum(d, dt="", dm="", dj=""):
             if not d: return dt, dm, dj
@@ -91,8 +92,13 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             if val and not val.lower().endswith("g") and not val.lower().endswith("ml"):
                 e.control.value = val + " g"; e.control.update()
 
+        # --- ÄNDERUNG: scale=1.2 eingebaut, Schrift auf 18/16 ---
         def cb(label, val, oc=None, bold=False):
-            return ft.Checkbox(label=label, value=bool(val), on_change=oc, label_style=ft.TextStyle(color="white", size=16 if bold else 12, weight="bold" if bold else "normal"), fill_color="yellow", check_color="black")
+            return ft.Checkbox(
+                label=label, value=bool(val), on_change=oc, 
+                label_style=ft.TextStyle(color="white", size=18 if bold else 16, weight="bold" if bold else "normal"), 
+                fill_color="yellow", check_color="black", scale=1.2
+            )
 
         def d_row(t_dd, m_dd, j_dd):
             return ft.Row([ft.Container(content=t_dd, expand=1), ft.Container(content=m_dd, expand=1), ft.Container(content=j_dd, expand=1)], spacing=5)
@@ -115,7 +121,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         # ==========================================
         d_tag, d_mon, d_jahr = parse_datum(aktuelle_daten.get("datum", heute_str), heute_str.split(".")[0], heute_str.split(".")[1], heute_str.split(".")[2])
         tag_dd, mon_dd, jahr_dd = combo("Tag", d_tag, tage_opts), combo("Mon", d_mon, mon_opts), combo("Jahr", d_jahr, jahr_opts)
-        datum_row = ft.Column([ft.Text("Datum der Probenahme", color="white", weight="bold"), d_row(tag_dd, mon_dd, jahr_dd)])
+        datum_row = ft.Column([ft.Text("Datum der Probenahme", color="white", weight="bold", size=16), d_row(tag_dd, mon_dd, jahr_dd)])
         
         adr_in = tf("Adresse Markt", aktuelle_daten.get("adresse", ""))
         nr_in = tf("Marktnummer", aktuelle_daten.get("marktnummer", ""))
@@ -234,7 +240,8 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
         hfm_fzg_cb = cb("Fleischzubereitung Geflügel", aktuelle_daten.get("hfm_fzg_cb", False), bold=True)
         hfm_fzg_override_cb = cb("Trotzdem speichern", aktuelle_daten.get("hfm_fzg_override", False))
-        hfm_fzg_entnahmeort_dd = combo("Entnahmeort", current_daten.get("hfm_fzg_entnahmeort", "Kühlraum"), ort_opts)
+        # --- ÄNDERUNG: current_daten zu aktuelle_daten korrigiert ---
+        hfm_fzg_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("hfm_fzg_entnahmeort", "Kühlraum"), ort_opts)
         hfm_fzg_produkt_in = tf("Produkt", aktuelle_daten.get("hfm_fzg_produkt", ""))
         hfm_fzg_marinade_in = tf("Marinade", aktuelle_daten.get("hfm_fzg_marinade", ""))
         t, m, j = get_herst("hfm_fzg_herstelldatum")
@@ -308,10 +315,10 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         # VORLAGEN LOGIK
         # ==========================================
         alle_vorlagen = lade_vorlagen_lokal()
-        vorlagen_status = ft.Text("", weight="bold", size=12) 
+        vorlagen_status = ft.Text("", weight="bold", size=14) 
         
-        # --- ÄNDERUNG: Pfeil vergrößert bei den Vorlagen (icon_size=35) ---
-        vl_dd = ft.Dropdown(options=[ft.dropdown.Option(k) for k in alle_vorlagen.keys()], hint_text="Vorlage wählen...", dense=True, content_padding=10, color="yellow", text_style=ft.TextStyle(color="yellow", size=12), border_color="white", icon_size=35)
+        # --- ÄNDERUNG: Vorlagen-Dropdown vergrößert ---
+        vl_dd = ft.Dropdown(options=[ft.dropdown.Option(k) for k in alle_vorlagen.keys()], hint_text="Vorlage wählen...", dense=True, content_padding=15, color="yellow", text_style=ft.TextStyle(color="yellow", size=16), border_color="white", icon_size=40)
         vl_name_in = tf("Als neue Vorlage speichern", "")
 
         def lade_v(e):
@@ -544,7 +551,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             page.update()
 
         vorlagen_expansion = ft.ExpansionTile(
-            title=ft.Text("📋 Vorlage", weight="bold", color="white"),
+            title=ft.Text("📋 Vorlage", weight="bold", color="white", size=18),
             collapsed_text_color="white",
             text_color="#4CAF50",
             controls=[
@@ -914,7 +921,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                         haupt_bereich.controls.extend([ft.Text("⚠️ Haken prüfen!", color="orange", weight="bold"), og_okz_cb, ft.Divider(color="white24")])
                         for i in range(1, 6):
                             c = og_okz_controls[f"{i:02d}"]
-                            if i == 2: haupt_bereich.controls.append(ft.Text("💡 Info: Bei Saftpresse bitte hier auswählen.", color="white54", italic=True, size=12))
+                            if i == 2: haupt_bereich.controls.append(ft.Text("💡 Info: Bei Saftpresse bitte hier auswählen.", color="white54", italic=True, size=14))
                             haupt_bereich.controls.extend([ft.Text(f"Probe {i}", color="yellow", weight="bold"), ft.Row([ft.Container(content=c["status"], expand=1), ft.Container(content=c["objekt"], expand=3)]), c["ort"], ft.Row([ft.Container(content=c["abklatsch"], expand=1), ft.Container(content=c["tupfer"], expand=1)]), ft.Divider(color="white24")])
                         haupt_bereich.controls.extend([ft.Text("💡 Wichtig: Wird die Saftpresse beprobt, muss zwingend auch das Messer aufgenommen werden!", color="orange", weight="bold"), og_okz_bemerkung_dd, og_okz_anmerkung_in])
                     page.update()
