@@ -20,7 +20,6 @@ def speichere_vorlagen_lokal(daten):
 def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboard, zeige_fehler, markt_index):
     try:
         ansicht.controls.clear()
-        # STRETCH zwingt das Hauptlayout auf 100% Breite, ohne abzuschneiden!
         ansicht.horizontal_alignment = ft.CrossAxisAlignment.STRETCH 
         
         fehler_text = ft.Text("", color="red", weight="bold", visible=False, size=14, text_align=ft.TextAlign.CENTER)
@@ -31,7 +30,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         heute_str = datetime.datetime.now().strftime('%d.%m.%Y')
         aktuelle_daten = maerkte[markt_index] if (markt_index is not None and markt_index < len(maerkte)) else {"datum": heute_str, "mitarbeiter_name": f"{v} {z}".strip()}
 
-        # width=None lässt die Felder auf jedem Gerät die perfekte Breite finden
         def tf(label, val, hint="", w=None, oc=None, ob=None):
             return ft.TextField(
                 label=label, value=val or "", hint_text=hint, 
@@ -88,7 +86,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         def cb(label, val, oc=None, bold=False):
             return ft.Checkbox(label=label, value=bool(val), on_change=oc, label_style=ft.TextStyle(color="white", size=16 if bold else 12, weight="bold" if bold else "normal"), fill_color="yellow", check_color="black")
 
-        # Teilt die Breite fair auf Tag, Monat, Jahr auf
         def d_row(t_dd, m_dd, j_dd):
             return ft.Row([ft.Container(content=t_dd, expand=1), ft.Container(content=m_dd, expand=1), ft.Container(content=j_dd, expand=1)], spacing=5)
 
@@ -108,8 +105,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         # ==========================================
         # STAMMDATEN
         # ==========================================
-        lims_override_cb = cb("Trotzdem speichern", False)
-
         d_tag, d_mon, d_jahr = parse_datum(aktuelle_daten.get("datum", heute_str), heute_str.split(".")[0], heute_str.split(".")[1], heute_str.split(".")[2])
         tag_dd, mon_dd, jahr_dd = combo("Tag", d_tag, tage_opts), combo("Mon", d_mon, mon_opts), combo("Jahr", d_jahr, jahr_opts)
         datum_row = ft.Column([ft.Text("Datum der Probenahme", color="white", weight="bold"), d_row(tag_dd, mon_dd, jahr_dd)])
@@ -125,8 +120,9 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         # ==========================================
         # TRINKWASSER
         # ==========================================
-        # Alle Haken wieder flach und linksbündig (nicht mehr im Center-Row)
         tw_kalt_cb = cb("Trinkwasser kalt", aktuelle_daten.get("tw_kalt", False), bold=True)
+        tw_override_cb = cb("Trotzdem speichern", aktuelle_daten.get("tw_override", False))
+        
         tw_zeit_in, tw_temp_in, tw_tempkonst_in = tf("Probenahmezeit", aktuelle_daten.get("tw_zeit", ""), ob=format_zeit), tf("Temp Probenahme", aktuelle_daten.get("tw_temp", ""), ob=format_temp), tf("Temp Konstante", aktuelle_daten.get("tw_tempkonst", ""), ob=format_temp)
         tw_desinf_dd = combo("Desinfektion", aktuelle_daten.get("tw_desinf", "Abflammen"), ["Abflammen", "Sprühdesinfektion", "ohne Desinfektion"])
         tw_zapf_dd = combo("Zapfstelle", aktuelle_daten.get("tw_zapf", "Spülbecken"), ["Spülbecken", "Handwaschbecken"])
@@ -153,6 +149,8 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         # SCHERBENEIS
         # ==========================================
         se_kalt_cb = cb("Scherbeneis Eigenkontrolle", aktuelle_daten.get("se_kalt", False), bold=True)
+        se_override_cb = cb("Trotzdem speichern", aktuelle_daten.get("se_override", False))
+        
         se_zeit_in = tf("Probenahmezeit", aktuelle_daten.get("se_zeit", ""), ob=format_zeit)
         se_zapf_dd = combo("Zapfstelle (Eis)", aktuelle_daten.get("se_zapf", "Eismaschine"), ["Eismaschine"])
         se_cb_eiswanne, se_cb_fallprobe = cb("Eiswanne/Schöpfprobe", aktuelle_daten.get("se_cb_eiswanne", False)), cb("Fallprobe", aktuelle_daten.get("se_cb_fallprobe", True))
@@ -179,6 +177,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         # FLEISCH (HFM)
         # ==========================================
         hfm_hack_cb = cb("Hackfleisch gemischt", aktuelle_daten.get("hfm_hack_cb", False), bold=True)
+        hfm_hack_override_cb = cb("Trotzdem speichern", aktuelle_daten.get("hfm_hack_override", False))
         hfm_hack_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("hfm_hack_entnahmeort", "Kühlraum"), ort_opts)
         t, m, j = get_herst("hfm_hack_herstelldatum")
         hfm_hack_herst_tag_dd, hfm_hack_herst_mon_dd, hfm_hack_herst_jahr_dd = combo("Tag", t, tage_opts), combo("Mon", m, mon_opts), combo("Jahr", j, jahr_opts)
@@ -196,6 +195,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         hfm_hack_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("hfm_hack_bemerkung", ""), ["", "Keine Besonderheiten"])
 
         hfm_mett_cb = cb("Gewürztes Schweinemett", aktuelle_daten.get("hfm_mett_cb", False), bold=True)
+        hfm_mett_override_cb = cb("Trotzdem speichern", aktuelle_daten.get("hfm_mett_override", False))
         hfm_mett_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("hfm_mett_entnahmeort", "Kühlraum"), ort_opts)
         t, m, j = get_herst("hfm_mett_herstelldatum")
         hfm_mett_herst_tag_dd, hfm_mett_herst_mon_dd, hfm_mett_herst_jahr_dd = combo("Tag", t, tage_opts), combo("Mon", m, mon_opts), combo("Jahr", j, jahr_opts)
@@ -209,6 +209,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         hfm_mett_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("hfm_mett_bemerkung", ""), ["", "Keine Besonderheiten"])
 
         hfm_fzs_cb = cb("Fleischzubereitung Schwein", aktuelle_daten.get("hfm_fzs_cb", False), bold=True)
+        hfm_fzs_override_cb = cb("Trotzdem speichern", aktuelle_daten.get("hfm_fzs_override", False))
         hfm_fzs_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("hfm_fzs_entnahmeort", "Kühlraum"), ort_opts)
         hfm_fzs_produkt_in = tf("Produkt", aktuelle_daten.get("hfm_fzs_produkt", ""))
         hfm_fzs_marinade_in = tf("Marinade", aktuelle_daten.get("hfm_fzs_marinade", ""))
@@ -224,6 +225,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         hfm_fzs_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("hfm_fzs_bemerkung", ""), ["", "Keine Besonderheiten"])
 
         hfm_fzg_cb = cb("Fleischzubereitung Geflügel", aktuelle_daten.get("hfm_fzg_cb", False), bold=True)
+        hfm_fzg_override_cb = cb("Trotzdem speichern", aktuelle_daten.get("hfm_fzg_override", False))
         hfm_fzg_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("hfm_fzg_entnahmeort", "Kühlraum"), ort_opts)
         hfm_fzg_produkt_in = tf("Produkt", aktuelle_daten.get("hfm_fzg_produkt", ""))
         hfm_fzg_marinade_in = tf("Marinade", aktuelle_daten.get("hfm_fzg_marinade", ""))
@@ -239,6 +241,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         hfm_fzg_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("hfm_fzg_bemerkung", ""), ["", "Keine Besonderheiten"])
 
         hfm_bio_cb = cb("Bio-Hackfleisch", aktuelle_daten.get("hfm_bio_cb", False), bold=True)
+        hfm_bio_override_cb = cb("Trotzdem speichern", aktuelle_daten.get("hfm_bio_override", False))
         hfm_bio_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("hfm_bio_entnahmeort", "Produktionsraum"), ort_opts)
         t, m, j = get_herst("hfm_bio_herstelldatum")
         hfm_bio_herst_tag_dd, hfm_bio_herst_mon_dd, hfm_bio_herst_jahr_dd = combo("Tag", t, tage_opts), combo("Mon", m, mon_opts), combo("Jahr", j, jahr_opts)
@@ -265,6 +268,8 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0010_status_{idx}", "R+D"), ["R+D", "R", "P", "-"]), "objekt": combo("Objekt", aktuelle_daten.get(f"0010_objekt_{idx}") or okz_def[i]["o"], okz_obj_opts), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0010_ort_{idx}", "Kühlraum"), ["Kühlraum", "Produktionsbereich", "Theke"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0010_abklatsch_{idx}", okz_def[i]["a"])), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0010_tupfer_{idx}", okz_def[i]["t"]))}
 
         og_cb = cb("Obst-/Gemüse Convenience", aktuelle_daten.get("og_cb", False), bold=True)
+        og_override_cb = cb("Trotzdem speichern", aktuelle_daten.get("og_override", False))
+        
         og_controls = {}
         for i in range(1, 6):
             idx = f"{i:02d}"
@@ -303,7 +308,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             if not vl_dd.value: return
             v = alle_vorlagen.get(vl_dd.value, {})
             
-            # --- SAUBERE HILFSFUNKTIONEN (OHNE HACKS) ---
             def setze_wert(ctrl, key, default=""):
                 if ctrl is None: return
                 val = v.get(key, default)
@@ -311,7 +315,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                     ctrl.value = bool(val)
                 else:
                     ctrl.value = str(val) if val is not None else ""
-                # WICHTIG: Kein explizites ctrl.update() mehr! Wir ändern nur den Wert im Hintergrund.
 
             def setze_datum(key, t_ctrl, m_ctrl, j_ctrl):
                 t, m, j = parse_datum(v.get(key, ""))
@@ -319,9 +322,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 if m_ctrl: m_ctrl.value = m
                 if j_ctrl: j_ctrl.value = j
 
-            # ==========================================
-            # DATEN IN DIE UI LADEN
-            # ==========================================
             # Stammdaten
             setze_datum("datum", tag_dd, mon_dd, jahr_dd)
             setze_wert(adr_in, "adresse")
@@ -334,7 +334,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
             # Trinkwasser
             setze_wert(tw_kalt_cb, "tw_kalt", False)
-            setze_wert(lims_override_cb, "tw_lims_override", False)
+            setze_wert(tw_override_cb, "tw_override", False)
             setze_wert(tw_zeit_in, "tw_zeit")
             setze_wert(tw_temp_in, "tw_temp")
             setze_wert(tw_tempkonst_in, "tw_tempkonst")
@@ -374,6 +374,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
             # Scherbeneis
             setze_wert(se_kalt_cb, "se_kalt", False)
+            setze_wert(se_override_cb, "se_override", False)
             setze_wert(se_zeit_in, "se_zeit")
             setze_wert(se_zapf_dd, "se_zapf")
             setze_wert(se_cb_eiswanne, "se_cb_eiswanne", False)
@@ -399,6 +400,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
             # HFM Hack
             setze_wert(hfm_hack_cb, "hfm_hack_cb", False)
+            setze_wert(hfm_hack_override_cb, "hfm_hack_override", False)
             setze_wert(hfm_hack_entnahmeort_dd, "hfm_hack_entnahmeort")
             setze_datum("hfm_hack_herstelldatum", hfm_hack_herst_tag_dd, hfm_hack_herst_mon_dd, hfm_hack_herst_jahr_dd)
             setze_wert(hfm_hack_inhalt_in, "hfm_hack_inhalt")
@@ -414,6 +416,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
             # HFM Mett
             setze_wert(hfm_mett_cb, "hfm_mett_cb", False)
+            setze_wert(hfm_mett_override_cb, "hfm_mett_override", False)
             setze_wert(hfm_mett_entnahmeort_dd, "hfm_mett_entnahmeort")
             setze_datum("hfm_mett_herstelldatum", hfm_mett_herst_tag_dd, hfm_mett_herst_mon_dd, hfm_mett_herst_jahr_dd)
             setze_wert(hfm_mett_inhalt_in, "hfm_mett_inhalt")
@@ -426,6 +429,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
             # HFM FZS
             setze_wert(hfm_fzs_cb, "hfm_fzs_cb", False)
+            setze_wert(hfm_fzs_override_cb, "hfm_fzs_override", False)
             setze_wert(hfm_fzs_entnahmeort_dd, "hfm_fzs_entnahmeort")
             setze_wert(hfm_fzs_produkt_in, "hfm_fzs_produkt")
             setze_wert(hfm_fzs_marinade_in, "hfm_fzs_marinade")
@@ -440,6 +444,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
             # HFM FZG
             setze_wert(hfm_fzg_cb, "hfm_fzg_cb", False)
+            setze_wert(hfm_fzg_override_cb, "hfm_fzg_override", False)
             setze_wert(hfm_fzg_entnahmeort_dd, "hfm_fzg_entnahmeort")
             setze_wert(hfm_fzg_produkt_in, "hfm_fzg_produkt")
             setze_wert(hfm_fzg_marinade_in, "hfm_fzg_marinade")
@@ -454,6 +459,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
             # HFM BIO
             setze_wert(hfm_bio_cb, "hfm_bio_cb", False)
+            setze_wert(hfm_bio_override_cb, "hfm_bio_override", False)
             setze_wert(hfm_bio_entnahmeort_dd, "hfm_bio_entnahmeort")
             setze_datum("hfm_bio_herstelldatum", hfm_bio_herst_tag_dd, hfm_bio_herst_mon_dd, hfm_bio_herst_jahr_dd)
             setze_wert(hfm_bio_inhalt_in, "hfm_bio_inhalt")
@@ -479,6 +485,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
             # OBST/GEMÜSE CONVENIENCE
             setze_wert(og_cb, "og_cb", False)
+            setze_wert(og_override_cb, "og_override", False)
             for i in range(1, 6):
                 idx = f"{i:02d}"
                 c = og_controls[i]
@@ -501,10 +508,9 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 setze_wert(c["abklatsch"], f"0011_abklatsch_{idx}", False)
                 setze_wert(c["tupfer"], f"0011_tupfer_{idx}", False)
 
-            # Erfolgsmeldung und EINZIGES Update am Ende!
-            vorlagen_status.value = f"✅ '{vl_dd.value}' komplett geladen!"
+            vorlagen_status.value = f"✅ '{vl_dd.value}' geladen!"
             vorlagen_status.color = "green"
-            page.update()  # <-- Das aktualisiert ganz sauber alles, ohne abzustürzen!
+            page.update()
 
         def del_v(e):
             if vl_dd.value in alle_vorlagen:
@@ -518,21 +524,13 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
         def save_v(e):
             if not (vl_name_in.value or "").strip(): return
-            
-            # MAGIE: Zieht sich automatisch alle Felder, Dropdowns und Checkboxen!
             alle_vorlagen[vl_name_in.value] = hole_aktuelle_daten()
-            
             speichere_vorlagen_lokal(alle_vorlagen)
-            
             vl_dd.options = [ft.dropdown.Option(k) for k in alle_vorlagen.keys()]
             vl_dd.update() 
-            
             vorlagen_status.value = f"✅ Vorlage gespeichert!"
             vorlagen_status.color = "orange"
-            vorlagen_status.update()
-            
             vl_name_in.value = ""
-            vl_name_in.update()
             page.update()
 
         vorlagen_expansion = ft.ExpansionTile(
@@ -565,7 +563,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 "mitarbeiter_name": name_in.value, "auftraggeber": get_val(ag_dd, "03509 - REWE Hackfleischmonitoring"), 
                 "typ_probenahme": get_val(typ_dd, "Standard"), "bemerkung": bem_in.value,
                 
-                "tw_kalt": bool(tw_kalt_cb.value), "tw_lims_override": bool(lims_override_cb.value), 
+                "tw_kalt": bool(tw_kalt_cb.value), "tw_override": bool(tw_override_cb.value), 
                 "tw_zeit": tw_zeit_in.value, "tw_temp": tw_temp_in.value, 
                 "tw_desinf": get_val(tw_desinf_dd, "Abflammen"), "tw_zapf": get_val(tw_zapf_dd, "Spülbecken"), 
                 "tw_cb_pn": bool(cb_pn.value), "tw_cb_zwei": bool(cb_zwei.value), "tw_cb_sensor": bool(cb_sensor.value), "tw_cb_knie": bool(cb_knie.value), 
@@ -583,7 +581,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 "tw_verpackung": get_val(tw_verpackung_dd, "500ml Kunststoff-Flasche mit Natriumthiosulfat"), 
                 "tw_entnahmeort": get_val(tw_entnahmeort_dd, "Metzgerei"), "tw_tempkonst": tw_tempkonst_in.value, "tw_bemerkung_2": tw_bemerkung_dd.value,
                 
-                "se_kalt": bool(se_kalt_cb.value), "se_zeit": se_zeit_in.value, "se_zapf": get_val(se_zapf_dd, "Eismaschine"), 
+                "se_kalt": bool(se_kalt_cb.value), "se_override": bool(se_override_cb.value), "se_zeit": se_zeit_in.value, "se_zapf": get_val(se_zapf_dd, "Eismaschine"), 
                 "se_cb_eiswanne": bool(se_cb_eiswanne.value), "se_cb_fallprobe": bool(se_cb_fallprobe.value), 
                 "se_tech_sonst": se_tech_sonst_in.value, "se_desinf": get_val(se_desinf_dd, "ohne Desinfektion"), 
                 "se_cb_ozon": bool(se_cb_ozon.value), "se_auff_sonst": se_auff_sonst_in.value, "se_inhalt": get_val(se_inhalt_in, "ca. 1000ml"), 
@@ -591,7 +589,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 "se_temp": se_temp_in.value, "se_bemerkung": se_bemerkung_dd.value, 
                 "se_abklatsch_cb": bool(se_okz_cb.value), "se_abklatsch_bemerkung": se_okz_bemerkung_dd.value,
                 
-                "hfm_hack_cb": bool(hfm_hack_cb.value), "hfm_hack_entnahmeort": get_val(hfm_hack_entnahmeort_dd, "Kühlraum"), 
+                "hfm_hack_cb": bool(hfm_hack_cb.value), "hfm_hack_override": bool(hfm_hack_override_cb.value), "hfm_hack_entnahmeort": get_val(hfm_hack_entnahmeort_dd, "Kühlraum"), 
                 "hfm_hack_herstelldatum": get_date_str(hfm_hack_herst_tag_dd.value, hfm_hack_herst_mon_dd.value, hfm_hack_herst_jahr_dd.value), 
                 "hfm_hack_inhalt": get_val(hfm_hack_inhalt_in, "jeweils ca. 200 g"), "hfm_hack_verpackung": get_val(hfm_hack_verpackung_dd, "steriler Probenbeutel"), 
                 "hfm_hack_lief_schwein": hfm_hack_lief_schwein_in.value, "hfm_hack_lief_rind": hfm_hack_lief_rind_in.value, 
@@ -600,27 +598,27 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 "hfm_hack_charge_schwein": hfm_hack_charge_schwein_dd.value, "hfm_hack_charge_rind": hfm_hack_charge_rind_dd.value, 
                 "hfm_hack_temp": hfm_hack_temp_in.value, "hfm_hack_bemerkung": hfm_hack_bemerkung_dd.value,
                 
-                "hfm_mett_cb": bool(hfm_mett_cb.value), "hfm_mett_entnahmeort": get_val(hfm_mett_entnahmeort_dd, "Kühlraum"), 
+                "hfm_mett_cb": bool(hfm_mett_cb.value), "hfm_mett_override": bool(hfm_mett_override_cb.value), "hfm_mett_entnahmeort": get_val(hfm_mett_entnahmeort_dd, "Kühlraum"), 
                 "hfm_mett_herstelldatum": get_date_str(hfm_mett_herst_tag_dd.value, hfm_mett_herst_mon_dd.value, hfm_mett_herst_jahr_dd.value), 
                 "hfm_mett_inhalt": get_val(hfm_mett_inhalt_in, "ca. 200 g"), "hfm_mett_verpackung": get_val(hfm_mett_verpackung_dd, "steriler Probenbeutel"), 
                 "hfm_mett_lief": hfm_mett_lief_in.value, "hfm_mett_mhd": get_date_str(hfm_mett_mhd_tag_dd.value, hfm_mett_mhd_mon_dd.value, hfm_mett_mhd_jahr_dd.value), 
                 "hfm_mett_charge": hfm_mett_charge_dd.value, "hfm_mett_temp": hfm_mett_temp_in.value, "hfm_mett_bemerkung": hfm_mett_bemerkung_dd.value,
                 
-                "hfm_fzs_cb": bool(hfm_fzs_cb.value), "hfm_fzs_entnahmeort": get_val(hfm_fzs_entnahmeort_dd, "Kühlraum"), 
+                "hfm_fzs_cb": bool(hfm_fzs_cb.value), "hfm_fzs_override": bool(hfm_fzs_override_cb.value), "hfm_fzs_entnahmeort": get_val(hfm_fzs_entnahmeort_dd, "Kühlraum"), 
                 "hfm_fzs_produkt": hfm_fzs_produkt_in.value, "hfm_fzs_marinade": hfm_fzs_marinade_in.value, 
                 "hfm_fzs_herstelldatum": get_date_str(hfm_fzs_herst_tag_dd.value, hfm_fzs_herst_mon_dd.value, hfm_fzs_herst_jahr_dd.value), 
                 "hfm_fzs_inhalt": get_val(hfm_fzs_inhalt_in, "ca. 200 g"), "hfm_fzs_verpackung": get_val(hfm_fzs_verpackung_dd, "steriler Probenbeutel"), 
                 "hfm_fzs_lief": hfm_fzs_lief_in.value, "hfm_fzs_mhd": get_date_str(hfm_fzs_mhd_tag_dd.value, hfm_fzs_mhd_mon_dd.value, hfm_fzs_mhd_jahr_dd.value), 
                 "hfm_fzs_charge": hfm_fzs_charge_dd.value, "hfm_fzs_temp": hfm_fzs_temp_in.value, "hfm_fzs_bemerkung": hfm_fzs_bemerkung_dd.value,
                 
-                "hfm_fzg_cb": bool(hfm_fzg_cb.value), "hfm_fzg_entnahmeort": get_val(hfm_fzg_entnahmeort_dd, "Kühlraum"), 
+                "hfm_fzg_cb": bool(hfm_fzg_cb.value), "hfm_fzg_override": bool(hfm_fzg_override_cb.value), "hfm_fzg_entnahmeort": get_val(hfm_fzg_entnahmeort_dd, "Kühlraum"), 
                 "hfm_fzg_produkt": hfm_fzg_produkt_in.value, "hfm_fzg_marinade": hfm_fzg_marinade_in.value, 
                 "hfm_fzg_herstelldatum": get_date_str(hfm_fzg_herst_tag_dd.value, hfm_fzg_herst_mon_dd.value, hfm_fzg_herst_jahr_dd.value), 
                 "hfm_fzg_inhalt": get_val(hfm_fzg_inhalt_in, "ca. 200 g"), "hfm_fzg_verpackung": get_val(hfm_fzg_verpackung_dd, "steriler Probenbeutel"), 
                 "hfm_fzg_lief": hfm_fzg_lief_in.value, "hfm_fzg_mhd": get_date_str(hfm_fzg_mhd_tag_dd.value, hfm_fzg_mhd_mon_dd.value, hfm_fzg_mhd_jahr_dd.value), 
                 "hfm_fzg_charge": hfm_fzg_charge_dd.value, "hfm_fzg_temp": hfm_fzg_temp_in.value, "hfm_fzg_bemerkung": hfm_fzg_bemerkung_dd.value,
                 
-                "hfm_bio_cb": bool(hfm_bio_cb.value), "hfm_bio_entnahmeort": get_val(hfm_bio_entnahmeort_dd, "Produktionsraum"), 
+                "hfm_bio_cb": bool(hfm_bio_cb.value), "hfm_bio_override": bool(hfm_bio_override_cb.value), "hfm_bio_entnahmeort": get_val(hfm_bio_entnahmeort_dd, "Produktionsraum"), 
                 "hfm_bio_inhalt": get_val(hfm_bio_inhalt_in, "jeweils ca. 200 g"), "hfm_bio_verpackung": get_val(hfm_bio_verpackung_dd, "steriler Probenbecher"), 
                 "hfm_bio_lief_schwein": hfm_bio_lief_schwein_in.value, "hfm_bio_lief_rind": hfm_bio_lief_rind_in.value, 
                 "hfm_bio_mhd_schwein": get_date_str(hfm_bio_mhd_s_tag_dd.value, hfm_bio_mhd_s_mon_dd.value, hfm_bio_mhd_s_jahr_dd.value), 
@@ -629,7 +627,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 "hfm_bio_temp": hfm_bio_temp_in.value, "hfm_bio_bemerkung": hfm_bio_bemerkung_dd.value, 
                 "hfm_abklatsch_cb": bool(hfm_okz_cb.value), "hfm_abklatsch_bemerkung": hfm_okz_bemerkung_dd.value,
                 
-                "og_cb": bool(og_cb.value), "og_abklatsch_cb": bool(og_okz_cb.value), 
+                "og_cb": bool(og_cb.value), "og_override": bool(og_override_cb.value), "og_abklatsch_cb": bool(og_okz_cb.value), 
                 "og_abklatsch_bemerkung_1": og_okz_bemerkung_dd.value, "og_abklatsch_bemerkung_2": og_okz_anmerkung_in.value,
             }
 
@@ -677,8 +675,8 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             if tw_haken:
                 if not tw_t: errors.append("- Trinkwasser: Temperatur fehlt")
                 if not tw_z: errors.append("- Trinkwasser: Uhrzeit fehlt")
-            elif tw_t or tw_z:
-                errors.append("- Trinkwasser: Haken oben vergessen!")
+            elif (tw_t or tw_z) and not tw_override_cb.value:
+                errors.append("- Trinkwasser: Daten eingetragen, aber Haken vergessen!")
 
             # --- SCHERBENEIS CHECK ---
             se_haken = se_kalt_cb.value
@@ -687,8 +685,8 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             if se_haken:
                 if not se_t: errors.append("- Scherbeneis: Temperatur fehlt")
                 if not se_z: errors.append("- Scherbeneis: Uhrzeit fehlt")
-            elif se_t or se_z:
-                errors.append("- Scherbeneis: Haken oben vergessen!")
+            elif (se_t or se_z) and not se_override_cb.value:
+                errors.append("- Scherbeneis: Daten eingetragen, aber Haken vergessen!")
 
             # --- HACKFLEISCH CHECK ---
             hack_haken = hfm_hack_cb.value
@@ -701,8 +699,8 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 if not hack_c: errors.append("- Hackfleisch: Charge fehlt")
                 if not hack_m: errors.append("- Hackfleisch: MHD fehlt")
                 if not hack_l: errors.append("- Hackfleisch: Lieferant fehlt")
-            elif hack_t or hack_c or hack_m or hack_l:
-                errors.append("- Hackfleisch: Haken oben vergessen!")
+            elif (hack_t or hack_c or hack_m or hack_l) and not hfm_hack_override_cb.value:
+                errors.append("- Hackfleisch: Daten eingetragen, aber Haken vergessen!")
 
             # --- METT CHECK ---
             mett_haken = hfm_mett_cb.value
@@ -715,8 +713,8 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 if not mett_c: errors.append("- Mett: Charge fehlt")
                 if not mett_m: errors.append("- Mett: MHD fehlt")
                 if not mett_l: errors.append("- Mett: Lieferant fehlt")
-            elif mett_t or mett_c or mett_m or mett_l:
-                errors.append("- Mett: Haken oben vergessen!")
+            elif (mett_t or mett_c or mett_m or mett_l) and not hfm_mett_override_cb.value:
+                errors.append("- Mett: Daten eingetragen, aber Haken vergessen!")
 
             # --- FZS SCHWEIN CHECK ---
             fzs_haken = hfm_fzs_cb.value
@@ -729,8 +727,8 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 if not fzs_c: errors.append("- FZ Schwein: Charge fehlt")
                 if not fzs_m: errors.append("- FZ Schwein: MHD fehlt")
                 if not fzs_l: errors.append("- FZ Schwein: Lieferant fehlt")
-            elif fzs_t or fzs_c or fzs_m or fzs_l:
-                errors.append("- FZ Schwein: Haken oben vergessen!")
+            elif (fzs_t or fzs_c or fzs_m or fzs_l) and not hfm_fzs_override_cb.value:
+                errors.append("- FZ Schwein: Daten eingetragen, aber Haken vergessen!")
 
             # --- FZG GEFLÜGEL CHECK ---
             fzg_haken = hfm_fzg_cb.value
@@ -743,8 +741,8 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 if not fzg_c: errors.append("- FZ Geflügel: Charge fehlt")
                 if not fzg_m: errors.append("- FZ Geflügel: MHD fehlt")
                 if not fzg_l: errors.append("- FZ Geflügel: Lieferant fehlt")
-            elif fzg_t or fzg_c or fzg_m or fzg_l:
-                errors.append("- FZ Geflügel: Haken oben vergessen!")
+            elif (fzg_t or fzg_c or fzg_m or fzg_l) and not hfm_fzg_override_cb.value:
+                errors.append("- FZ Geflügel: Daten eingetragen, aber Haken vergessen!")
 
             # --- BIO HACKFLEISCH CHECK ---
             bio_haken = hfm_bio_cb.value
@@ -757,8 +755,13 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 if not bio_c: errors.append("- Bio Hackfleisch: Charge fehlt")
                 if not bio_m: errors.append("- Bio Hackfleisch: MHD fehlt")
                 if not bio_l: errors.append("- Bio Hackfleisch: Lieferant fehlt")
-            elif bio_t or bio_c or bio_m or bio_l:
-                errors.append("- Bio Hackfleisch: Haken oben vergessen!")
+            elif (bio_t or bio_c or bio_m or bio_l) and not hfm_bio_override_cb.value:
+                errors.append("- Bio Hackfleisch: Daten eingetragen, aber Haken vergessen!")
+
+            # --- OBST/GEMÜSE CHECK ---
+            og_has_data = any((c["name"].value or c["inhalt"].value or c["temp"].value).strip() for c in og_controls.values())
+            if not og_cb.value and og_has_data and not og_override_cb.value:
+                errors.append("- Obst/Gemüse: Daten eingetragen, aber Haken vergessen!")
             
             return errors
 
@@ -839,7 +842,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 top_nav.controls.append(btn)
             
             if tab_id == "stamm": haupt_bereich.controls.extend([vorlagen_expansion, ft.Divider(color="white24"), ft.Text("Stammdaten", size=20, weight="bold", color="white"), datum_row, adr_in, nr_in, auft_in, ag_dd, name_in, typ_dd, bem_in])
-            elif tab_id == "tw": haupt_bereich.controls.extend([ft.Text("Trinkwasser-Check", size=24, weight="bold", color="white"), tw_kalt_cb, tw_zeit_in, tw_temp_in, tw_tempkonst_in, ft.Divider(color="white24"), ft.Text("Probenahme / Zapfstelle:", color="white", weight="bold"), tw_entnahmeort_dd, tw_zapf_dd, tw_zapf_sonst_dd, tw_desinf_dd, ft.Row([cb_pn, cb_zwei, cb_sensor, cb_knie], wrap=True), ft.Row([cb_ein, cb_ein_g, cb_eck], wrap=True), ft.Divider(color="white24"), ft.Text("Sensorik & Analytik:", color="white", weight="bold"), tw_inaktiv_dd, tw_kurz1_dd, tw_kurz2_dd, tw_kurz3_dd, tw_kurz4_dd, ft.Divider(color="white24"), ft.Text("Auffälligkeiten:", color="white", weight="bold"), ft.Row([cb_auff_ja, cb_auff_nein], wrap=True), cb_auff_perl, cb_auff_verkalk, cb_auff_verbrueh, cb_auff_durchlauf, cb_auff_unterbau, cb_auff_eck_zu, cb_auff_nichtmoeglich, cb_auff_dusche, cb_auff_handbrause, cb_auff_sonst, tw_auff_sonstiges_in, ft.Divider(color="white24"), tw_zweck_dd, tw_inhalt_in, tw_verpackung_dd, tw_bemerkung_dd])
+            elif tab_id == "tw": haupt_bereich.controls.extend([ft.Text("Trinkwasser-Check", size=24, weight="bold", color="white"), ft.Row([tw_kalt_cb, tw_override_cb], wrap=True), tw_zeit_in, tw_temp_in, tw_tempkonst_in, ft.Divider(color="white24"), ft.Text("Probenahme / Zapfstelle:", color="white", weight="bold"), tw_entnahmeort_dd, tw_zapf_dd, tw_zapf_sonst_dd, tw_desinf_dd, ft.Row([cb_pn, cb_zwei, cb_sensor, cb_knie], wrap=True), ft.Row([cb_ein, cb_ein_g, cb_eck], wrap=True), ft.Divider(color="white24"), ft.Text("Sensorik & Analytik:", color="white", weight="bold"), tw_inaktiv_dd, tw_kurz1_dd, tw_kurz2_dd, tw_kurz3_dd, tw_kurz4_dd, ft.Divider(color="white24"), ft.Text("Auffälligkeiten:", color="white", weight="bold"), ft.Row([cb_auff_ja, cb_auff_nein], wrap=True), cb_auff_perl, cb_auff_verkalk, cb_auff_verbrueh, cb_auff_durchlauf, cb_auff_unterbau, cb_auff_eck_zu, cb_auff_nichtmoeglich, cb_auff_dusche, cb_auff_handbrause, cb_auff_sonst, tw_auff_sonstiges_in, ft.Divider(color="white24"), tw_zweck_dd, tw_inhalt_in, tw_verpackung_dd, tw_bemerkung_dd])
             elif tab_id == "se":
                 sub_nav = ft.Row(wrap=True, alignment=ft.MainAxisAlignment.CENTER)
                 haupt_bereich.controls.extend([ft.Text("Scherbeneis", size=24, weight="bold", color="white"), sub_nav])
@@ -850,7 +853,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                         is_active = (sid == sub)
                         btn = ft.ElevatedButton(sname, on_click=lambda e, s=sid: sw_se(s), bgcolor="#004400" if is_active else "#1a1a1a", color="white", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=12, side=ft.BorderSide(width=1.5, color="#4CAF50")))
                         sub_nav.controls.append(btn)
-                    if sub == "eis": haupt_bereich.controls.extend([se_kalt_cb, se_zeit_in, se_zapf_dd, ft.Text("Technik:", color="white", weight="bold"), ft.Row([se_cb_eiswanne, se_cb_fallprobe], wrap=True), se_tech_sonst_in, se_desinf_dd, ft.Text("Auffälligkeiten:", color="white", weight="bold"), se_cb_ozon, se_auff_sonst_in, se_inhalt_in, se_verpackung_dd, se_entnahmeort_dd, se_temp_in, se_bemerkung_dd])
+                    if sub == "eis": haupt_bereich.controls.extend([ft.Row([se_kalt_cb, se_override_cb], wrap=True), se_zeit_in, se_zapf_dd, ft.Text("Technik:", color="white", weight="bold"), ft.Row([se_cb_eiswanne, se_cb_fallprobe], wrap=True), se_tech_sonst_in, se_desinf_dd, ft.Text("Auffälligkeiten:", color="white", weight="bold"), se_cb_ozon, se_auff_sonst_in, se_inhalt_in, se_verpackung_dd, se_entnahmeort_dd, se_temp_in, se_bemerkung_dd])
                     elif sub == "okz":
                         haupt_bereich.controls.extend([ft.Text("⚠️ Haken prüfen!", color="orange", weight="bold"), se_okz_cb, ft.Divider(color="white24")])
                         for i in range(1, 4):
@@ -869,11 +872,11 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                         is_sub_act = (sid == sub)
                         btn = ft.ElevatedButton(sname, on_click=lambda e, s=sid: sw_hfm(s), bgcolor="#004400" if is_sub_act else "#1a1a1a", color="white", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=5, side=ft.BorderSide(width=1, color="#4CAF50")))
                         sub_nav.controls.append(btn)
-                    if sub == "hack": haupt_bereich.controls.extend([hfm_hack_cb, hfm_hack_entnahmeort_dd, ft.Text("Herstellungsdatum:", color="white"), d_row(hfm_hack_herst_tag_dd, hfm_hack_herst_mon_dd, hfm_hack_herst_jahr_dd), hfm_hack_inhalt_in, hfm_hack_verpackung_dd, hfm_hack_lief_schwein_in, hfm_hack_lief_rind_in, ft.Text("MHD (Schwein):", color="yellow"), d_row(hfm_hack_mhd_s_tag_dd, hfm_hack_mhd_s_mon_dd, hfm_hack_mhd_s_jahr_dd), ft.Text("MHD (Rind):", color="yellow"), d_row(hfm_hack_mhd_r_tag_dd, hfm_hack_mhd_r_mon_dd, hfm_hack_mhd_r_jahr_dd), hfm_hack_charge_schwein_dd, hfm_hack_charge_rind_dd, hfm_hack_temp_in, hfm_hack_bemerkung_dd])
-                    elif sub == "mett": haupt_bereich.controls.extend([hfm_mett_cb, hfm_mett_entnahmeort_dd, ft.Text("Herstellungsdatum:", color="white"), d_row(hfm_mett_herst_tag_dd, hfm_mett_herst_mon_dd, hfm_mett_herst_jahr_dd), hfm_mett_inhalt_in, hfm_mett_verpackung_dd, hfm_mett_lief_in, ft.Text("MHD:", color="white"), d_row(hfm_mett_mhd_tag_dd, hfm_mett_mhd_mon_dd, hfm_mett_mhd_jahr_dd), hfm_mett_charge_dd, hfm_mett_temp_in, hfm_mett_bemerkung_dd])
-                    elif sub == "fzs": haupt_bereich.controls.extend([hfm_fzs_cb, hfm_fzs_entnahmeort_dd, hfm_fzs_produkt_in, hfm_fzs_marinade_in, ft.Text("Herstellungsdatum:", color="white"), d_row(hfm_fzs_herst_tag_dd, hfm_fzs_herst_mon_dd, hfm_fzs_herst_jahr_dd), hfm_fzs_inhalt_in, hfm_fzs_verpackung_dd, hfm_fzs_lief_in, ft.Text("MHD:", color="white"), d_row(hfm_fzs_mhd_tag_dd, hfm_fzs_mhd_mon_dd, hfm_fzs_mhd_jahr_dd), hfm_fzs_charge_dd, hfm_fzs_temp_in, hfm_fzs_bemerkung_dd])
-                    elif sub == "fzg": haupt_bereich.controls.extend([hfm_fzg_cb, hfm_fzg_entnahmeort_dd, hfm_fzg_produkt_in, hfm_fzg_marinade_in, ft.Text("Herstellungsdatum:", color="white"), d_row(hfm_fzg_herst_tag_dd, hfm_fzg_herst_mon_dd, hfm_fzg_herst_jahr_dd), hfm_fzg_inhalt_in, hfm_fzg_verpackung_dd, hfm_fzg_lief_in, ft.Text("MHD:", color="white"), d_row(hfm_fzg_mhd_tag_dd, hfm_fzg_mhd_mon_dd, hfm_fzg_mhd_jahr_dd), hfm_fzg_charge_dd, hfm_fzg_temp_in, hfm_fzg_bemerkung_dd])
-                    elif sub == "bio": haupt_bereich.controls.extend([hfm_bio_cb, hfm_bio_entnahmeort_dd, ft.Text("Herstellungsdatum:", color="white"), d_row(hfm_bio_herst_tag_dd, hfm_bio_herst_mon_dd, hfm_bio_herst_jahr_dd), hfm_bio_inhalt_in, hfm_bio_verpackung_dd, hfm_bio_lief_schwein_in, hfm_bio_lief_rind_in, ft.Text("MHD (Schwein):", color="yellow"), d_row(hfm_bio_mhd_s_tag_dd, hfm_bio_mhd_s_mon_dd, hfm_bio_mhd_s_jahr_dd), ft.Text("MHD (Rind):", color="yellow"), d_row(hfm_bio_mhd_r_tag_dd, hfm_bio_mhd_r_mon_dd, hfm_bio_mhd_r_jahr_dd), hfm_bio_charge_schwein_dd, hfm_bio_charge_rind_dd, hfm_bio_temp_in, hfm_bio_bemerkung_dd])
+                    if sub == "hack": haupt_bereich.controls.extend([ft.Row([hfm_hack_cb, hfm_hack_override_cb], wrap=True), hfm_hack_entnahmeort_dd, ft.Text("Herstellungsdatum:", color="white"), d_row(hfm_hack_herst_tag_dd, hfm_hack_herst_mon_dd, hfm_hack_herst_jahr_dd), hfm_hack_inhalt_in, hfm_hack_verpackung_dd, hfm_hack_lief_schwein_in, hfm_hack_lief_rind_in, ft.Text("MHD (Schwein):", color="yellow"), d_row(hfm_hack_mhd_s_tag_dd, hfm_hack_mhd_s_mon_dd, hfm_hack_mhd_s_jahr_dd), ft.Text("MHD (Rind):", color="yellow"), d_row(hfm_hack_mhd_r_tag_dd, hfm_hack_mhd_r_mon_dd, hfm_hack_mhd_r_jahr_dd), hfm_hack_charge_schwein_dd, hfm_hack_charge_rind_dd, hfm_hack_temp_in, hfm_hack_bemerkung_dd])
+                    elif sub == "mett": haupt_bereich.controls.extend([ft.Row([hfm_mett_cb, hfm_mett_override_cb], wrap=True), hfm_mett_entnahmeort_dd, ft.Text("Herstellungsdatum:", color="white"), d_row(hfm_mett_herst_tag_dd, hfm_mett_herst_mon_dd, hfm_mett_herst_jahr_dd), hfm_mett_inhalt_in, hfm_mett_verpackung_dd, hfm_mett_lief_in, ft.Text("MHD:", color="white"), d_row(hfm_mett_mhd_tag_dd, hfm_mett_mhd_mon_dd, hfm_mett_mhd_jahr_dd), hfm_mett_charge_dd, hfm_mett_temp_in, hfm_mett_bemerkung_dd])
+                    elif sub == "fzs": haupt_bereich.controls.extend([ft.Row([hfm_fzs_cb, hfm_fzs_override_cb], wrap=True), hfm_fzs_entnahmeort_dd, hfm_fzs_produkt_in, hfm_fzs_marinade_in, ft.Text("Herstellungsdatum:", color="white"), d_row(hfm_fzs_herst_tag_dd, hfm_fzs_herst_mon_dd, hfm_fzs_herst_jahr_dd), hfm_fzs_inhalt_in, hfm_fzs_verpackung_dd, hfm_fzs_lief_in, ft.Text("MHD:", color="white"), d_row(hfm_fzs_mhd_tag_dd, hfm_fzs_mhd_mon_dd, hfm_fzs_mhd_jahr_dd), hfm_fzs_charge_dd, hfm_fzs_temp_in, hfm_fzs_bemerkung_dd])
+                    elif sub == "fzg": haupt_bereich.controls.extend([ft.Row([hfm_fzg_cb, hfm_fzg_override_cb], wrap=True), hfm_fzg_entnahmeort_dd, hfm_fzg_produkt_in, hfm_fzg_marinade_in, ft.Text("Herstellungsdatum:", color="white"), d_row(hfm_fzg_herst_tag_dd, hfm_fzg_herst_mon_dd, hfm_fzg_herst_jahr_dd), hfm_fzg_inhalt_in, hfm_fzg_verpackung_dd, hfm_fzg_lief_in, ft.Text("MHD:", color="white"), d_row(hfm_fzg_mhd_tag_dd, hfm_fzg_mhd_mon_dd, hfm_fzg_mhd_jahr_dd), hfm_fzg_charge_dd, hfm_fzg_temp_in, hfm_fzg_bemerkung_dd])
+                    elif sub == "bio": haupt_bereich.controls.extend([ft.Row([hfm_bio_cb, hfm_bio_override_cb], wrap=True), hfm_bio_entnahmeort_dd, ft.Text("Herstellungsdatum:", color="white"), d_row(hfm_bio_herst_tag_dd, hfm_bio_herst_mon_dd, hfm_bio_herst_jahr_dd), hfm_bio_inhalt_in, hfm_bio_verpackung_dd, hfm_bio_lief_schwein_in, hfm_bio_lief_rind_in, ft.Text("MHD (Schwein):", color="yellow"), d_row(hfm_bio_mhd_s_tag_dd, hfm_bio_mhd_s_mon_dd, hfm_bio_mhd_s_jahr_dd), ft.Text("MHD (Rind):", color="yellow"), d_row(hfm_bio_mhd_r_tag_dd, hfm_bio_mhd_r_mon_dd, hfm_bio_mhd_r_jahr_dd), hfm_bio_charge_schwein_dd, hfm_bio_charge_rind_dd, hfm_bio_temp_in, hfm_bio_bemerkung_dd])
                     elif sub == "okz":
                         haupt_bereich.controls.extend([ft.Text("⚠️ Haken prüfen!", color="orange", weight="bold"), hfm_okz_cb, ft.Divider(color="white24")])
                         for i in range(1, 11):
@@ -893,7 +896,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                         btn = ft.ElevatedButton(sname, on_click=lambda e, s=sid: sw_og(s), bgcolor="#004400" if is_sub_act else "#1a1a1a", color="white", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=8, side=ft.BorderSide(width=1.5, color="#4CAF50")))
                         sub_nav.controls.append(btn)
                     if sub == "teil":
-                        haupt_bereich.controls.extend([og_cb, ft.Divider(color="white24")])
+                        haupt_bereich.controls.extend([ft.Row([og_cb, og_override_cb], wrap=True), ft.Divider(color="white24")])
                         for i in range(1, 6):
                             c = og_controls[i]
                             haupt_bereich.controls.extend([ft.Text(f"Teilprobe {i}", color="yellow", weight="bold"), c["name"], c["ort"], ft.Text("Herstellungsdatum:", color="white"), d_row(c["h_t"], c["h_m"], c["h_j"]), ft.Text("Verbrauchsdatum:", color="white"), d_row(c["v_t"], c["v_m"], c["v_j"]), c["inhalt"], c["verpackung"], c["temp"], ft.Divider(color="white24")])
