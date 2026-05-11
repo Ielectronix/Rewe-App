@@ -41,11 +41,12 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 border_color="white", content_padding=15, width=w, on_change=oc, on_blur=ob
             )
 
-        # --- HELFER: Dropdown/Combo (Schriftgröße 14, großer Pfeil & Puffer) ---
-        def combo(label, val, opts, w=None, oc=None):
+        # --- HELFER: Dropdown/Combo (Schriftgröße 14, großer Pfeil & Puffer, JETZT AUCH MIT MULTILINE) ---
+        def combo(label, val, opts, w=None, oc=None, multiline=False):
             echter_wert = val if val is not None else ""
             c = ft.TextField(
                 label=label, value=echter_wert, 
+                multiline=multiline, # <-- Das fehlte hier!
                 color="yellow", text_style=ft.TextStyle(size=14, color="yellow"), 
                 label_style=ft.TextStyle(color="white", size=14), 
                 border_color="white", dense=True, content_padding=15, width=w, on_change=oc
@@ -317,7 +318,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         alle_vorlagen = lade_vorlagen_lokal()
         vorlagen_status = ft.Text("", weight="bold", size=14) 
         
-        # --- FIX: icon_size entfernt, da ft.Dropdown das nicht unterstützt ---
         vl_dd = ft.Dropdown(
             options=[ft.dropdown.Option(k) for k in alle_vorlagen.keys()], 
             hint_text="Vorlage wählen...", 
