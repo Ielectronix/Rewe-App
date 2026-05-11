@@ -48,7 +48,15 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 border_color="white", dense=True, content_padding=10, width=w, on_change=oc
             )
             items = [ft.PopupMenuItem(content=ft.Text(o), on_click=lambda e, opt=o: (setattr(c, 'value', opt), c.update())) for o in opts]
-            c.suffix = ft.PopupMenuButton(items=items, content=ft.Text("▼", color="white"))
+            
+            # --- ÄNDERUNG: Pfeil vergrößert & riesige unsichtbare Trefferzone (padding=10) ---
+            c.suffix = ft.PopupMenuButton(
+                items=items, 
+                content=ft.Container(
+                    content=ft.Text("▼", color="white", size=22), 
+                    padding=10 
+                )
+            )
             return c
             
         def action_btn_form(text, oc, farbe):
@@ -226,7 +234,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
         hfm_fzg_cb = cb("Fleischzubereitung Geflügel", aktuelle_daten.get("hfm_fzg_cb", False), bold=True)
         hfm_fzg_override_cb = cb("Trotzdem speichern", aktuelle_daten.get("hfm_fzg_override", False))
-        hfm_fzg_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("hfm_fzg_entnahmeort", "Kühlraum"), ort_opts)
+        hfm_fzg_entnahmeort_dd = combo("Entnahmeort", current_daten.get("hfm_fzg_entnahmeort", "Kühlraum"), ort_opts)
         hfm_fzg_produkt_in = tf("Produkt", aktuelle_daten.get("hfm_fzg_produkt", ""))
         hfm_fzg_marinade_in = tf("Marinade", aktuelle_daten.get("hfm_fzg_marinade", ""))
         t, m, j = get_herst("hfm_fzg_herstelldatum")
@@ -301,7 +309,9 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         # ==========================================
         alle_vorlagen = lade_vorlagen_lokal()
         vorlagen_status = ft.Text("", weight="bold", size=12) 
-        vl_dd = ft.Dropdown(options=[ft.dropdown.Option(k) for k in alle_vorlagen.keys()], hint_text="Vorlage wählen...", dense=True, content_padding=10, color="yellow", text_style=ft.TextStyle(color="yellow", size=12), border_color="white")
+        
+        # --- ÄNDERUNG: Pfeil vergrößert bei den Vorlagen (icon_size=35) ---
+        vl_dd = ft.Dropdown(options=[ft.dropdown.Option(k) for k in alle_vorlagen.keys()], hint_text="Vorlage wählen...", dense=True, content_padding=10, color="yellow", text_style=ft.TextStyle(color="yellow", size=12), border_color="white", icon_size=35)
         vl_name_in = tf("Als neue Vorlage speichern", "")
 
         def lade_v(e):
