@@ -22,48 +22,60 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         ansicht.controls.clear()
         ansicht.horizontal_alignment = ft.CrossAxisAlignment.STRETCH 
         
-        fehler_text = ft.Text("", color="red", weight="bold", visible=False, size=14, text_align=ft.TextAlign.CENTER)
-        status_text = ft.Text("", color="yellow", weight="bold", size=16, text_align=ft.TextAlign.CENTER)
+        fehler_text = ft.Text("", color="red", weight="bold", visible=False, size=16, text_align=ft.TextAlign.CENTER)
+        status_text = ft.Text("", color="yellow", weight="bold", size=18, text_align=ft.TextAlign.CENTER)
 
         maerkte = lade_maerkte()
         v, z = lade_benutzer()
         heute_str = datetime.datetime.now().strftime('%d.%m.%Y')
         aktuelle_daten = maerkte[markt_index] if (markt_index is not None and markt_index < len(maerkte)) else {"datum": heute_str, "mitarbeiter_name": f"{v} {z}".strip()}
 
-        def tf(label, val, hint="", w=None, oc=None, ob=None):
+        # --- HELFER: Textfeld (Schriftgröße 14, Padding 15, multiline integriert) ---
+        def tf(label, val, hint="", w=None, oc=None, ob=None, multiline=False):
             return ft.TextField(
                 label=label, value=val or "", hint_text=hint, 
+                multiline=multiline,
                 hint_style=ft.TextStyle(color="white54", size=12), 
-                color="yellow", text_style=ft.TextStyle(size=12, color="yellow"), 
-                label_style=ft.TextStyle(color="white"), 
-                border_color="white", content_padding=10, width=w, on_change=oc, on_blur=ob
+                color="yellow", text_style=ft.TextStyle(size=14, color="yellow"), 
+                label_style=ft.TextStyle(color="white", size=14), 
+                border_color="white", content_padding=15, width=w, on_change=oc, on_blur=ob
             )
 
-        def combo(label, val, opts, w=None, oc=None):
+        # --- INTELLIGENTES DROPDOWN: Umbruch für lange Texte, klein für Datum ---
+        def combo(label, val, opts, w=None, oc=None, multiline=True):
+            # Prüfen, ob es sich um ein Datumsfeld handelt
+            is_date = label in ["Tag", "Mon", "Jahr"]
+            
+            # Wenn Datum, dann kompaktes Padding und kleiner Pfeil. Sonst groß.
+            pad = 5 if is_date else 15
+            txt_size = 14
+            lbl_size = 12 if is_date else 14
+            icon_sz = 16 if is_date else 24
+            
             echter_wert = val if val is not None else ""
             c = ft.TextField(
                 label=label, value=echter_wert, 
-                color="yellow", text_style=ft.TextStyle(size=12, color="yellow"), 
-                label_style=ft.TextStyle(color="white"), 
-                border_color="white", dense=True, content_padding=10, width=w, on_change=oc
+                multiline=False if is_date else multiline,
+                color="yellow", text_style=ft.TextStyle(size=txt_size, color="yellow"), 
+                label_style=ft.TextStyle(color="white", size=lbl_size), 
+                border_color="white", dense=True, content_padding=pad, width=w, on_change=oc
             )
-            items = [ft.PopupMenuItem(content=ft.Text(o), on_click=lambda e, opt=o: (setattr(c, 'value', opt), c.update())) for o in opts]
+            items = [ft.PopupMenuItem(content=ft.Text(o, size=14), on_click=lambda e, opt=o: (setattr(c, 'value', opt), c.update())) for o in opts]
             
-            # Vergrößerter Pfeil und riesige Trefferzone
             c.suffix = ft.PopupMenuButton(
                 items=items, 
                 content=ft.Container(
-                    content=ft.Text("▼", color="white", size=22), 
-                    padding=10 
+                    content=ft.Text("▼", color="white", size=icon_sz), 
+                    padding=pad 
                 )
             )
             return c
             
         def action_btn_form(text, oc, farbe):
-            return ft.ElevatedButton(content=ft.Text(text, size=14, weight="bold"), on_click=oc, bgcolor="#0b1a0b", color=farbe, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=15, side=ft.BorderSide(width=2, color=farbe)))
+            return ft.ElevatedButton(content=ft.Text(text, size=16, weight="bold"), on_click=oc, bgcolor="#0b1a0b", color=farbe, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=20, side=ft.BorderSide(width=2, color=farbe)))
             
         def emoji_btn(text, oc, farbe):
-            return ft.ElevatedButton(text, on_click=oc, bgcolor="#1a1a1a", color=farbe, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=10, side=ft.BorderSide(width=1.5, color=farbe)))
+            return ft.ElevatedButton(text, on_click=oc, bgcolor="#1a1a1a", color=farbe, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=15, side=ft.BorderSide(width=1.5, color=farbe)))
 
         def parse_datum(d, dt="", dm="", dj=""):
             if not d: return dt, dm, dj
@@ -91,8 +103,13 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             if val and not val.lower().endswith("g") and not val.lower().endswith("ml"):
                 e.control.value = val + " g"; e.control.update()
 
+        # --- FIX: scale=1.2 entfernt, dadurch sehen die Checkboxen wieder normal aus ---
         def cb(label, val, oc=None, bold=False):
-            return ft.Checkbox(label=label, value=bool(val), on_change=oc, label_style=ft.TextStyle(color="white", size=16 if bold else 12, weight="bold" if bold else "normal"), fill_color="yellow", check_color="black")
+            return ft.Checkbox(
+                label=label, value=bool(val), on_change=oc, 
+                label_style=ft.TextStyle(color="white", size=16 if bold else 14, weight="bold" if bold else "normal"), 
+                fill_color="yellow", check_color="black"
+            )
 
         def d_row(t_dd, m_dd, j_dd):
             return ft.Row([ft.Container(content=t_dd, expand=1), ft.Container(content=m_dd, expand=1), ft.Container(content=j_dd, expand=1)], spacing=5)
@@ -115,13 +132,13 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         # ==========================================
         d_tag, d_mon, d_jahr = parse_datum(aktuelle_daten.get("datum", heute_str), heute_str.split(".")[0], heute_str.split(".")[1], heute_str.split(".")[2])
         tag_dd, mon_dd, jahr_dd = combo("Tag", d_tag, tage_opts), combo("Mon", d_mon, mon_opts), combo("Jahr", d_jahr, jahr_opts)
-        datum_row = ft.Column([ft.Text("Datum der Probenahme", color="white", weight="bold"), d_row(tag_dd, mon_dd, jahr_dd)])
+        datum_row = ft.Column([ft.Text("Datum der Probenahme", color="white", weight="bold", size=16), d_row(tag_dd, mon_dd, jahr_dd)])
         
-        adr_in = tf("Adresse Markt", aktuelle_daten.get("adresse", ""))
+        adr_in = tf("Adresse Markt", aktuelle_daten.get("adresse", ""), multiline=True)
         nr_in = tf("Marktnummer", aktuelle_daten.get("marktnummer", ""))
         auft_in = tf("Auftragsnummer", aktuelle_daten.get("auftragsnummer", ""), "Etikettenummer: XX-XXXXXXX")
         name_in = tf("Name Probenehmer", aktuelle_daten.get("mitarbeiter_name", ""))
-        bem_in = tf("Zusätzliche Bemerkung", aktuelle_daten.get("bemerkung", ""))
+        bem_in = tf("Zusätzliche Bemerkung", aktuelle_daten.get("bemerkung", ""), multiline=True)
         ag_dd = combo("Auftraggeber", aktuelle_daten.get("auftraggeber", "03509 - REWE Hackfleischmonitoring"), ["03509 - REWE Hackfleischmonitoring", "3001767 - REWE Dortmund (Hackfleischmonitoring)"])
         typ_dd = combo("Typ der Probenahme", aktuelle_daten.get("typ_probenahme", "Standard"), ["Standard", "Nachkontrolle", "Mehrwöchig"])
 
@@ -151,7 +168,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         cb_auff_verkalk, cb_auff_verbrueh, cb_auff_durchlauf = cb("Starke Verkalkung", aktuelle_daten.get("tw_auff_kalk", False)), cb("Armatur mit Verbrühschutz", aktuelle_daten.get("tw_auff_verbrueh", False)), cb("Durchlauferhitzer", aktuelle_daten.get("tw_auff_durchlauf", False))
         cb_auff_unterbau, cb_auff_eck_zu, cb_auff_nichtmoeglich = cb("Unterbauspeicher", aktuelle_daten.get("tw_auff_unterbau", False)), cb("Eckventil warm/kalt geschlossen", aktuelle_daten.get("tw_auff_eckventil", False)), cb("nicht möglich", aktuelle_daten.get("tw_auff_unmoeglich", False))
         cb_auff_dusche, cb_auff_handbrause, cb_auff_sonst = cb("Entnahme Dusche", aktuelle_daten.get("tw_auff_dusche", False)), cb("Handbrause", aktuelle_daten.get("tw_auff_handbrause", False)), cb("Sonstiges", aktuelle_daten.get("tw_auff_sonstiges", False))
-        tw_auff_sonstiges_in, tw_inhalt_in = tf("Auffälligkeiten (Sonstiges)", aktuelle_daten.get("tw_auff_sonst_text", "")), tf("Inhalt", aktuelle_daten.get("tw_inhalt", ""))
+        tw_auff_sonstiges_in, tw_inhalt_in = tf("Auffälligkeiten (Sonstiges)", aktuelle_daten.get("tw_auff_sonst_text", ""), multiline=True), tf("Inhalt", aktuelle_daten.get("tw_inhalt", ""))
 
         # ==========================================
         # SCHERBENEIS
@@ -162,10 +179,10 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         se_zeit_in = tf("Probenahmezeit", aktuelle_daten.get("se_zeit", ""), ob=format_zeit)
         se_zapf_dd = combo("Zapfstelle (Eis)", aktuelle_daten.get("se_zapf", "Eismaschine"), ["Eismaschine"])
         se_cb_eiswanne, se_cb_fallprobe = cb("Eiswanne/Schöpfprobe", aktuelle_daten.get("se_cb_eiswanne", False)), cb("Fallprobe", aktuelle_daten.get("se_cb_fallprobe", True))
-        se_tech_sonst_in = tf("Sonstiges (Technik)", aktuelle_daten.get("se_tech_sonst", ""))
+        se_tech_sonst_in = tf("Sonstiges (Technik)", aktuelle_daten.get("se_tech_sonst", ""), multiline=True)
         se_desinf_dd = combo("Art der Desinfektion", aktuelle_daten.get("se_desinf", "ohne Desinfektion"), ["Abflammen", "Sprühdesinfektion", "ohne Desinfektion"])
         se_cb_ozon = cb("Ozonsterilisator", aktuelle_daten.get("se_cb_ozon", False))
-        se_auff_sonst_in = tf("Sonstiges (Auffälligkeiten)", aktuelle_daten.get("se_auff_sonst", ""))
+        se_auff_sonst_in = tf("Sonstiges (Auffälligkeiten)", aktuelle_daten.get("se_auff_sonst", ""), multiline=True)
         se_inhalt_in = tf("Inhalt", aktuelle_daten.get("se_inhalt", ""))
         se_verpackung_dd = combo("Verpackung", aktuelle_daten.get("se_verpackung", "steriler Probenbeutel"), verp_opts)
         se_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("se_entnahmeort", "Fischabteilung-Eismaschine"), ort_opts)
@@ -295,7 +312,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
         og_okz_cb = cb("Abklatschproben Convenience", aktuelle_daten.get("og_abklatsch_cb", False), bold=True)
         og_okz_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("og_abklatsch_bemerkung_1", ""), ["", "Keine Besonderheiten"])
-        og_okz_anmerkung_in = tf("Anmerkung", aktuelle_daten.get("og_abklatsch_bemerkung_2", ""))
+        og_okz_anmerkung_in = tf("Anmerkung", aktuelle_daten.get("og_abklatsch_bemerkung_2", ""), multiline=True)
         
         og_okz_opts = ["", "Schneidebrett", "Messer", "Saftpresse Auffanggitter", "Saftpresse Rückwand", "Saftpresse Auslass", "Waagenauflage", "Schüssel", "Löffel", "GN-Behälter"]
         og_okz_def = {1: {"o": "Schneidebrett", "a": True, "t": True}, 2: {"o": "Messer", "a": True, "t": True}, 3: {"o": "Waagenauflage", "a": True, "t": False}, 4: {"o": "Schüssel", "a": True, "t": False}, 5: {"o": "Löffel", "a": True, "t": False}}
@@ -308,9 +325,17 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         # VORLAGEN LOGIK
         # ==========================================
         alle_vorlagen = lade_vorlagen_lokal()
-        vorlagen_status = ft.Text("", weight="bold", size=12) 
+        vorlagen_status = ft.Text("", weight="bold", size=14) 
         
-        vl_dd = ft.Dropdown(options=[ft.dropdown.Option(k) for k in alle_vorlagen.keys()], hint_text="Vorlage wählen...", dense=True, content_padding=10, color="yellow", text_style=ft.TextStyle(color="yellow", size=12), border_color="white", icon_size=35)
+        vl_dd = ft.Dropdown(
+            options=[ft.dropdown.Option(k) for k in alle_vorlagen.keys()], 
+            hint_text="Vorlage wählen...", 
+            dense=True, 
+            content_padding=15, 
+            color="yellow", 
+            text_style=ft.TextStyle(color="yellow", size=14), 
+            border_color="white"
+        )
         vl_name_in = tf("Als neue Vorlage speichern", "")
 
         def lade_v(e):
@@ -543,7 +568,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             page.update()
 
         vorlagen_expansion = ft.ExpansionTile(
-            title=ft.Text("📋 Vorlage", weight="bold", color="white"),
+            title=ft.Text("📋 Vorlage", weight="bold", color="white", size=18),
             collapsed_text_color="white",
             text_color="#4CAF50",
             controls=[
@@ -940,7 +965,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                         haupt_bereich.controls.extend([ft.Text("⚠️ Haken prüfen!", color="orange", weight="bold"), og_okz_cb, ft.Divider(color="white24")])
                         for i in range(1, 6):
                             c = og_okz_controls[f"{i:02d}"]
-                            if i == 2: haupt_bereich.controls.append(ft.Text("💡 Info: Bei Saftpresse bitte hier auswählen.", color="white54", italic=True, size=12))
+                            if i == 2: haupt_bereich.controls.append(ft.Text("💡 Info: Bei Saftpresse bitte hier auswählen.", color="white54", italic=True, size=14))
                             haupt_bereich.controls.extend([ft.Text(f"Probe {i}", color="yellow", weight="bold"), ft.Row([ft.Container(content=c["status"], expand=1), ft.Container(content=c["objekt"], expand=3)]), c["ort"], ft.Row([ft.Container(content=c["abklatsch"], expand=1), ft.Container(content=c["tupfer"], expand=1)]), ft.Divider(color="white24")])
                         haupt_bereich.controls.extend([ft.Text("💡 Wichtig: Wird die Saftpresse beprobt, muss zwingend auch das Messer aufgenommen werden!", color="orange", weight="bold"), og_okz_bemerkung_dd, og_okz_anmerkung_in])
                     page.update()
