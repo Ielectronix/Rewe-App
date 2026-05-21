@@ -194,10 +194,10 @@ def main(page: ft.Page):
                             pfad = os.path.join(ordner, f)
                             
                             ist_gesendet = pfad in gesendet_set
-                            farbe = "#4CAF50" if ist_gesendet else "white"
-                            text_gewicht = "bold" if ist_gesendet else "normal"
-                            text_groesse = 14 if ist_gesendet else 13
-                            anzeige_text = f"✅ {f}" if ist_gesendet else f
+                            
+                            # NEU: Sehr simple Formatierung. Einfach ein Haken dahinter, wenn gesendet.
+                            anzeige_text = f"{f} ✅" if ist_gesendet else f
+                            text_farbe = "#4CAF50" if ist_gesendet else "white"
                             
                             async def teilen_jetzt(e, p=pfad):
                                 markiere_als_gesendet(p)
@@ -210,7 +210,11 @@ def main(page: ft.Page):
                                 if os.path.exists(p): os.remove(p)
                                 zeige_postausgang()
 
-                            ansicht.controls.append(ft.Container(bgcolor="#002200", padding=10, border_radius=15, content=ft.Row([ft.Text(anzeige_text, color=farbe, size=text_groesse, expand=True, weight=text_gewicht, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS), list_action_btn("📤 Senden", teilen_jetzt, "#2196F3"), small_btn("🗑️", rm, "#F44336")])))
+                            ansicht.controls.append(ft.Container(bgcolor="#002200", padding=10, border_radius=15, content=ft.Row([
+                                ft.Text(anzeige_text, color=text_farbe, size=13, expand=True, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS), 
+                                list_action_btn("📤 Senden", teilen_jetzt, "#2196F3"), 
+                                small_btn("🗑️", rm, "#F44336")
+                            ])))
                 except: pass
             if not pdfs_gefunden: ansicht.controls.append(ft.Text("Keine Berichte zum Senden.", color="white54", text_align="center"))
             page.add(ft.SafeArea(ansicht))
@@ -247,11 +251,12 @@ def main(page: ft.Page):
                         for f in p_list:
                             pdfs_gefunden = True
                             pfad = os.path.join(ordner, f)
+                            
                             ist_gesendet = pfad in gesendet_set
-                            farbe = "#4CAF50" if ist_gesendet else "white"
-                            text_gewicht = "bold" if ist_gesendet else "normal"
-                            text_groesse = 14 if ist_gesendet else 13
-                            anzeige_text = f"✅ {f}" if ist_gesendet else f
+                            
+                            # NEU: Sehr simple Formatierung. Einfach ein Haken dahinter, wenn gesendet.
+                            anzeige_text = f"{f} ✅" if ist_gesendet else f
+                            text_farbe = "#4CAF50" if ist_gesendet else "white"
                             
                             async def teilen_archiv(e, p=pfad):
                                 markiere_als_gesendet(p)
@@ -260,7 +265,10 @@ def main(page: ft.Page):
                                     await share_obj.share_files([ft.ShareFile.from_path(p)], text="REWE Bericht")
                                 else: print("Share geht auf dem PC nicht.")
 
-                            ansicht.controls.append(ft.Container(bgcolor="#002200", padding=10, border_radius=15, content=ft.Row([ft.Text(anzeige_text, color=farbe, size=text_groesse, expand=True, weight=text_gewicht, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS), list_action_btn("📤 Senden", teilen_archiv, "#2196F3")])))
+                            ansicht.controls.append(ft.Container(bgcolor="#002200", padding=10, border_radius=15, content=ft.Row([
+                                ft.Text(anzeige_text, color=text_farbe, size=13, expand=True, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS), 
+                                list_action_btn("📤 Senden", teilen_archiv, "#2196F3")
+                            ])))
                         ansicht.controls.append(ft.Divider(color="white24"))
                 except: pass
             if not pdfs_gefunden: ansicht.controls.append(ft.Text("Keine Berichte im Archiv.", color="white54", text_align="center"))
