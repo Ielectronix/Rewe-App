@@ -319,7 +319,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         og_okz_controls = {}
         for i in range(1, 6):
             idx = f"{i:02d}"
-            og_okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0011_status_{idx}", "R+D"), ["R+D", "R", "P", "-"]), "objekt": combo("Objekt", aktuelle_daten.get(f"0011_objekt_{idx}") or og_okz_def[i]["o"], og_okz_opts), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0011_ort_{idx}", "Produktionsbereich"), ["Kühlraum", "Produktionsbereich", "Theke"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0011_abklatsch_{idx}", og_okz_def[i]["a"])), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0011_tupfer_{idx}", og_okz_def[i]["t"]))}
+            og_okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0011_status_{idx}", "R+D"), ["R+D", "R", "P", "-"]), "objekt": combo("Objekt", aktuelle_daten.get(f"0011_objekt_{idx}") or og_okz_def[i], og_okz_opts), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0011_ort_{idx}", "Produktionsbereich"), ["Kühlraum", "Produktionsbereich", "Theke"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0011_abklatsch_{idx}", og_okz_def[i]["a"])), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0011_tupfer_{idx}", og_okz_def[i]["t"]))}
 
         # ==========================================
         # VORLAGEN LOGIK
@@ -796,7 +796,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             og_haken = og_cb.value
             og_has_any_data = False
 
-            # Wir prüfen jede der 5 Teilproben einzeln
             for i in range(1, 6):
                 c = og_controls[i]
                 n = (c["name"].value or "").strip()
@@ -806,12 +805,10 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 hm = (c["h_m"].value or "").strip()
                 hj = (c["h_j"].value or "").strip()
                 
-                # Hat der User in dieser Zeile IRGENDETWAS eingetippt?
                 probe_has_data = bool(n or inh or tmp or ht or hm or hj)
                 
                 if probe_has_data:
                     og_has_any_data = True
-                    # Wenn der Haupt-Haken an ist, prüfen wir diese gefüllte Probe auf Fehler
                     if og_haken:
                         if not tmp: 
                             errors.append(f"- Obst/Gemüse (Probe {i}): Temperatur fehlt")
@@ -960,7 +957,8 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                         haupt_bereich.controls.extend([ft.Row([og_cb, og_override_cb], wrap=True), ft.Divider(color="white24")])
                         for i in range(1, 6):
                             c = og_controls[i]
-                            haupt_bereich.controls.extend([ft.Text(f"Teilprobe {i}", color="yellow", weight="bold"), c["name"], c["ort"], ft.Text("Herstellungsdatum:", color="white"), d_row(c["h_t"], c["h_m"], c["h_j"]), ft.Text("Verbrauchsdatum:", color="white"), d_row(c["v_t"], c["v_m"], c["v_j"]), c["inhalt"], c["verpackung"], c["temp"], ft.Divider(color="white24")])
+                            # HIER GEÄNDERT: "Teilprobe X" jetzt in size=18
+                            haupt_bereich.controls.extend([ft.Text(f"Teilprobe {i}", color="yellow", weight="bold", size=18), c["name"], c["ort"], ft.Text("Herstellungsdatum:", color="white"), d_row(c["h_t"], c["h_m"], c["h_j"]), ft.Text("Verbrauchsdatum:", color="white"), d_row(c["v_t"], c["v_m"], c["v_j"]), c["inhalt"], c["verpackung"], c["temp"], ft.Divider(color="white24")])
                     elif sub == "okz":
                         haupt_bereich.controls.extend([ft.Text("⚠️ Haken prüfen!", color="orange", weight="bold"), og_okz_cb, ft.Divider(color="white24")])
                         for i in range(1, 6):
