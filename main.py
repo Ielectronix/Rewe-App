@@ -170,7 +170,6 @@ def main(page: ft.Page):
                     ])))
             ansicht.controls.append(ft.Row([action_btn("➕ Neue Tour anlegen", lambda e: zeige_maske_ui(page, ansicht, None, zeige_dashboard, None, None), "#2196F3")], alignment=ft.MainAxisAlignment.CENTER))
             page.add(ft.SafeArea(ansicht))
-            page.update()
 
         def zeige_postausgang():
             page.clean()
@@ -193,28 +192,28 @@ def main(page: ft.Page):
                         if f.lower().endswith(".pdf"):
                             pdfs_gefunden = True
                             pfad = os.path.join(ordner, f)
+                            
                             ist_gesendet = pfad in gesendet_set
                             farbe = "#4CAF50" if ist_gesendet else "white"
                             text_gewicht = "bold" if ist_gesendet else "normal"
+                            text_groesse = 14 if ist_gesendet else 13
                             anzeige_text = f"✅ {f}" if ist_gesendet else f
                             
                             async def teilen_jetzt(e, p=pfad):
+                                markiere_als_gesendet(p)
+                                zeige_postausgang() 
                                 if share_obj: 
                                     await share_obj.share_files([ft.ShareFile.from_path(p)], text="REWE Bericht")
-                                    markiere_als_gesendet(p)
-                                    gesendet_set.add(p) # Sofort im UI aktivieren
-                                    zeige_postausgang() 
                                 else: print("Share geht auf dem PC nicht.")
 
                             def rm(e, p=pfad):
                                 if os.path.exists(p): os.remove(p)
                                 zeige_postausgang()
 
-                            ansicht.controls.append(ft.Container(bgcolor="#002200", padding=10, border_radius=15, content=ft.Row([ft.Text(anzeige_text, color=farbe, size=12, expand=True, weight=text_gewicht, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS), list_action_btn("📤 Senden", teilen_jetzt, "#2196F3"), small_btn("🗑️", rm, "#F44336")])))
+                            ansicht.controls.append(ft.Container(bgcolor="#002200", padding=10, border_radius=15, content=ft.Row([ft.Text(anzeige_text, color=farbe, size=text_groesse, expand=True, weight=text_gewicht, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS), list_action_btn("📤 Senden", teilen_jetzt, "#2196F3"), small_btn("🗑️", rm, "#F44336")])))
                 except: pass
             if not pdfs_gefunden: ansicht.controls.append(ft.Text("Keine Berichte zum Senden.", color="white54", text_align="center"))
             page.add(ft.SafeArea(ansicht))
-            page.update()
 
         def zeige_archiv():
             page.clean()
@@ -251,22 +250,21 @@ def main(page: ft.Page):
                             ist_gesendet = pfad in gesendet_set
                             farbe = "#4CAF50" if ist_gesendet else "white"
                             text_gewicht = "bold" if ist_gesendet else "normal"
+                            text_groesse = 14 if ist_gesendet else 13
                             anzeige_text = f"✅ {f}" if ist_gesendet else f
                             
                             async def teilen_archiv(e, p=pfad):
+                                markiere_als_gesendet(p)
+                                zeige_archiv()
                                 if share_obj: 
                                     await share_obj.share_files([ft.ShareFile.from_path(p)], text="REWE Bericht")
-                                    markiere_als_gesendet(p)
-                                    gesendet_set.add(p) # Sofort im UI aktivieren
-                                    zeige_archiv()
                                 else: print("Share geht auf dem PC nicht.")
 
-                            ansicht.controls.append(ft.Container(bgcolor="#002200", padding=10, border_radius=15, content=ft.Row([ft.Text(anzeige_text, color=farbe, size=12, expand=True, weight=text_gewicht, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS), list_action_btn("📤 Senden", teilen_archiv, "#2196F3")])))
+                            ansicht.controls.append(ft.Container(bgcolor="#002200", padding=10, border_radius=15, content=ft.Row([ft.Text(anzeige_text, color=farbe, size=text_groesse, expand=True, weight=text_gewicht, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS), list_action_btn("📤 Senden", teilen_archiv, "#2196F3")])))
                         ansicht.controls.append(ft.Divider(color="white24"))
                 except: pass
             if not pdfs_gefunden: ansicht.controls.append(ft.Text("Keine Berichte im Archiv.", color="white54", text_align="center"))
             page.add(ft.SafeArea(ansicht))
-            page.update()
 
         mitarbeiter = hole_alle_benutzer()
         if not mitarbeiter: zeige_registrierung()
