@@ -319,7 +319,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         og_okz_controls = {}
         for i in range(1, 6):
             idx = f"{i:02d}"
-            og_okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0011_status_{idx}", "R+D"), ["R+D", "R", "P", "-"]), "objekt": combo("Objekt", aktuelle_daten.get(f"0011_objekt_{idx}") or og_okz_def[i], og_okz_opts), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0011_ort_{idx}", "Produktionsbereich"), ["Kühlraum", "Produktionsbereich", "Theke"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0011_abklatsch_{idx}", og_okz_def[i]["a"])), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0011_tupfer_{idx}", og_okz_def[i]["t"]))}
+            og_okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0011_status_{idx}", "R+D"), ["R+D", "R", "P", "-"]), "objekt": combo("Objekt", aktuelle_daten.get(f"0011_objekt_{idx}") or og_okz_def[i]["o"], og_okz_opts), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0011_ort_{idx}", "Produktionsbereich"), ["Kühlraum", "Produktionsbereich", "Theke"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0011_abklatsch_{idx}", og_okz_def[i]["a"])), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0011_tupfer_{idx}", og_okz_def[i]["t"]))}
 
         # ==========================================
         # VORLAGEN LOGIK
@@ -699,7 +699,10 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             errors = []
             if not (nr_in.value or "").strip(): errors.append("- Stammdaten: Marktnummer fehlt")
             if not (adr_in.value or "").strip(): errors.append("- Stammdaten: Adresse fehlt")
+            
+            # --- HIER WURDE DIE PRÜFUNG HINZUGEFÜGT ---
             if not (auft_in.value or "").strip(): errors.append("- Stammdaten: Auftragsnummer fehlt")
+            
             if not (name_in.value or "").strip(): errors.append("- Stammdaten: Name Probenehmer fehlt")
 
             # --- TRINKWASSER CHECK ---
@@ -957,7 +960,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                         haupt_bereich.controls.extend([ft.Row([og_cb, og_override_cb], wrap=True), ft.Divider(color="white24")])
                         for i in range(1, 6):
                             c = og_controls[i]
-                            # HIER GEÄNDERT: "Teilprobe X" jetzt in size=18
                             haupt_bereich.controls.extend([ft.Text(f"Teilprobe {i}", color="yellow", weight="bold", size=18), c["name"], c["ort"], ft.Text("Herstellungsdatum:", color="white"), d_row(c["h_t"], c["h_m"], c["h_j"]), ft.Text("Verbrauchsdatum:", color="white"), d_row(c["v_t"], c["v_m"], c["v_j"]), c["inhalt"], c["verpackung"], c["temp"], ft.Divider(color="white24")])
                     elif sub == "okz":
                         haupt_bereich.controls.extend([ft.Text("⚠️ Haken prüfen!", color="orange", weight="bold"), og_okz_cb, ft.Divider(color="white24")])
