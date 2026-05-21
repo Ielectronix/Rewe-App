@@ -170,6 +170,7 @@ def main(page: ft.Page):
                     ])))
             ansicht.controls.append(ft.Row([action_btn("➕ Neue Tour anlegen", lambda e: zeige_maske_ui(page, ansicht, None, zeige_dashboard, None, None), "#2196F3")], alignment=ft.MainAxisAlignment.CENTER))
             page.add(ft.SafeArea(ansicht))
+            page.update()
 
         def zeige_postausgang():
             page.clean()
@@ -201,6 +202,7 @@ def main(page: ft.Page):
                                 if share_obj: 
                                     await share_obj.share_files([ft.ShareFile.from_path(p)], text="REWE Bericht")
                                     markiere_als_gesendet(p)
+                                    gesendet_set.add(p) # Sofort im UI aktivieren
                                     zeige_postausgang() 
                                 else: print("Share geht auf dem PC nicht.")
 
@@ -212,6 +214,7 @@ def main(page: ft.Page):
                 except: pass
             if not pdfs_gefunden: ansicht.controls.append(ft.Text("Keine Berichte zum Senden.", color="white54", text_align="center"))
             page.add(ft.SafeArea(ansicht))
+            page.update()
 
         def zeige_archiv():
             page.clean()
@@ -254,6 +257,7 @@ def main(page: ft.Page):
                                 if share_obj: 
                                     await share_obj.share_files([ft.ShareFile.from_path(p)], text="REWE Bericht")
                                     markiere_als_gesendet(p)
+                                    gesendet_set.add(p) # Sofort im UI aktivieren
                                     zeige_archiv()
                                 else: print("Share geht auf dem PC nicht.")
 
@@ -262,6 +266,7 @@ def main(page: ft.Page):
                 except: pass
             if not pdfs_gefunden: ansicht.controls.append(ft.Text("Keine Berichte im Archiv.", color="white54", text_align="center"))
             page.add(ft.SafeArea(ansicht))
+            page.update()
 
         mitarbeiter = hole_alle_benutzer()
         if not mitarbeiter: zeige_registrierung()
