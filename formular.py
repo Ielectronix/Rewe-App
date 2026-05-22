@@ -323,7 +323,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             og_okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0011_status_{idx}", "R+D"), ["R+D", "R", "P", "-"]), "objekt": combo("Objekt", aktuelle_daten.get(f"0011_objekt_{idx}") or og_okz_def[i]["o"], og_okz_opts), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0011_ort_{idx}", "Produktionsbereich"), ["Kühlraum", "Produktionsbereich", "Theke"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0011_abklatsch_{idx}", og_okz_def[i]["a"])), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0011_tupfer_{idx}", og_okz_def[i]["t"]))}
 
         # ==========================================
-        # VORLAGEN LOGIK (JETZT KOMPLETT DRIN!)
+        # VORLAGEN LOGIK 
         # ==========================================
         alle_vorlagen = lade_vorlagen_lokal()
         vorlagen_status = ft.Text("", weight="bold", size=14) 
@@ -640,42 +640,75 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             if not (auft_in.value or "").strip(): err("Stammdaten: Auftragsnummer fehlt", "stamm", None, auft_in)
             if not (name_in.value or "").strip(): err("Stammdaten: Probenehmer fehlt", "stamm", None, name_in)
 
+            # Hilfsfunktion für Datum-Prüfung (Tag+Monat Pflicht, Jahr völlig egal!)
             def check_datum_ohne_jahr(t_ctrl, m_ctrl, feld_name, tab, sub_tab, ctrl):
                 t = (t_ctrl.value or "").strip()
                 m = (m_ctrl.value or "").strip()
-                if (t or m) and not (t and m):
-                    err(f"{feld_name}: Tag oder Monat unvollständig", tab, sub_tab, ctrl)
+                if not (t and m):
+                    err(f"{feld_name} (Tag/Monat) fehlt", tab, sub_tab, ctrl)
 
-            tw_haken = tw_kalt_cb.value
-            if tw_haken:
+            # Trinkwasser
+            if tw_kalt_cb.value:
                 if not (tw_temp_in.value or "").strip(): err("Trinkwasser: Temperatur fehlt", "tw", None, tw_temp_in)
                 if not (tw_zeit_in.value or "").strip(): err("Trinkwasser: Uhrzeit fehlt", "tw", None, tw_zeit_in)
 
-            se_haken = se_kalt_cb.value
-            if se_haken:
+            # Scherbeneis
+            if se_kalt_cb.value:
                 if not (se_temp_in.value or "").strip(): err("Scherbeneis: Temperatur fehlt", "se", "eis", se_temp_in)
                 if not (se_zeit_in.value or "").strip(): err("Scherbeneis: Uhrzeit fehlt", "se", "eis", se_zeit_in)
 
-            def check_fleisch(haken, temp_in, charge_dd, mhd_t, mhd_m, lief_in, name, sub):
+            # Fleisch-Prüflogik (Einfach)
+            def check_einfach_fleisch(haken, temp, charge, lief, herst_t, herst_m, mhd_t, mhd_m, name, sub):
                 if haken:
-                    if not (temp_in.value or "").strip(): err(f"{name}: Temperatur fehlt", "hfm", sub, temp_in)
-                    if not (charge_dd.value or "").strip(): err(f"{name}: Charge fehlt", "hfm", sub, charge_dd)
-                    if not (lief_in.value or "").strip(): err(f"{name}: Lieferant fehlt", "hfm", sub, lief_in)
+                    if not (temp.value or "").strip(): err(f"{name}: Temperatur fehlt", "hfm", sub, temp)
+                    if not (charge.value or "").strip(): err(f"{name}: Charge fehlt", "hfm", sub, charge)
+                    if not (lief.value or "").strip(): err(f"{name}: Lieferant fehlt", "hfm", sub, lief)
+                    check_datum_ohne_jahr(herst_t, herst_m, f"{name}: Herstelldatum", "hfm", sub, herst_t)
                     check_datum_ohne_jahr(mhd_t, mhd_m, f"{name}: MHD", "hfm", sub, mhd_t)
 
-            check_fleisch(hfm_hack_cb.value, hfm_hack_temp_in, hfm_hack_charge_schwein_dd, hfm_hack_mhd_s_tag_dd, hfm_hack_mhd_s_mon_dd, hfm_hack_lief_schwein_in, "Hackfleisch", "hack")
-            check_fleisch(hfm_mett_cb.value, hfm_mett_temp_in, hfm_mett_charge_dd, hfm_mett_mhd_tag_dd, hfm_mett_mhd_mon_dd, hfm_mett_lief_in, "Mett", "mett")
-            check_fleisch(hfm_fzs_cb.value, hfm_fzs_temp_in, hfm_fzs_charge_dd, hfm_fzs_mhd_tag_dd, hfm_fzs_mhd_mon_dd, hfm_fzs_lief_in, "FZ Schwein", "fzs")
-            check_fleisch(hfm_fzg_cb.value, hfm_fzg_temp_in, hfm_fzg_charge_dd, hfm_fzg_mhd_tag_dd, hfm_fzg_mhd_mon_dd, hfm_fzg_lief_in, "FZ Geflügel", "fzg")
-            check_fleisch(hfm_bio_cb.value, hfm_bio_temp_in, hfm_bio_charge_schwein_dd, hfm_bio_mhd_s_tag_dd, hfm_bio_mhd_s_mon_dd, hfm_bio_lief_schwein_in, "Bio Hack", "bio")
+            # HACKFLEISCH (Doppelt)
+            if hfm_hack_cb.value:
+                if not (hfm_hack_temp_in.value or "").strip(): err("Hackfleisch: Temperatur fehlt", "hfm", "hack", hfm_hack_temp_in)
+                if not ((hfm_hack_charge_schwein_dd.value or "").strip() or (hfm_hack_charge_rind_dd.value or "").strip()): err("Hackfleisch: Charge fehlt", "hfm", "hack", hfm_hack_charge_schwein_dd)
+                if not ((hfm_hack_lief_schwein_in.value or "").strip() or (hfm_hack_lief_rind_in.value or "").strip()): err("Hackfleisch: Lieferant fehlt", "hfm", "hack", hfm_hack_lief_schwein_in)
+                check_datum_ohne_jahr(hfm_hack_herst_tag_dd, hfm_hack_herst_mon_dd, "Hackfleisch: Herstelldatum", "hfm", "hack", hfm_hack_herst_tag_dd)
+                
+                s_ok = (hfm_hack_mhd_s_tag_dd.value or "").strip() and (hfm_hack_mhd_s_mon_dd.value or "").strip()
+                r_ok = (hfm_hack_mhd_r_tag_dd.value or "").strip() and (hfm_hack_mhd_r_mon_dd.value or "").strip()
+                if not (s_ok or r_ok):
+                    err("Hackfleisch: MHD (Tag/Monat) fehlt", "hfm", "hack", hfm_hack_mhd_s_tag_dd)
 
+            # METT, FZS, FZG
+            check_einfach_fleisch(hfm_mett_cb.value, hfm_mett_temp_in, hfm_mett_charge_dd, hfm_mett_lief_in, hfm_mett_herst_tag_dd, hfm_mett_herst_mon_dd, hfm_mett_mhd_tag_dd, hfm_mett_mhd_mon_dd, "Mett", "mett")
+            check_einfach_fleisch(hfm_fzs_cb.value, hfm_fzs_temp_in, hfm_fzs_charge_dd, hfm_fzs_lief_in, hfm_fzs_herst_tag_dd, hfm_fzs_herst_mon_dd, hfm_fzs_mhd_tag_dd, hfm_fzs_mhd_mon_dd, "FZ Schwein", "fzs")
+            check_einfach_fleisch(hfm_fzg_cb.value, hfm_fzg_temp_in, hfm_fzg_charge_dd, hfm_fzg_lief_in, hfm_fzg_herst_tag_dd, hfm_fzg_herst_mon_dd, hfm_fzg_mhd_tag_dd, hfm_fzg_mhd_mon_dd, "FZ Geflügel", "fzg")
+
+            # BIO HACK (Doppelt)
+            if hfm_bio_cb.value:
+                if not (hfm_bio_temp_in.value or "").strip(): err("Bio Hack: Temperatur fehlt", "hfm", "bio", hfm_bio_temp_in)
+                if not ((hfm_bio_charge_schwein_dd.value or "").strip() or (hfm_bio_charge_rind_dd.value or "").strip()): err("Bio Hack: Charge fehlt", "hfm", "bio", hfm_bio_charge_schwein_dd)
+                if not ((hfm_bio_lief_schwein_in.value or "").strip() or (hfm_bio_lief_rind_in.value or "").strip()): err("Bio Hack: Lieferant fehlt", "hfm", "bio", hfm_bio_lief_schwein_in)
+                check_datum_ohne_jahr(hfm_bio_herst_tag_dd, hfm_bio_herst_mon_dd, "Bio Hack: Herstelldatum", "hfm", "bio", hfm_bio_herst_tag_dd)
+                
+                s_ok = (hfm_bio_mhd_s_tag_dd.value or "").strip() and (hfm_bio_mhd_s_mon_dd.value or "").strip()
+                r_ok = (hfm_bio_mhd_r_tag_dd.value or "").strip() and (hfm_bio_mhd_r_mon_dd.value or "").strip()
+                if not (s_ok or r_ok):
+                    err("Bio Hack: MHD (Tag/Monat) fehlt", "hfm", "bio", hfm_bio_mhd_s_tag_dd)
+
+            # OBST/GEMÜSE
             og_haken = og_cb.value
+            og_has_any_data = False
             for i in range(1, 6):
                 c = og_controls[i]
                 if (c["name"].value or "").strip(): 
+                    og_has_any_data = True
                     if og_haken:
                         if not (c["temp"].value or "").strip(): err(f"Obst/Gemüse (Probe {i}): Temperatur fehlt", "og", "teil", c["temp"])
                         check_datum_ohne_jahr(c["h_t"], c["h_m"], f"Obst/Gemüse (Probe {i}): Herstelldatum", "og", "teil", c["h_t"])
+            
+            if og_haken and not og_has_any_data:
+                err("Obst/Gemüse: Haken gesetzt, aber keine Proben eingetragen!", "og", "teil", og_cb)
+                
             return errors
 
         # ==========================================
