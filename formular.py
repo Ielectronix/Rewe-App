@@ -265,7 +265,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
         hfm_bio_cb = cb("Bio-Hackfleisch", aktuelle_daten.get("hfm_bio_cb", False), bold=True)
         hfm_bio_override_cb = cb("Trotzdem speichern", aktuelle_daten.get("hfm_bio_override", False))
-        hfm_bio_entnahmeort_dd = combo("Denahmeort", aktuelle_daten.get("hfm_bio_entnahmeort", "Produktionsraum"), ort_opts)
+        hfm_bio_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("hfm_bio_entnahmeort", "Produktionsraum"), ort_opts)
         ht, hm, hj = get_herst("hfm_bio_herstelldatum")
         hfm_bio_herst_tag_dd, hfm_bio_herst_mon_dd, hfm_bio_herst_jahr_dd = combo("Tag", ht, tage_opts), combo("Mon", hm, mon_opts), combo("Jahr", hj, jahr_opts)
         t, m, j = parse_datum(aktuelle_daten.get("hfm_bio_mhd_schwein", ""))
@@ -323,7 +323,203 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             og_okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0011_status_{idx}", "R+D"), ["R+D", "R", "P", "-"]), "objekt": combo("Objekt", aktuelle_daten.get(f"0011_objekt_{idx}") or og_okz_def[i]["o"], og_okz_opts), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0011_ort_{idx}", "Produktionsbereich"), ["Kühlraum", "Produktionsbereich", "Theke"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0011_abklatsch_{idx}", og_okz_def[i]["a"])), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0011_tupfer_{idx}", og_okz_def[i]["t"]))}
 
         # ==========================================
-        # DIE GIGANTISCHE DATEN-SAMMLUNG 
+        # VORLAGEN LOGIK (JETZT KOMPLETT DRIN!)
+        # ==========================================
+        alle_vorlagen = lade_vorlagen_lokal()
+        vorlagen_status = ft.Text("", weight="bold", size=14) 
+        
+        vl_dd = ft.Dropdown(
+            options=[ft.dropdown.Option(k) for k in alle_vorlagen.keys()], 
+            hint_text="Vorlage wählen...", dense=True, content_padding=15, 
+            color="yellow", text_style=ft.TextStyle(color="yellow", size=14), border_color="white"
+        )
+        vl_name_in = tf("Als neue Vorlage speichern", "")
+
+        def lade_v(e):
+            if not vl_dd.value: return
+            v = alle_vorlagen.get(vl_dd.value, {})
+            
+            def setze_wert(ctrl, key, default=""):
+                if ctrl is None: return
+                val = v.get(key, default)
+                if isinstance(ctrl, ft.Checkbox): ctrl.value = bool(val)
+                else: ctrl.value = str(val) if val is not None else ""
+
+            tag_dd.value, mon_dd.value, jahr_dd.value = htoday, mtoday, jtoday
+            setze_wert(adr_in, "adresse")
+            setze_wert(nr_in, "marktnummer")
+            setze_wert(auft_in, "auftragsnummer")
+            setze_wert(name_in, "mitarbeiter_name")
+            setze_wert(ag_dd, "auftraggeber")
+            setze_wert(typ_dd, "typ_probenahme")
+            setze_wert(bem_in, "bemerkung")
+
+            setze_wert(tw_kalt_cb, "tw_kalt", False)
+            setze_wert(tw_override_cb, "tw_override", False)
+            setze_wert(tw_zeit_in, "tw_zeit")
+            setze_wert(tw_temp_in, "tw_temp")
+            setze_wert(tw_tempkonst_in, "tw_tempkonst")
+            setze_wert(tw_desinf_dd, "tw_desinf")
+            setze_wert(tw_zapf_dd, "tw_zapf")
+            setze_wert(cb_pn, "tw_cb_pn", False)
+            setze_wert(cb_zwei, "tw_cb_zwei", False)
+            setze_wert(cb_sensor, "tw_cb_sensor", False)
+            setze_wert(cb_knie, "tw_cb_knie", False)
+            setze_wert(cb_ein, "tw_cb_ein", False)
+            setze_wert(cb_ein_g, "tw_cb_ein_g", False)
+            setze_wert(cb_eck, "tw_cb_eck", False)
+            setze_wert(tw_zapf_sonst_dd, "tw_zapf_sonst")
+            setze_wert(tw_inaktiv_dd, "tw_inaktiv")
+            setze_wert(tw_kurz1_dd, "tw_kurz1")
+            setze_wert(tw_kurz2_dd, "tw_kurz2")
+            setze_wert(tw_kurz3_dd, "tw_kurz3")
+            setze_wert(tw_kurz4_dd, "tw_kurz4")
+            setze_wert(cb_auff_ja, "tw_auff_ja", False)
+            setze_wert(cb_auff_nein, "tw_auff_nein", False)
+            setze_wert(cb_auff_perl, "tw_auff_perlator", False)
+            setze_wert(cb_auff_verkalk, "tw_auff_kalk", False)
+            setze_wert(cb_auff_verbrueh, "tw_auff_verbrueh", False)
+            setze_wert(cb_auff_durchlauf, "tw_auff_durchlauf", False)
+            setze_wert(cb_auff_eck_zu, "tw_auff_eckventil", False)
+            setze_wert(cb_auff_unterbau, "tw_auff_unterbau", False)
+            setze_wert(cb_auff_nichtmoeglich, "tw_auff_unmoeglich", False)
+            setze_wert(cb_auff_dusche, "tw_auff_dusche", False)
+            setze_wert(cb_auff_handbrause, "tw_auff_handbrause", False)
+            setze_wert(cb_auff_sonst, "tw_auff_sonstiges", False)
+            setze_wert(tw_auff_sonstiges_in, "tw_auff_sonst_text")
+            setze_wert(tw_zweck_dd, "tw_zweck")
+            setze_wert(tw_inhalt_in, "tw_inhalt")
+            setze_wert(tw_verpackung_dd, "tw_verpackung")
+            setze_wert(tw_entnahmeort_dd, "tw_entnahmeort")
+            setze_wert(tw_bemerkung_dd, "tw_bemerkung_2")
+
+            setze_wert(se_kalt_cb, "se_kalt", False)
+            setze_wert(se_override_cb, "se_override", False)
+            setze_wert(se_zeit_in, "se_zeit")
+            setze_wert(se_zapf_dd, "se_zapf")
+            setze_wert(se_cb_eiswanne, "se_cb_eiswanne", False)
+            setze_wert(se_cb_fallprobe, "se_cb_fallprobe", False)
+            setze_wert(se_tech_sonst_in, "se_tech_sonst")
+            setze_wert(se_desinf_dd, "se_desinf")
+            setze_wert(se_cb_ozon, "se_cb_ozon", False)
+            setze_wert(se_auff_sonst_in, "se_auff_sonst")
+            setze_wert(se_inhalt_in, "se_inhalt")
+            setze_wert(se_verpackung_dd, "se_verpackung")
+            setze_wert(se_entnahmeort_dd, "se_entnahmeort")
+            setze_wert(se_temp_in, "se_temp")
+            setze_wert(se_bemerkung_dd, "se_bemerkung")
+            setze_wert(se_okz_cb, "se_abklatsch_cb", False)
+            setze_wert(se_okz_bemerkung_dd, "se_abklatsch_bemerkung")
+            for idx, c in se_okz_controls.items():
+                setze_wert(c["status"], f"0003_status_{idx}")
+                setze_wert(c["objekt"], f"0003_objekt_{idx}")
+                setze_wert(c["ort"], f"0003_ort_{idx}")
+                setze_wert(c["abklatsch"], f"0003_abklatsch_{idx}", False)
+                setze_wert(c["tupfer"], f"0003_tupfer_{idx}", False)
+
+            # Fleisch laden
+            for prefix in ["hfm_hack", "hfm_mett", "hfm_fzs", "hfm_fzg", "hfm_bio"]:
+                setze_wert(getattr(locals(), f"{prefix}_cb"), f"{prefix}_cb", False)
+                setze_wert(getattr(locals(), f"{prefix}_override_cb"), f"{prefix}_override", False)
+                setze_wert(getattr(locals(), f"{prefix}_entnahmeort_dd"), f"{prefix}_entnahmeort")
+                getattr(locals(), f"{prefix}_herst_tag_dd").value = ""
+                getattr(locals(), f"{prefix}_herst_mon_dd").value = ""
+                getattr(locals(), f"{prefix}_herst_jahr_dd").value = jtoday
+                if hasattr(locals(), f"{prefix}_produkt_in"): setze_wert(getattr(locals(), f"{prefix}_produkt_in"), f"{prefix}_produkt")
+                if hasattr(locals(), f"{prefix}_marinade_in"): setze_wert(getattr(locals(), f"{prefix}_marinade_in"), f"{prefix}_marinade")
+                setze_wert(getattr(locals(), f"{prefix}_inhalt_in"), f"{prefix}_inhalt")
+                setze_wert(getattr(locals(), f"{prefix}_verpackung_dd"), f"{prefix}_verpackung")
+                if hasattr(locals(), f"{prefix}_lief_in"): setze_wert(getattr(locals(), f"{prefix}_lief_in"), f"{prefix}_lief")
+                if hasattr(locals(), f"{prefix}_lief_schwein_in"): setze_wert(getattr(locals(), f"{prefix}_lief_schwein_in"), f"{prefix}_lief_schwein")
+                if hasattr(locals(), f"{prefix}_lief_rind_in"): setze_wert(getattr(locals(), f"{prefix}_lief_rind_in"), f"{prefix}_lief_rind")
+                
+                if hasattr(locals(), f"{prefix}_mhd_tag_dd"):
+                    getattr(locals(), f"{prefix}_mhd_tag_dd").value = ""
+                    getattr(locals(), f"{prefix}_mhd_mon_dd").value = ""
+                    getattr(locals(), f"{prefix}_mhd_jahr_dd").value = ""
+                if hasattr(locals(), f"{prefix}_mhd_s_tag_dd"):
+                    getattr(locals(), f"{prefix}_mhd_s_tag_dd").value = ""
+                    getattr(locals(), f"{prefix}_mhd_s_mon_dd").value = ""
+                    getattr(locals(), f"{prefix}_mhd_s_jahr_dd").value = ""
+                    getattr(locals(), f"{prefix}_mhd_r_tag_dd").value = ""
+                    getattr(locals(), f"{prefix}_mhd_r_mon_dd").value = ""
+                    getattr(locals(), f"{prefix}_mhd_r_jahr_dd").value = ""
+                if hasattr(locals(), f"{prefix}_charge_dd"): setze_wert(getattr(locals(), f"{prefix}_charge_dd"), f"{prefix}_charge")
+                if hasattr(locals(), f"{prefix}_charge_schwein_dd"): setze_wert(getattr(locals(), f"{prefix}_charge_schwein_dd"), f"{prefix}_charge_schwein")
+                if hasattr(locals(), f"{prefix}_charge_rind_dd"): setze_wert(getattr(locals(), f"{prefix}_charge_rind_dd"), f"{prefix}_charge_rind")
+                setze_wert(getattr(locals(), f"{prefix}_temp_in"), f"{prefix}_temp")
+                setze_wert(getattr(locals(), f"{prefix}_bemerkung_dd"), f"{prefix}_bemerkung")
+
+            setze_wert(hfm_okz_cb, "hfm_abklatsch_cb", False)
+            setze_wert(hfm_okz_bemerkung_dd, "hfm_abklatsch_bemerkung")
+            for idx, c in okz_controls.items():
+                c["status"].value = "R+D"
+                setze_wert(c["objekt"], f"0010_objekt_{idx}")
+                c["ort"].value = "Kühlraum"
+                setze_wert(c["abklatsch"], f"0010_abklatsch_{idx}", False)
+                setze_wert(c["tupfer"], f"0010_tupfer_{idx}", False)
+
+            setze_wert(og_cb, "og_cb", False)
+            setze_wert(og_override_cb, "og_override", False)
+            for i in range(1, 6):
+                idx = f"{i:02d}"; c = og_controls[i]
+                setze_wert(c["name"], f"og_name_{idx}")
+                c["ort"].value = "Produktionsraum"
+                setze_wert(c["inhalt"], f"og_inhalt_{idx}")
+                c["verpackung"].value = "steriler Probenbecher"
+                setze_wert(c["temp"], f"og_temp_{idx}")
+                c["h_t"].value, c["h_m"].value, c["h_j"].value = "", "", jtoday
+                c["v_t"].value, c["v_m"].value, c["v_j"].value = "", "", ""
+
+            setze_wert(og_okz_cb, "og_abklatsch_cb", False)
+            setze_wert(og_okz_bemerkung_dd, "og_abklatsch_bemerkung_1")
+            setze_wert(og_okz_anmerkung_in, "og_abklatsch_bemerkung_2")
+            for idx, c in og_okz_controls.items():
+                c["status"].value = "R+D"
+                setze_wert(c["objekt"], f"0011_objekt_{idx}")
+                c["ort"].value = "Produktionsbereich"
+                setze_wert(c["abklatsch"], f"0011_abklatsch_{idx}", False)
+                setze_wert(c["tupfer"], f"0011_tupfer_{idx}", False)
+
+            vorlagen_status.value = f"✅ '{vl_dd.value}' geladen!"
+            vorlagen_status.color = "green"
+            page.update()
+
+        def del_v(e):
+            if vl_dd.value in alle_vorlagen:
+                del alle_vorlagen[vl_dd.value]
+                speichere_vorlagen_lokal(alle_vorlagen)
+                vl_dd.options = [ft.dropdown.Option(k) for k in alle_vorlagen.keys()]
+                vorlagen_status.value = f"🗑️ Gelöscht!"
+                vorlagen_status.color = "red"
+                vl_dd.value = None
+                page.update()
+
+        def save_v(e):
+            if not (vl_name_in.value or "").strip(): return
+            alle_vorlagen[vl_name_in.value] = hole_aktuelle_daten()
+            speichere_vorlagen_lokal(alle_vorlagen)
+            vl_dd.options = [ft.dropdown.Option(k) for k in alle_vorlagen.keys()]
+            vl_dd.update() 
+            vorlagen_status.value = f"✅ Vorlage gespeichert!"
+            vorlagen_status.color = "orange"
+            vl_name_in.value = ""
+            page.update()
+
+        vorlagen_expansion = ft.ExpansionTile(
+            title=ft.Text("📋 Vorlage", weight="bold", color="white", size=18),
+            collapsed_text_color="white", text_color="#4CAF50",
+            controls=[
+                ft.Container(bgcolor="#002b00", padding=15, border_radius=10, content=ft.Column([
+                    vorlagen_status,
+                    ft.Row([ft.Container(content=vl_dd, expand=True), emoji_btn("📥", lade_v, "#2196F3"), emoji_btn("🗑️", del_v, "#F44336")]),
+                    ft.Row([ft.Container(content=vl_name_in, expand=True), emoji_btn("💾", save_v, "#FF9800")])
+                ]))
+            ]
+        )
+
+        # ==========================================
+        # DATEN SAMMELN
         # ==========================================
         def hole_aktuelle_daten():
             def get_val(ctrl, default_val):
@@ -441,29 +637,25 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
             if not (nr_in.value or "").strip(): err("Stammdaten: Marktnummer fehlt", "stamm", None, nr_in)
             if not (adr_in.value or "").strip(): err("Stammdaten: Adresse fehlt", "stamm", None, adr_in)
-            if not (auft_in.value or "").strip(): err("Stammdaten: Auftragsnummer (Etikettenummer) fehlt", "stamm", None, auft_in)
-            if not (name_in.value or "").strip(): err("Stammdaten: Name Probenehmer fehlt", "stamm", None, name_in)
+            if not (auft_in.value or "").strip(): err("Stammdaten: Auftragsnummer fehlt", "stamm", None, auft_in)
+            if not (name_in.value or "").strip(): err("Stammdaten: Probenehmer fehlt", "stamm", None, name_in)
 
-            # Hilfsfunktion für Datum-Prüfung (Tag+Monat Pflicht, Jahr völlig egal!)
             def check_datum_ohne_jahr(t_ctrl, m_ctrl, feld_name, tab, sub_tab, ctrl):
                 t = (t_ctrl.value or "").strip()
                 m = (m_ctrl.value or "").strip()
                 if (t or m) and not (t and m):
                     err(f"{feld_name}: Tag oder Monat unvollständig", tab, sub_tab, ctrl)
 
-            # Trinkwasser
             tw_haken = tw_kalt_cb.value
             if tw_haken:
                 if not (tw_temp_in.value or "").strip(): err("Trinkwasser: Temperatur fehlt", "tw", None, tw_temp_in)
                 if not (tw_zeit_in.value or "").strip(): err("Trinkwasser: Uhrzeit fehlt", "tw", None, tw_zeit_in)
 
-            # Scherbeneis
             se_haken = se_kalt_cb.value
             if se_haken:
                 if not (se_temp_in.value or "").strip(): err("Scherbeneis: Temperatur fehlt", "se", "eis", se_temp_in)
                 if not (se_zeit_in.value or "").strip(): err("Scherbeneis: Uhrzeit fehlt", "se", "eis", se_zeit_in)
 
-            # Fleisch-Prüflogik
             def check_fleisch(haken, temp_in, charge_dd, mhd_t, mhd_m, lief_in, name, sub):
                 if haken:
                     if not (temp_in.value or "").strip(): err(f"{name}: Temperatur fehlt", "hfm", sub, temp_in)
@@ -477,7 +669,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             check_fleisch(hfm_fzg_cb.value, hfm_fzg_temp_in, hfm_fzg_charge_dd, hfm_fzg_mhd_tag_dd, hfm_fzg_mhd_mon_dd, hfm_fzg_lief_in, "FZ Geflügel", "fzg")
             check_fleisch(hfm_bio_cb.value, hfm_bio_temp_in, hfm_bio_charge_schwein_dd, hfm_bio_mhd_s_tag_dd, hfm_bio_mhd_s_mon_dd, hfm_bio_lief_schwein_in, "Bio Hack", "bio")
 
-            # Obst/Gemüse
             og_haken = og_cb.value
             for i in range(1, 6):
                 c = og_controls[i]
@@ -551,7 +742,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                     hfm_fzg_produkt_in.value, hfm_fzg_marinade_in.value, hfm_fzg_inhalt_in.value = "", "", ""
                     hfm_fzg_herst_tag_dd.value, hfm_fzg_herst_mon_dd.value, hfm_fzg_herst_jahr_dd.value = "", "", jtoday
                     hfm_fzg_verpackung_dd.value = "steriler Probenbeutel"
-                    hfm_fzg_lief_in.value, hfm_fzg_mhd_tag_dd.value, hfm_fzg_mhd_mon_dd.value, hfm_fzg_mhd_jahr_dd = "", "", "", ""
+                    hfm_fzg_lief_in.value, hfm_fzg_mhd_tag_dd.value, hfm_fzg_mhd_mon_dd.value, hfm_fzg_mhd_jahr_dd.value = "", "", "", ""
                     hfm_fzg_charge_dd.value, hfm_fzg_temp_in.value, hfm_fzg_bemerkung_dd.value = "", "", ""
                 elif sub == "bio":
                     hfm_bio_cb.value, hfm_bio_override_cb.value = False, False
@@ -574,8 +765,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                         c = og_controls[i]
                         c["name"].value, c["inhalt"].value, c["temp"].value = "", "", ""
                         c["ort"].value, c["verpackung"].value = "Produktionsraum", "steriler Probenbecher"
-                        c["h_t"].value, c["h_m"].value = "", ""
-                        c["h_j"].value = jtoday
+                        c["h_t"].value, c["h_m"].value, c["h_j"].value = "", "", jtoday
                         c["v_t"].value, c["v_m"].value, c["v_j"].value = "", "", ""
                 elif sub == "okz":
                     og_okz_cb.value, og_okz_bemerkung_dd.value, og_okz_anmerkung_in.value = False, "", ""
@@ -588,159 +778,24 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             status_text.color = "orange"
             page.update()
 
-        # ==========================================
-        # SPEICHERN & GENERIEREN ACTIONS
-        # ==========================================
-        def lade_v(e):
-            if not vl_dd.value: return
-            v = alle_vorlagen.get(vl_dd.value, {})
-            def setze_wert(ctrl, key, default=""):
-                if ctrl is None: return
-                val = v.get(key, default)
-                if isinstance(ctrl, ft.Checkbox): ctrl.value = bool(val)
-                else: ctrl.value = str(val) if val is not None else ""
-
-            tag_dd.value, mon_dd.value, jahr_dd.value = htoday, mtoday, jtoday
-            setze_wert(adr_in, "adresse")
-            setze_wert(nr_in, "marktnummer")
-            setze_wert(auft_in, "auftragsnummer")
-            setze_wert(name_in, "mitarbeiter_name")
-            setze_wert(ag_dd, "auftraggeber")
-            setze_wert(typ_dd, "typ_probenahme")
-            setze_wert(bem_in, "bemerkung")
-
-            setze_wert(tw_kalt_cb, "tw_kalt", False)
-            setze_wert(tw_override_cb, "tw_override", False)
-            setze_wert(tw_zeit_in, "tw_zeit")
-            setze_wert(tw_temp_in, "tw_temp")
-            setze_wert(tw_tempkonst_in, "tw_tempkonst")
-            setze_wert(tw_desinf_dd, "tw_desinf")
-            setze_wert(tw_zapf_dd, "tw_zapf")
-            setze_wert(cb_pn, "tw_cb_pn", False)
-            setze_wert(cb_zwei, "tw_cb_zwei", False)
-            setze_wert(cb_sensor, "tw_cb_sensor", False)
-            setze_wert(cb_knie, "tw_cb_knie", False)
-            setze_wert(cb_ein, "tw_cb_ein", False)
-            setze_wert(cb_ein_g, "tw_cb_ein_g", False)
-            setze_wert(cb_eck, "tw_cb_eck", False)
-            setze_wert(tw_zapf_sonst_dd, "tw_zapf_sonst")
-            setze_wert(tw_inaktiv_dd, "tw_inaktiv")
-            setze_wert(tw_kurz1_dd, "tw_kurz1")
-            setze_wert(tw_kurz2_dd, "tw_kurz2")
-            setze_wert(tw_kurz3_dd, "tw_kurz3")
-            setze_wert(tw_kurz4_dd, "tw_kurz4")
-            setze_wert(cb_auff_ja, "tw_auff_ja", False)
-            setze_wert(cb_auff_nein, "tw_auff_nein", False)
-            setze_wert(cb_auff_perl, "tw_auff_perlator", False)
-            setze_wert(cb_auff_verkalk, "tw_auff_kalk", False)
-            setze_wert(cb_auff_verbrueh, "tw_auff_verbrueh", False)
-            setze_wert(cb_auff_durchlauf, "tw_auff_durchlauf", False)
-            setze_wert(cb_auff_eck_zu, "tw_auff_eckventil", False)
-            setze_wert(cb_auff_unterbau, "tw_auff_unterbau", False)
-            setze_wert(cb_auff_nichtmoeglich, "tw_auff_unmoeglich", False)
-            setze_wert(cb_auff_dusche, "tw_auff_dusche", False)
-            setze_wert(cb_auff_handbrause, "tw_auff_handbrause", False)
-            setze_wert(cb_auff_sonst, "tw_auff_sonstiges", False)
-            setze_wert(tw_auff_sonstiges_in, "tw_auff_sonst_text")
-            setze_wert(tw_zweck_dd, "tw_zweck")
-            setze_wert(tw_inhalt_in, "tw_inhalt")
-            setze_wert(tw_verpackung_dd, "tw_verpackung")
-            setze_wert(tw_entnahmeort_dd, "tw_entnahmeort")
-            setze_wert(tw_bemerkung_dd, "tw_bemerkung_2")
-
-            setze_wert(se_kalt_cb, "se_kalt", False)
-            setze_wert(se_override_cb, "se_override", False)
-            setze_wert(se_zeit_in, "se_zeit")
-            setze_wert(se_zapf_dd, "se_zapf")
-            setze_wert(se_cb_eiswanne, "se_cb_eiswanne", False)
-            setze_wert(se_cb_fallprobe, "se_cb_fallprobe", False)
-            setze_wert(se_tech_sonst_in, "se_tech_sonst")
-            setze_wert(se_desinf_dd, "se_desinf")
-            setze_wert(se_cb_ozon, "se_cb_ozon", False)
-            setze_wert(se_auff_sonst_in, "se_auff_sonst")
-            setze_wert(se_inhalt_in, "se_inhalt")
-            setze_wert(se_verpackung_dd, "se_verpackung")
-            setze_wert(se_entnahmeort_dd, "se_entnahmeort")
-            setze_wert(se_temp_in, "se_temp")
-            setze_wert(se_bemerkung_dd, "se_bemerkung")
-            setze_wert(se_okz_cb, "se_abklatsch_cb", False)
-            setze_wert(se_okz_bemerkung_dd, "se_abklatsch_bemerkung")
-            for idx, c in se_okz_controls.items():
-                setze_wert(c["status"], f"0003_status_{idx}")
-                setze_wert(c["objekt"], f"0003_objekt_{idx}")
-                setze_wert(c["ort"], f"0003_ort_{idx}")
-                setze_wert(c["abklatsch"], f"0003_abklatsch_{idx}", False)
-                setze_wert(c["tupfer"], f"0003_tupfer_{idx}", False)
-
-            # Herstellungsjahre voreinstellen, MHDs komplett leeren!
-            for prefix in ["hfm_hack", "hfm_mett", "hfm_fzs", "hfm_fzg", "hfm_bio"]:
-                setze_wert(getattr(locals(), f"{prefix}_cb"), f"{prefix}_cb", False)
-                setze_wert(getattr(locals(), f"{prefix}_override_cb"), f"{prefix}_override", False)
-                setze_wert(getattr(locals(), f"{prefix}_entnahmeort_dd"), f"{prefix}_entnahmeort")
-                getattr(locals(), f"{prefix}_herst_tag_dd").value = ""
-                getattr(locals(), f"{prefix}_herst_mon_dd").value = ""
-                getattr(locals(), f"{prefix}_herst_jahr_dd").value = jtoday
-                if hasattr(locals(), f"{prefix}_produkt_in"): setze_wert(getattr(locals(), f"{prefix}_produkt_in"), f"{prefix}_produkt")
-                if hasattr(locals(), f"{prefix}_marinade_in"): setze_wert(getattr(locals(), f"{prefix}_marinade_in"), f"{prefix}_marinade")
-                setze_wert(getattr(locals(), f"{prefix}_inhalt_in"), f"{prefix}_inhalt")
-                setze_wert(getattr(locals(), f"{prefix}_verpackung_dd"), f"{prefix}_verpackung")
-                if hasattr(locals(), f"{prefix}_lief_in"): setze_wert(getattr(locals(), f"{prefix}_lief_in"), f"{prefix}_lief")
-                if hasattr(locals(), f"{prefix}_lief_schwein_in"): setze_wert(getattr(locals(), f"{prefix}_lief_schwein_in"), f"{prefix}_lief_schwein")
-                if hasattr(locals(), f"{prefix}_lief_rind_in"): setze_wert(getattr(locals(), f"{prefix}_lief_rind_in"), f"{prefix}_lief_rind")
-                
-                # MHD komplett blank
-                if hasattr(locals(), f"{prefix}_mhd_tag_dd"):
-                    getattr(locals(), f"{prefix}_mhd_tag_dd").value = ""
-                    getattr(locals(), f"{prefix}_mhd_mon_dd").value = ""
-                    getattr(locals(), f"{prefix}_mhd_jahr_dd").value = ""
-                if hasattr(locals(), f"{prefix}_mhd_s_tag_dd"):
-                    getattr(locals(), f"{prefix}_mhd_s_tag_dd").value = ""
-                    getattr(locals(), f"{prefix}_mhd_s_mon_dd").value = ""
-                    getattr(locals(), f"{prefix}_mhd_s_jahr_dd").value = ""
-                    getattr(locals(), f"{prefix}_mhd_r_tag_dd").value = ""
-                    getattr(locals(), f"{prefix}_mhd_r_mon_dd").value = ""
-                    getattr(locals(), f"{prefix}_mhd_r_jahr_dd").value = ""
-                if hasattr(locals(), f"{prefix}_charge_dd"): setze_wert(getattr(locals(), f"{prefix}_charge_dd"), f"{prefix}_charge")
-                if hasattr(locals(), f"{prefix}_charge_schwein_dd"): setze_wert(getattr(locals(), f"{prefix}_charge_schwein_dd"), f"{prefix}_charge_schwein")
-                if hasattr(locals(), f"{prefix}_charge_rind_dd"): setze_wert(getattr(locals(), f"{prefix}_charge_rind_dd"), f"{prefix}_charge_rind")
-                setze_wert(getattr(locals(), f"{prefix}_temp_in"), f"{prefix}_temp")
-                setze_wert(getattr(locals(), f"{prefix}_bemerkung_dd"), f"{prefix}_bemerkung")
-
-            setze_wert(hfm_okz_cb, "hfm_abklatsch_cb", False)
-            setze_wert(hfm_okz_bemerkung_dd, "hfm_abklatsch_bemerkung")
-            for idx, c in okz_controls.items():
-                c["status"].value = "R+D"
-                setze_wert(c["objekt"], f"0010_objekt_{idx}")
-                c["ort"].value = "Kühlraum"
-                setze_wert(c["abklatsch"], f"0010_abklatsch_{idx}", False)
-                setze_wert(c["tupfer"], f"0010_tupfer_{idx}", False)
-
-            setze_wert(og_cb, "og_cb", False)
-            setze_wert(og_override_cb, "og_override", False)
-            for i in range(1, 6):
-                idx = f"{i:02d}"; c = og_controls[i]
-                setze_wert(c["name"], f"og_name_{idx}")
-                c["ort"].value = "Produktionsraum"
-                setze_wert(c["inhalt"], f"og_inhalt_{idx}")
-                c["verpackung"].value = "steriler Probenbecher"
-                setze_wert(c["temp"], f"og_temp_{idx}")
-                c["h_t"].value, c["h_m"].value, c["h_j"].value = "", "", jtoday
-                c["v_t"].value, c["v_m"].value, c["v_j"].value = "", "", ""
-
-            setze_wert(og_okz_cb, "og_abklatsch_cb", False)
-            setze_wert(og_okz_bemerkung_dd, "og_abklatsch_bemerkung_1")
-            setze_wert(og_okz_anmerkung_in, "og_abklatsch_bemerkung_2")
-            for idx, c in og_okz_controls.items():
-                c["status"].value = "R+D"
-                setze_wert(c["objekt"], f"0011_objekt_{idx}")
-                c["ort"].value = "Produktionsbereich"
-                setze_wert(c["abklatsch"], f"0011_abklatsch_{idx}", False)
-                setze_wert(c["tupfer"], f"0011_tupfer_{idx}", False)
-
-            vorlagen_status.value = f"✅ '{vl_dd.value}' geladen!"
-            vorlagen_status.color = "green"
+        def nur_speichern(e):
+            fehler_container.visible = False
+            status_text.value = ""
             page.update()
 
+            try:
+                status_text.value = "⏳ Speichere..."; status_text.color = "yellow"; page.update()
+                maerkte = lade_maerkte()
+                d = hole_aktuelle_daten()
+                tour_aktualisiert = False
+                for i, tour in enumerate(maerkte):
+                    if tour.get("marktnummer") == nr_in.value: maerkte[i] = d; tour_aktualisiert = True; break
+                if not tour_aktualisiert: maerkte.append(d)
+                speichere_maerkte(maerkte)
+                status_text.value = "✅ Gespeichert!"; status_text.color = "orange"; page.update()
+            except Exception as ex: 
+                status_text.value = "❌ Fehler"; status_text.color = "red"; zeige_fehler(ex)
+        
         def save_final(e):
             fehler_container.visible = False
             status_text.value = ""
@@ -751,7 +806,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 fehler_container.controls.clear()
                 fehler_container.controls.append(ft.Text("⚠️ BITTE PRÜFEN:", color="red", weight="bold", size=16))
                 
-                # NAVIGATION-HANDLER: Wechselt Tabs und setzt den Focus
                 def gehe_zu_fehler(ziel_tab, ziel_sub_tab, ziel_ctrl):
                     switch_tab(ziel_tab, ziel_sub_tab)
                     page.update()
@@ -773,7 +827,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 return
 
             try:
-                status_text.value = "⏳ Erstelle PDF..."; status_text.color = "yellow"; page.update()
+                status_text.value = "⏳ PDF..."; status_text.color = "yellow"; page.update()
                 maerkte = lade_maerkte()
                 d = hole_aktuelle_daten()
                 if markt_index is None: maerkte.append(d)
@@ -782,24 +836,20 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 try:
                     saved_path = erstelle_bericht(d)
                     fname = os.path.basename(saved_path)
-                    status_text.value = f"✅ BERICHT ERSTELLT!\nDatei: {fname}"; status_text.color = "green"
+                    status_text.value = f"✅ BERICHT!\n{fname}"; status_text.color = "green"
                 except Exception as ex:
-                    status_text.value = ""; fehler_container.controls.append(ft.Text(f"⚠️ SPEICHER-FEHLER: {str(ex)}", color="red"))
+                    status_text.value = ""; fehler_container.controls.append(ft.Text(f"⚠️ FEHLER: {str(ex)}", color="red"))
                 page.update()
             except Exception as ex: 
                 status_text.value = "❌ Fehler"; status_text.color = "red"; zeige_fehler(ex)
 
-        # ==========================================
-        # LAYOUT & STRUKTUR
-        # ==========================================
-        alle_vorlagen = lade_vorlagen_lokal()
         bottom_buttons = ft.Column([
             ft.Row([
                 ft.Container(content=action_btn_form("🚚 Touren", lambda e: zeige_dashboard(), "#F44336"), expand=1),
                 ft.Container(content=action_btn_form("🔄 Reset", reset_form, "#9C27B0"), expand=1),
             ]),
             ft.Row([
-                ft.Container(content=action_btn_form("💾 Speichern", lambda e: nur_speichern(e), "#FF9800"), expand=1),
+                ft.Container(content=action_btn_form("💾 Speichern", nur_speichern, "#FF9800"), expand=1),
                 ft.Container(content=action_btn_form("📄 Bericht", save_final, "#2196F3"), expand=1),
             ])
         ], spacing=10)
@@ -839,7 +889,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                             c = se_okz_controls[f"{i:02d}"]
                             haupt_bereich.controls.extend([ft.Text(f"Probe {i}", color="yellow", weight="bold"), ft.Row([ft.Container(content=c["status"], expand=1), ft.Container(content=c["objekt"], expand=3)]), c["ort"], ft.Row([ft.Container(content=c["abklatsch"], expand=1), ft.Container(content=c["tupfer"], expand=1)]), ft.Divider(color="white24")])
                         haupt_bereich.controls.append(se_okz_bemerkung_dd)
-                    page.update()
+                    if page: page.update()
                 sw_se(sub_tab_id if sub_tab_id else "eis")
             elif tab_id == "hfm":
                 sub_nav = ft.Row(wrap=True, alignment=ft.MainAxisAlignment.CENTER)
@@ -863,7 +913,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                             c = okz_controls[f"{i:02d}"]
                             haupt_bereich.controls.extend([ft.Text(f"Probe {i}", color="yellow", weight="bold"), ft.Row([ft.Container(content=c["status"], expand=1), ft.Container(content=c["objekt"], expand=3)]), c["ort"], ft.Row([ft.Container(content=c["abklatsch"], expand=1), ft.Container(content=c["tupfer"], expand=1)]), ft.Divider(color="white24")])
                         haupt_bereich.controls.append(hfm_okz_bemerkung_dd)
-                    page.update()
+                    if page: page.update()
                 sw_hfm(sub_tab_id if sub_tab_id else "hack")
             elif tab_id == "og":
                 sub_nav = ft.Row(wrap=True, alignment=ft.MainAxisAlignment.CENTER)
@@ -888,9 +938,9 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                             if i == 2: haupt_bereich.controls.append(ft.Text("💡 Info: Bei Saftpresse bitte hier auswählen.", color="white54", italic=True, size=14))
                             haupt_bereich.controls.extend([ft.Text(f"Probe {i}", color="yellow", weight="bold"), ft.Row([ft.Container(content=c["status"], expand=1), ft.Container(content=c["objekt"], expand=3)]), c["ort"], ft.Row([ft.Container(content=c["abklatsch"], expand=1), ft.Container(content=c["tupfer"], expand=1)]), ft.Divider(color="white24")])
                         haupt_bereich.controls.extend([ft.Text("💡 Wichtig: Wird die Saftpresse beprobt, muss zwingend auch das Messer aufgenommen werden!", color="orange", weight="bold"), og_okz_bemerkung_dd, og_okz_anmerkung_in])
-                    page.update()
+                    if page: page.update()
                 sw_og(sub_tab_id if sub_tab_id else "teil")
-            page.update()
+            if page: page.update()
 
         ansicht.controls.extend([top_nav, ft.Divider(color="white24"), haupt_bereich, ft.Container(height=20), fehler_container, status_text, bottom_buttons])
         switch_tab("stamm")
