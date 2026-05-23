@@ -39,7 +39,13 @@ def main(page: ft.Page):
             except: pass
 
         def get_erweiterte_bases():
-            try: return get_all_rewe_bases() + ["/storage/emulated/0/Download/Rewe_Monitoring"]
+            try: 
+                # DOPPELTE PFADE VERHINDERN
+                bases = get_all_rewe_bases()
+                zusatz = "/storage/emulated/0/Download/Rewe_Monitoring"
+                if zusatz not in bases:
+                    bases.append(zusatz)
+                return list(set([os.path.normpath(b) for b in bases]))
             except: return []
 
         def bereinige_archiv():
@@ -156,7 +162,8 @@ def main(page: ft.Page):
                 such_ordner_liste = get_erweiterte_bases()
                 aktuelles_gesendet_set = lade_gesendet() 
                 
-                # --- SAUBERE FUNKTION FÜR JEDEN EINZELNEN BERICHT ---
+                gesehene_pfade = set() # VERHINDERT DOPPELTE ANZEIGE
+
                 def erstelle_eintrag(dateiname, pfad):
                     ist_gesendet = pfad in aktuelles_gesendet_set
                     
@@ -195,24 +202,18 @@ def main(page: ft.Page):
                     senden_btn.on_click = teilen_jetzt
 
                     def loeschen(e):
-                        # Physische Datei löschen
                         try:
-                            if os.path.exists(pfad):
-                                os.remove(pfad)
+                            if os.path.exists(pfad): os.remove(pfad)
                             if pfad in aktuelles_gesendet_set:
                                 aktuelles_gesendet_set.remove(pfad)
                                 page.client_storage.set("gesendet_pdfs", list(aktuelles_gesendet_set))
-                        except Exception as ex: 
-                            pass
-                        
-                        # Blendet NUR DIESE EINE Zeile aus (kein Seiten-Reload!)
+                        except Exception as ex: pass
                         container.visible = False
                         container.update()
 
                     loesch_btn = small_btn("🗑️", loeschen, "#F44336")
                     container.content = ft.Row([text_ctrl, senden_btn, loesch_btn])
                     return container
-                # ----------------------------------------------------
 
                 for base in such_ordner_liste:
                     ziel_ordner = os.path.join(base, heute_ordner)
@@ -223,9 +224,13 @@ def main(page: ft.Page):
                         try:
                             for f in os.listdir(ordner):
                                 if f.lower().endswith(".pdf"):
+                                    pfad = os.path.normpath(os.path.join(ordner, f))
+                                    # HIER DER CHECK: Schon in der Liste?
+                                    if pfad in gesehene_pfade:
+                                        continue
+                                    
+                                    gesehene_pfade.add(pfad)
                                     pdfs_gefunden = True
-                                    pfad = os.path.join(ordner, f)
-                                    # Hängt den sicheren Container an die Ansicht an
                                     ansicht.controls.append(erstelle_eintrag(f, pfad))
                         except Exception as file_error:
                             ansicht.controls.append(ft.Text(f"Ordner-Fehler: {file_error}", color="red", size=10))
@@ -261,6 +266,7 @@ def main(page: ft.Page):
             
             aktuelles_gesendet_set = lade_gesendet() 
             such_ordner.sort(reverse=True)
+            gesehene_pfade_archiv = set() # AUCH HIER DOPPELTE VERHINDERN
             
             for ordner in such_ordner:
                 try:
@@ -269,8 +275,12 @@ def main(page: ft.Page):
                         d = datetime.datetime.strptime(os.path.basename(ordner), '%Y-%m-%d')
                         ansicht.controls.append(ft.Text(f"📅 {d.strftime('%d.%m.%Y')}", color="yellow", weight="bold", size=14))
                         for f in p_list:
+                            pfad = os.path.normpath(os.path.join(ordner, f))
+                            if pfad in gesehene_pfade_archiv:
+                                continue
+                            gesehene_pfade_archiv.add(pfad)
+                            
                             pdfs_gefunden = True
-                            pfad = os.path.join(ordner, f)
                             ist_gesendet = pfad in aktuelles_gesendet_set
                             
                             text_ctrl = ft.Text(
