@@ -266,7 +266,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
         hfm_bio_cb = cb("Bio-Hackfleisch", aktuelle_daten.get("hfm_bio_cb", False), bold=True)
         hfm_bio_override_cb = cb("Trotzdem speichern", aktuelle_daten.get("hfm_bio_override", False))
-        hfm_bio_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("hfm_bio_entnahmeort", "Produktionsraum"), ort_opts)
+        hfm_bio_entnahmeort_dd = combo("Entnahmeort", current_val=aktuelle_daten.get("hfm_bio_entnahmeort", "Produktionsraum"), opts=ort_opts)
         ht, hm, hj = get_herst("hfm_bio_herstelldatum")
         hfm_bio_herst_tag_dd, hfm_bio_herst_mon_dd, hfm_bio_herst_jahr_dd = combo("Tag", ht, tage_opts), combo("Mon", hm, mon_opts), combo("Jahr", hj, jahr_opts)
         t, m, j = parse_datum(aktuelle_daten.get("hfm_bio_mhd_schwein", ""))
@@ -634,28 +634,38 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             for ctrl in markierte_fehler_controls:
                 if hasattr(ctrl, "border_color"):
                     ctrl.border_color = "white"
-                    try: ctrl.update()
-                    except: pass
+                if isinstance(ctrl, ft.Checkbox):
+                    ctrl.fill_color = "yellow"
+                    if ctrl.label_style:
+                        ctrl.label_style.color = "white"
+                try: ctrl.update()
+                except: pass
             markierte_fehler_controls.clear()
 
         def check_pflichtfelder():
             reset_fehler_markierungen() 
             errors = []
             
+            def highlight_ctrl(ctrl):
+                if ctrl is None: return
+                if hasattr(ctrl, "border_color"):
+                    ctrl.border_color = "red"
+                if isinstance(ctrl, ft.Checkbox):
+                    ctrl.fill_color = "red"
+                    if ctrl.label_style:
+                        ctrl.label_style.color = "red"
+                    else:
+                        ctrl.label_style = ft.TextStyle(color="red")
+                markierte_fehler_controls.append(ctrl)
+                try: ctrl.update()
+                except: pass
+
             def err(msg, tab, sub_tab, ctrl):
                 errors.append({"msg": msg, "tab": tab, "sub": sub_tab, "ctrl": ctrl})
-                if ctrl and hasattr(ctrl, "border_color"):
-                    ctrl.border_color = "red"
-                    markierte_fehler_controls.append(ctrl)
-                    try: ctrl.update()
-                    except: pass
+                highlight_ctrl(ctrl)
 
             def markiere_extra(ctrl):
-                if ctrl and hasattr(ctrl, "border_color"):
-                    ctrl.border_color = "red"
-                    markierte_fehler_controls.append(ctrl)
-                    try: ctrl.update()
-                    except: pass
+                highlight_ctrl(ctrl)
 
             # --- Stammdaten ---
             if not (nr_in.value or "").strip(): err("Stammdaten: Marktnummer fehlt", "stamm", None, nr_in)
@@ -674,7 +684,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             tw_daten = any([(tw_temp_in.value or "").strip(), (tw_zeit_in.value or "").strip()])
             if tw_daten and not tw_kalt_cb.value: 
                 err("Trinkwasser: Daten eingetragen, aber Haken vergessen!", "tw", None, tw_kalt_cb)
-            elif tw_kalt_cb.value:
+            elif tw_kalt_cb.value and not tw_override_cb.value:
                 if not (tw_temp_in.value or "").strip(): err("Trinkwasser: Temperatur fehlt", "tw", None, tw_temp_in)
                 if not (tw_zeit_in.value or "").strip(): err("Trinkwasser: Uhrzeit fehlt", "tw", None, tw_zeit_in)
 
@@ -682,22 +692,18 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             se_daten = any([(se_temp_in.value or "").strip(), (se_zeit_in.value or "").strip()])
             if se_daten and not se_kalt_cb.value: 
                 err("Scherbeneis: Daten eingetragen, aber Haken vergessen!", "se", "eis", se_kalt_cb)
-            elif se_kalt_cb.value:
+            elif se_kalt_cb.value and not se_override_cb.value:
                 if not (se_temp_in.value or "").strip(): err("Scherbeneis: Temperatur fehlt", "se", "eis", se_temp_in)
                 if not (se_zeit_in.value or "").strip(): err("Scherbeneis: Uhrzeit fehlt", "se", "eis", se_zeit_in)
 
-            # --- HFM FLEISCH (Zentrale Logik) ---
-            def check_hfm(cb_ctrl, temp, h_t, h_m, l_s, l_r, c_s, c_r, mhd_s_t, mhd_s_m, mhd_r_t, mhd_r_m, name, tab):
-                # Alle relevanten Felder dieser Kategorie einsammeln
+            # --- HFM FLEISCH ---
+            def check_hfm(cb_ctrl, override_cb, temp, h_t, h_m, l_s, l_r, c_s, c_r, mhd_s_t, mhd_s_m, mhd_r_t, mhd_r_m, name, tab):
                 alle_felder = [f for f in [temp, h_t, h_m, l_s, l_r, c_s, c_r, mhd_s_t, mhd_s_m, mhd_r_t, mhd_r_m] if f is not None]
-                # Prüfen, ob irgendeines davon Daten enthält
                 daten_vorhanden = any([(f.value or "").strip() for f in alle_felder])
                 
-                # Wenn Daten da sind, aber der Haken fehlt
                 if daten_vorhanden and not cb_ctrl.value: 
-                    err(f"{name}: Daten eingetragen, aber Haken vergessen!", "hfm", tab, cb_ctrl)
-                # Wenn der Haken gesetzt ist, müssen alle benötigten Daten da sein
-                elif cb_ctrl.value:
+                    err(f"{name}: Daten eingetragen, aber Haupt-Haken vergessen!", "hfm", tab, cb_ctrl)
+                elif cb_ctrl.value and not override_cb.value:
                     if not (temp.value or "").strip(): err(f"{name}: Temperatur fehlt", "hfm", tab, temp)
                     check_datum_komplett(h_t, h_m, f"{name}: Herstellungsdatum", "hfm", tab)
                     if l_s and not (l_s.value or "").strip(): err(f"{name}: Lieferant (Schwein) fehlt", "hfm", tab, l_s)
@@ -707,11 +713,11 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                     if c_r and not (c_r.value or "").strip(): err(f"{name}: Charge (Rind) fehlt", "hfm", tab, c_r)
                     if mhd_r_t: check_datum_komplett(mhd_r_t, mhd_r_m, f"{name}: MHD (Rind)", "hfm", tab)
 
-            check_hfm(hfm_hack_cb, hfm_hack_temp_in, hfm_hack_herst_tag_dd, hfm_hack_herst_mon_dd, hfm_hack_lief_schwein_in, hfm_hack_lief_rind_in, hfm_hack_charge_schwein_dd, hfm_hack_charge_rind_dd, hfm_hack_mhd_s_tag_dd, hfm_hack_mhd_s_mon_dd, hfm_hack_mhd_r_tag_dd, hfm_hack_mhd_r_mon_dd, "Hackfleisch", "hack")
-            check_hfm(hfm_mett_cb, hfm_mett_temp_in, hfm_mett_herst_tag_dd, hfm_mett_herst_mon_dd, hfm_mett_lief_in, None, hfm_mett_charge_dd, None, None, None, hfm_mett_mhd_tag_dd, hfm_mett_mhd_mon_dd, "Mett", "mett")
-            check_hfm(hfm_fzs_cb, hfm_fzs_temp_in, hfm_fzs_herst_tag_dd, hfm_fzs_herst_mon_dd, hfm_fzs_lief_in, None, hfm_fzs_charge_dd, None, None, None, hfm_fzs_mhd_tag_dd, hfm_fzs_mhd_mon_dd, "FZ Schwein", "fzs")
-            check_hfm(hfm_fzg_cb, hfm_fzg_temp_in, hfm_fzg_herst_tag_dd, hfm_fzg_herst_mon_dd, hfm_fzg_lief_in, None, hfm_fzg_charge_dd, None, None, None, hfm_fzg_mhd_tag_dd, hfm_fzg_mhd_mon_dd, "FZ Geflügel", "fzg")
-            check_hfm(hfm_bio_cb, hfm_bio_temp_in, hfm_bio_herst_tag_dd, hfm_bio_herst_mon_dd, hfm_bio_lief_schwein_in, hfm_bio_lief_rind_in, hfm_bio_charge_schwein_dd, hfm_bio_charge_rind_dd, hfm_bio_mhd_s_tag_dd, hfm_bio_mhd_s_mon_dd, hfm_bio_mhd_r_tag_dd, hfm_bio_mhd_r_mon_dd, "Bio Hack", "bio")
+            check_hfm(hfm_hack_cb, hfm_hack_override_cb, hfm_hack_temp_in, hfm_hack_herst_tag_dd, hfm_hack_herst_mon_dd, hfm_hack_lief_schwein_in, hfm_hack_lief_rind_in, hfm_hack_charge_schwein_dd, hfm_hack_charge_rind_dd, hfm_hack_mhd_s_tag_dd, hfm_hack_mhd_s_mon_dd, hfm_hack_mhd_r_tag_dd, hfm_hack_mhd_r_mon_dd, "Hackfleisch", "hack")
+            check_hfm(hfm_mett_cb, hfm_mett_override_cb, hfm_mett_temp_in, hfm_mett_herst_tag_dd, hfm_mett_herst_mon_dd, hfm_mett_lief_in, None, hfm_mett_charge_dd, None, None, None, hfm_mett_mhd_tag_dd, hfm_mett_mhd_mon_dd, "Mett", "mett")
+            check_hfm(hfm_fzs_cb, hfm_fzs_override_cb, hfm_fzs_temp_in, hfm_fzs_herst_tag_dd, hfm_fzs_herst_mon_dd, hfm_fzs_lief_in, None, hfm_fzs_charge_dd, None, None, None, hfm_fzs_mhd_tag_dd, hfm_fzs_mhd_mon_dd, "FZ Schwein", "fzs")
+            check_hfm(hfm_fzg_cb, hfm_fzg_override_cb, hfm_fzg_temp_in, hfm_fzg_herst_tag_dd, hfm_fzg_herst_mon_dd, hfm_fzg_lief_in, None, hfm_fzg_charge_dd, None, None, None, hfm_fzg_mhd_tag_dd, hfm_fzg_mhd_mon_dd, "FZ Geflügel", "fzg")
+            check_hfm(hfm_bio_cb, hfm_bio_override_cb, hfm_bio_temp_in, hfm_bio_herst_tag_dd, hfm_bio_herst_mon_dd, hfm_bio_lief_schwein_in, hfm_bio_lief_rind_in, hfm_bio_charge_schwein_dd, hfm_bio_charge_rind_dd, hfm_bio_mhd_s_tag_dd, hfm_bio_mhd_s_mon_dd, hfm_bio_mhd_r_tag_dd, hfm_bio_mhd_r_mon_dd, "Bio Hack", "bio")
 
             # --- CONVENIENCE (OG) ---
             og_daten_vorhanden = False
@@ -723,7 +729,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                     
             if og_daten_vorhanden and not og_cb.value: 
                 err("Convenience: Daten eingetragen, aber Haupt-Haken vergessen!", "og", "teil", og_cb)
-            elif og_cb.value:
+            elif og_cb.value and not og_override_cb.value:
                 for i in range(1, 6):
                     c = og_controls[i]
                     if (c["name"].value or "").strip():
