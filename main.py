@@ -40,7 +40,6 @@ def main(page: ft.Page):
 
         def get_erweiterte_bases():
             try: 
-                # DOPPELTE PFADE VERHINDERN
                 bases = get_all_rewe_bases()
                 zusatz = "/storage/emulated/0/Download/Rewe_Monitoring"
                 if zusatz not in bases:
@@ -61,11 +60,6 @@ def main(page: ft.Page):
                                 if (heute - ordner_datum).days > 14: shutil.rmtree(ordner_pfad)
                             except: pass
                 except PermissionError: pass
-
-        def get_logo_bild():
-            if os.path.exists(LOGO_PFAD):
-                return ft.Image(src=LOGO_PFAD, width=200, height=100, fit="contain")
-            return ft.Text("LOGO", color="white")
 
         def get_start_logo_bild():
             if os.path.exists(START_LOGO_PFAD):
@@ -90,9 +84,6 @@ def main(page: ft.Page):
 
         def action_btn(text, on_click, farbe):
             return ft.ElevatedButton(content=ft.Text(text, size=14, weight="bold"), on_click=on_click, bgcolor="#0b1a0b", color=farbe, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=25), padding=15, side=ft.BorderSide(width=2, color=farbe)))
-
-        def list_action_btn(text, on_click, farbe):
-            return ft.ElevatedButton(content=ft.Text(text, size=12, weight="bold"), on_click=on_click, bgcolor="#0b1a0b", color=farbe, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=15), padding=8, side=ft.BorderSide(width=1.5, color=farbe)))
 
         def small_btn(emoji, on_click, farbe):
             return ft.ElevatedButton(content=ft.Text(emoji, size=16), on_click=on_click, bgcolor="#0b1a0b", color=farbe, style=ft.ButtonStyle(shape=ft.CircleBorder(), padding=0, side=ft.BorderSide(width=2, color=farbe)), width=45, height=45)
@@ -158,105 +149,61 @@ def main(page: ft.Page):
                 
                 heute_ordner = datetime.datetime.now().strftime('%Y-%m-%d')
                 pdfs_gefunden = False
-                
                 such_ordner_liste = get_erweiterte_bases()
                 aktuelles_gesendet_set = lade_gesendet() 
-                
-                gesehene_pfade = set() # VERHINDERT DOPPELTE ANZEIGE
+                gesehene_dateien = set()
 
                 def erstelle_eintrag(dateiname, pfad):
                     ist_gesendet = pfad in aktuelles_gesendet_set
-                    
-                    text_ctrl = ft.Text(
-                        f"{dateiname} ✅" if ist_gesendet else dateiname, 
-                        color="#4CAF50" if ist_gesendet else "white", 
-                        size=13, expand=True, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS
-                    )
-                    
+                    text_ctrl = ft.Text(f"{dateiname} ✅" if ist_gesendet else dateiname, color="#4CAF50" if ist_gesendet else "white", size=13, expand=True, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS)
                     btn_text = "✅ Gesendet" if ist_gesendet else "📤 Senden"
                     btn_color = "#4CAF50" if ist_gesendet else "#2196F3"
-                    
-                    senden_btn = ft.ElevatedButton(
-                        content=ft.Text(btn_text, size=12, weight="bold"),
-                        bgcolor="#0b1a0b", color=btn_color,
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=15), padding=8, side=ft.BorderSide(width=1.5, color=btn_color))
-                    )
-                    
+                    senden_btn = ft.ElevatedButton(content=ft.Text(btn_text, size=12, weight="bold"), bgcolor="#0b1a0b", color=btn_color, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=15), padding=8, side=ft.BorderSide(width=1.5, color=btn_color)))
                     container = ft.Container(bgcolor="#002200", padding=10, border_radius=15)
-                    
                     async def teilen_jetzt(e):
-                        text_ctrl.value = f"{dateiname} ✅"
-                        text_ctrl.color = "#4CAF50"
-                        text_ctrl.update()
-                        
-                        senden_btn.content.value = "✅ Gesendet"
-                        senden_btn.color = "#4CAF50"
-                        senden_btn.style.side = ft.BorderSide(width=1.5, color="#4CAF50")
-                        senden_btn.update()
-                        
-                        markiere_als_gesendet(pfad)
-                        aktuelles_gesendet_set.add(pfad)
+                        text_ctrl.value = f"{dateiname} ✅"; text_ctrl.color = "#4CAF50"; text_ctrl.update()
+                        senden_btn.content.value = "✅ Gesendet"; senden_btn.color = "#4CAF50"; senden_btn.style.side = ft.BorderSide(width=1.5, color="#4CAF50"); senden_btn.update()
+                        markiere_als_gesendet(pfad); aktuelles_gesendet_set.add(pfad)
                         await asyncio.sleep(0.3)
                         if share_obj: await share_obj.share_files([ft.ShareFile.from_path(pfad)], text="REWE Bericht")
-                    
                     senden_btn.on_click = teilen_jetzt
-
                     def loeschen(e):
                         try:
                             if os.path.exists(pfad): os.remove(pfad)
                             if pfad in aktuelles_gesendet_set:
                                 aktuelles_gesendet_set.remove(pfad)
                                 page.client_storage.set("gesendet_pdfs", list(aktuelles_gesendet_set))
-                        except Exception as ex: pass
-                        container.visible = False
-                        container.update()
-
-                    loesch_btn = small_btn("🗑️", loeschen, "#F44336")
-                    container.content = ft.Row([text_ctrl, senden_btn, loesch_btn])
+                        except: pass
+                        container.visible = False; container.update()
+                    container.content = ft.Row([text_ctrl, senden_btn, small_btn("🗑️", loeschen, "#F44336")])
                     return container
 
                 for base in such_ordner_liste:
                     ziel_ordner = os.path.join(base, heute_ordner)
-                    ordner_zum_durchsuchen = [ziel_ordner, base]
-                    
-                    for ordner in list(set(ordner_zum_durchsuchen)):
+                    for ordner in list(set([ziel_ordner, base])):
                         if not os.path.exists(ordner): continue
-                        try:
-                            for f in os.listdir(ordner):
-                                if f.lower().endswith(".pdf"):
-                                    pfad = os.path.normpath(os.path.join(ordner, f))
-                                    # HIER DER CHECK: Schon in der Liste?
-                                    if pfad in gesehene_pfade:
-                                        continue
-                                    
-                                    gesehene_pfade.add(pfad)
-                                    pdfs_gefunden = True
-                                    ansicht.controls.append(erstelle_eintrag(f, pfad))
-                        except Exception as file_error:
-                            ansicht.controls.append(ft.Text(f"Ordner-Fehler: {file_error}", color="red", size=10))
-                
-                if not pdfs_gefunden: 
-                    ansicht.controls.append(ft.Text("Keine Berichte zum Senden gefunden.\nDie Liste aktualisiert sich nach Berichterstellung.", color="white54", text_align="center"))
-                
-                page.add(ft.SafeArea(ansicht))
-                page.update()
+                        for f in os.listdir(ordner):
+                            if f.lower().endswith(".pdf"):
+                                pfad = os.path.normpath(os.path.join(ordner, f))
+                                if f in gesehene_dateien: continue
+                                gesehene_dateien.add(f)
+                                pdfs_gefunden = True
+                                ansicht.controls.append(erstelle_eintrag(f, pfad))
+                if not pdfs_gefunden: ansicht.controls.append(ft.Text("Keine Berichte gefunden.", color="white54", text_align="center"))
+                page.add(ft.SafeArea(ansicht)); page.update()
             except Exception as e:
-                page.add(ft.Text(f"CRASH Postausgang: {e}", color="red", weight="bold"))
-                page.update()
+                page.add(ft.Text(f"CRASH Postausgang: {e}", color="red", weight="bold")); page.update()
 
         def zeige_archiv():
             page.clean()
             ansicht = ft.Column(spacing=20, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
             ansicht.controls.append(nav_leiste("archiv"))
             ansicht.controls.append(ft.Text("Archiv (Letzte 14 Tage)", size=20, weight="bold", color="white", text_align="center"))
-            ansicht.controls.append(ft.Container(bgcolor="#1a1a1a", padding=15, border_radius=15, content=ft.Column([ ft.Text("E-MAIL KOPIEREN:", color="#FF9800", weight="bold", size=14), ft.Text("registration-mibi.ber@tentamus.com", color="white", size=13, selectable=True)], horizontal_alignment="center")))
             
             bereinige_archiv()
-            pdfs_gefunden = False
             such_ordner = []
             heute = datetime.datetime.now()
             gueltige_datums = [(heute - datetime.timedelta(days=i)).strftime('%Y-%m-%d') for i in range(15)]
-            
             for base in get_erweiterte_bases():
                 if not os.path.exists(base): continue
                 for d_str in gueltige_datums:
@@ -266,7 +213,7 @@ def main(page: ft.Page):
             
             aktuelles_gesendet_set = lade_gesendet() 
             such_ordner.sort(reverse=True)
-            gesehene_pfade_archiv = set() # AUCH HIER DOPPELTE VERHINDERN
+            gesehene_dateien_archiv = set()
             
             for ordner in such_ordner:
                 try:
@@ -276,51 +223,23 @@ def main(page: ft.Page):
                         ansicht.controls.append(ft.Text(f"📅 {d.strftime('%d.%m.%Y')}", color="yellow", weight="bold", size=14))
                         for f in p_list:
                             pfad = os.path.normpath(os.path.join(ordner, f))
-                            if pfad in gesehene_pfade_archiv:
-                                continue
-                            gesehene_pfade_archiv.add(pfad)
+                            if f in gesehene_dateien_archiv: continue
+                            gesehene_dateien_archiv.add(f)
                             
-                            pdfs_gefunden = True
                             ist_gesendet = pfad in aktuelles_gesendet_set
-                            
-                            text_ctrl = ft.Text(
-                                f"{f} ✅" if ist_gesendet else f, 
-                                color="#4CAF50" if ist_gesendet else "white", 
-                                size=13, expand=True, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS
-                            )
-                            
-                            btn_text = "✅ Gesendet" if ist_gesendet else "📤 Senden"
-                            btn_color = "#4CAF50" if ist_gesendet else "#2196F3"
-                            
-                            senden_btn = ft.ElevatedButton(
-                                content=ft.Text(btn_text, size=12, weight="bold"),
-                                bgcolor="#0b1a0b", color=btn_color,
-                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=15), padding=8, side=ft.BorderSide(width=1.5, color=btn_color))
-                            )
-                            
+                            text_ctrl = ft.Text(f"{f} ✅" if ist_gesendet else f, color="#4CAF50" if ist_gesendet else "white", size=13, expand=True, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS)
+                            btn_text, btn_color = ("✅ Gesendet", "#4CAF50") if ist_gesendet else ("📤 Senden", "#2196F3")
+                            senden_btn = ft.ElevatedButton(content=ft.Text(btn_text, size=12, weight="bold"), bgcolor="#0b1a0b", color=btn_color, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=15), padding=8, side=ft.BorderSide(width=1.5, color=btn_color)))
                             async def teilen_archiv(e, p=pfad, tc=text_ctrl, btn=senden_btn, dateiname=f):
-                                tc.value = f"{dateiname} ✅"
-                                tc.color = "#4CAF50"
-                                tc.update()
-                                btn.content.value = "✅ Gesendet"
-                                btn.color = "#4CAF50"
-                                btn.style.side = ft.BorderSide(width=1.5, color="#4CAF50")
-                                btn.update()
-                                markiere_als_gesendet(p)
-                                await asyncio.sleep(0.3)
+                                tc.value = f"{dateiname} ✅"; tc.color = "#4CAF50"; tc.update()
+                                btn.content.value = "✅ Gesendet"; btn.color = "#4CAF50"; btn.style.side = ft.BorderSide(width=1.5, color="#4CAF50"); btn.update()
+                                markiere_als_gesendet(p); await asyncio.sleep(0.3)
                                 if share_obj: await share_obj.share_files([ft.ShareFile.from_path(p)], text="REWE Bericht")
-                                
                             senden_btn.on_click = teilen_archiv
-
-                            ansicht.controls.append(ft.Container(bgcolor="#002200", padding=10, border_radius=15, content=ft.Row([
-                                text_ctrl, senden_btn
-                            ])))
+                            ansicht.controls.append(ft.Container(bgcolor="#002200", padding=10, border_radius=15, content=ft.Row([text_ctrl, senden_btn])))
                         ansicht.controls.append(ft.Divider(color="white24"))
                 except: pass
-            
-            if not pdfs_gefunden: ansicht.controls.append(ft.Text("Keine Berichte im Archiv.", color="white54", text_align="center"))
-            page.add(ft.SafeArea(ansicht))
-            page.update()
+            page.add(ft.SafeArea(ansicht)); page.update()
 
         mitarbeiter = hole_alle_benutzer()
         if not mitarbeiter: zeige_registrierung()
