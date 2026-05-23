@@ -24,7 +24,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         
         current_tab_state = ["stamm"]
         current_sub_tab_state = [""]
-        markierte_fehler_controls = [] # NEU: Speichert aktuell rote Felder
+        markierte_fehler_controls = [] # Speichert aktuell rote Felder
         
         fehler_container = ft.Column(spacing=5, visible=False, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
         status_text = ft.Text("", color="yellow", weight="bold", size=18, text_align=ft.TextAlign.CENTER)
@@ -639,7 +639,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             markierte_fehler_controls.clear()
 
         def check_pflichtfelder():
-            reset_fehler_markierungen() # Alle roten Ränder entfernen vor der neuen Prüfung
+            reset_fehler_markierungen() 
             errors = []
             
             def err(msg, tab, sub_tab, ctrl):
@@ -650,47 +650,94 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                     try: ctrl.update()
                     except: pass
 
+            # Hilfsfunktion, um bei Datum extra Felder rot zu markieren
+            def markiere_extra(ctrl):
+                if ctrl and hasattr(ctrl, "border_color"):
+                    ctrl.border_color = "red"
+                    markierte_fehler_controls.append(ctrl)
+                    try: ctrl.update()
+                    except: pass
+
+            # Stammdaten
             if not (nr_in.value or "").strip(): err("Stammdaten: Marktnummer fehlt", "stamm", None, nr_in)
             if not (adr_in.value or "").strip(): err("Stammdaten: Adresse fehlt", "stamm", None, adr_in)
             if not (auft_in.value or "").strip(): err("Stammdaten: Auftragsnummer fehlt", "stamm", None, auft_in)
             if not (name_in.value or "").strip(): err("Stammdaten: Probenehmer fehlt", "stamm", None, name_in)
 
-            def check_datum_ohne_jahr(t_ctrl, m_ctrl, feld_name, tab, sub_tab, ctrl):
+            # Prüft streng, ob BEIDE Datumsteile da sind, wenn der Haken gesetzt wurde
+            def check_datum_komplett(t_ctrl, m_ctrl, feld_name, tab, sub_tab):
                 t = (t_ctrl.value or "").strip()
                 m = (m_ctrl.value or "").strip()
-                if (t or m) and not (t and m):
-                    err(f"{feld_name}: Tag oder Monat unvollständig", tab, sub_tab, ctrl)
+                if not t or not m:
+                    err(f"{feld_name}: Tag und Monat müssen angegeben werden", tab, sub_tab, t_ctrl)
+                    markiere_extra(m_ctrl)
 
+            # Trinkwasser
             tw_haken = tw_kalt_cb.value
             if tw_haken:
                 if not (tw_temp_in.value or "").strip(): err("Trinkwasser: Temperatur fehlt", "tw", None, tw_temp_in)
                 if not (tw_zeit_in.value or "").strip(): err("Trinkwasser: Uhrzeit fehlt", "tw", None, tw_zeit_in)
 
+            # Scherbeneis
             se_haken = se_kalt_cb.value
             if se_haken:
                 if not (se_temp_in.value or "").strip(): err("Scherbeneis: Temperatur fehlt", "se", "eis", se_temp_in)
                 if not (se_zeit_in.value or "").strip(): err("Scherbeneis: Uhrzeit fehlt", "se", "eis", se_zeit_in)
 
-            def check_fleisch(haken, temp_in, charge_dd, mhd_t, mhd_m, lief_in, name, sub):
-                if haken:
-                    if not (temp_in.value or "").strip(): err(f"{name}: Temperatur fehlt", "hfm", sub, temp_in)
-                    if not (charge_dd.value or "").strip(): err(f"{name}: Charge fehlt", "hfm", sub, charge_dd)
-                    if not (lief_in.value or "").strip(): err(f"{name}: Lieferant fehlt", "hfm", sub, lief_in)
-                    check_datum_ohne_jahr(mhd_t, mhd_m, f"{name}: MHD", "hfm", sub, mhd_t)
+            # --- HFM FLEISCH ---
+            if hfm_hack_cb.value:
+                if not (hfm_hack_temp_in.value or "").strip(): err("Hackfleisch: Temperatur fehlt", "hfm", "hack", hfm_hack_temp_in)
+                
+                # Schwein
+                if not (hfm_hack_charge_schwein_dd.value or "").strip(): err("Hackfleisch: Charge (Schwein) fehlt", "hfm", "hack", hfm_hack_charge_schwein_dd)
+                if not (hfm_hack_lief_schwein_in.value or "").strip(): err("Hackfleisch: Lieferant (Schwein) fehlt", "hfm", "hack", hfm_hack_lief_schwein_in)
+                check_datum_komplett(hfm_hack_mhd_s_tag_dd, hfm_hack_mhd_s_mon_dd, "Hackfleisch: MHD (Schwein)", "hfm", "hack")
+                
+                # Rind
+                if not (hfm_hack_charge_rind_dd.value or "").strip(): err("Hackfleisch: Charge (Rind) fehlt", "hfm", "hack", hfm_hack_charge_rind_dd)
+                if not (hfm_hack_lief_rind_in.value or "").strip(): err("Hackfleisch: Lieferant (Rind) fehlt", "hfm", "hack", hfm_hack_lief_rind_in)
+                check_datum_komplett(hfm_hack_mhd_r_tag_dd, hfm_hack_mhd_r_mon_dd, "Hackfleisch: MHD (Rind)", "hfm", "hack")
 
-            check_fleisch(hfm_hack_cb.value, hfm_hack_temp_in, hfm_hack_charge_schwein_dd, hfm_hack_mhd_s_tag_dd, hfm_hack_mhd_s_mon_dd, hfm_hack_lief_schwein_in, "Hackfleisch", "hack")
-            check_fleisch(hfm_mett_cb.value, hfm_mett_temp_in, hfm_mett_charge_dd, hfm_mett_mhd_tag_dd, hfm_mett_mhd_mon_dd, hfm_mett_lief_in, "Mett", "mett")
-            check_fleisch(hfm_fzs_cb.value, hfm_fzs_temp_in, hfm_fzs_charge_dd, hfm_fzs_mhd_tag_dd, hfm_fzs_mhd_mon_dd, hfm_fzs_lief_in, "FZ Schwein", "fzs")
-            check_fleisch(hfm_fzg_cb.value, hfm_fzg_temp_in, hfm_fzg_charge_dd, hfm_fzg_mhd_tag_dd, hfm_fzg_mhd_mon_dd, hfm_fzg_lief_in, "FZ Geflügel", "fzg")
-            check_fleisch(hfm_bio_cb.value, hfm_bio_temp_in, hfm_bio_charge_schwein_dd, hfm_bio_mhd_s_tag_dd, hfm_bio_mhd_s_mon_dd, hfm_bio_lief_schwein_in, "Bio Hack", "bio")
+            if hfm_mett_cb.value:
+                if not (hfm_mett_temp_in.value or "").strip(): err("Mett: Temperatur fehlt", "hfm", "mett", hfm_mett_temp_in)
+                if not (hfm_mett_charge_dd.value or "").strip(): err("Mett: Charge fehlt", "hfm", "mett", hfm_mett_charge_dd)
+                if not (hfm_mett_lief_in.value or "").strip(): err("Mett: Lieferant fehlt", "hfm", "mett", hfm_mett_lief_in)
+                check_datum_komplett(hfm_mett_mhd_tag_dd, hfm_mett_mhd_mon_dd, "Mett: MHD", "hfm", "mett")
 
+            if hfm_fzs_cb.value:
+                if not (hfm_fzs_temp_in.value or "").strip(): err("FZ Schwein: Temperatur fehlt", "hfm", "fzs", hfm_fzs_temp_in)
+                if not (hfm_fzs_charge_dd.value or "").strip(): err("FZ Schwein: Charge fehlt", "hfm", "fzs", hfm_fzs_charge_dd)
+                if not (hfm_fzs_lief_in.value or "").strip(): err("FZ Schwein: Lieferant fehlt", "hfm", "fzs", hfm_fzs_lief_in)
+                check_datum_komplett(hfm_fzs_mhd_tag_dd, hfm_fzs_mhd_mon_dd, "FZ Schwein: MHD", "hfm", "fzs")
+
+            if hfm_fzg_cb.value:
+                if not (hfm_fzg_temp_in.value or "").strip(): err("FZ Geflügel: Temperatur fehlt", "hfm", "fzg", hfm_fzg_temp_in)
+                if not (hfm_fzg_charge_dd.value or "").strip(): err("FZ Geflügel: Charge fehlt", "hfm", "fzg", hfm_fzg_charge_dd)
+                if not (hfm_fzg_lief_in.value or "").strip(): err("FZ Geflügel: Lieferant fehlt", "hfm", "fzg", hfm_fzg_lief_in)
+                check_datum_komplett(hfm_fzg_mhd_tag_dd, hfm_fzg_mhd_mon_dd, "FZ Geflügel: MHD", "hfm", "fzg")
+
+            if hfm_bio_cb.value:
+                if not (hfm_bio_temp_in.value or "").strip(): err("Bio Hack: Temperatur fehlt", "hfm", "bio", hfm_bio_temp_in)
+                
+                # Schwein
+                if not (hfm_bio_charge_schwein_dd.value or "").strip(): err("Bio Hack: Charge (Schwein) fehlt", "hfm", "bio", hfm_bio_charge_schwein_dd)
+                if not (hfm_bio_lief_schwein_in.value or "").strip(): err("Bio Hack: Lieferant (Schwein) fehlt", "hfm", "bio", hfm_bio_lief_schwein_in)
+                check_datum_komplett(hfm_bio_mhd_s_tag_dd, hfm_bio_mhd_s_mon_dd, "Bio Hack: MHD (Schwein)", "hfm", "bio")
+                
+                # Rind
+                if not (hfm_bio_charge_rind_dd.value or "").strip(): err("Bio Hack: Charge (Rind) fehlt", "hfm", "bio", hfm_bio_charge_rind_dd)
+                if not (hfm_bio_lief_rind_in.value or "").strip(): err("Bio Hack: Lieferant (Rind) fehlt", "hfm", "bio", hfm_bio_lief_rind_in)
+                check_datum_komplett(hfm_bio_mhd_r_tag_dd, hfm_bio_mhd_r_mon_dd, "Bio Hack: MHD (Rind)", "hfm", "bio")
+
+            # --- CONVENIENCE (OG) ---
             og_haken = og_cb.value
             for i in range(1, 6):
                 c = og_controls[i]
                 if (c["name"].value or "").strip(): 
                     if og_haken:
                         if not (c["temp"].value or "").strip(): err(f"Obst/Gemüse (Probe {i}): Temperatur fehlt", "og", "teil", c["temp"])
-                        check_datum_ohne_jahr(c["h_t"], c["h_m"], f"Obst/Gemüse (Probe {i}): Herstelldatum", "og", "teil", c["h_t"])
+                        check_datum_komplett(c["h_t"], c["h_m"], f"Obst/Gemüse (Probe {i}): Herstelldatum", "og", "teil", c["h_t"])
+
             return errors
 
         # ==========================================
