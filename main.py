@@ -185,11 +185,22 @@ def main(page: ft.Page):
                         for f in os.listdir(ordner):
                             if f.lower().endswith(".pdf"):
                                 pfad = os.path.normpath(os.path.join(ordner, f))
+                                
+                                # --- NEUE SCHUTZFUNKTION: Dateileichen aussortieren ---
+                                try:
+                                    if os.path.getsize(pfad) < 2048: # Wenn die Datei kleiner als 2 KB ist (also kaputt)
+                                        os.remove(pfad) # Lösche die Dateileiche sofort
+                                        continue # Zeige sie gar nicht erst an
+                                except Exception:
+                                    pass
+                                # -------------------------------------------------------
+
                                 if f in gesehene_dateien: continue
                                 gesehene_dateien.add(f)
                                 pdfs_gefunden = True
                                 ansicht.controls.append(erstelle_eintrag(f, pfad))
-                if not pdfs_gefunden: ansicht.controls.append(ft.Text("Keine Berichte gefunden.", color="white54", text_align="center"))
+                
+                if not pdfs_gefunden: ansicht.controls.append(ft.Text("Keine Berichte gefunden.\nFehlerhafte oder unvollständige Berichte wurden aussortiert.", color="white54", text_align="center"))
                 page.add(ft.SafeArea(ansicht)); page.update()
             except Exception as e:
                 page.add(ft.Text(f"CRASH Postausgang: {e}", color="red", weight="bold")); page.update()
@@ -201,6 +212,7 @@ def main(page: ft.Page):
             ansicht.controls.append(ft.Text("Archiv (Letzte 14 Tage)", size=20, weight="bold", color="white", text_align="center"))
             
             bereinige_archiv()
+            pdfs_gefunden = False
             such_ordner = []
             heute = datetime.datetime.now()
             gueltige_datums = [(heute - datetime.timedelta(days=i)).strftime('%Y-%m-%d') for i in range(15)]
@@ -220,12 +232,30 @@ def main(page: ft.Page):
                     p_list = [f for f in os.listdir(ordner) if f.lower().endswith(".pdf")]
                     if p_list:
                         d = datetime.datetime.strptime(os.path.basename(ordner), '%Y-%m-%d')
-                        ansicht.controls.append(ft.Text(f"📅 {d.strftime('%d.%m.%Y')}", color="yellow", weight="bold", size=14))
+                        titel_angelegt = False
+                        
                         for f in p_list:
                             pfad = os.path.normpath(os.path.join(ordner, f))
+                            
+                            # --- NEUE SCHUTZFUNKTION AUCH IM ARCHIV ---
+                            try:
+                                if os.path.getsize(pfad) < 2048:
+                                    os.remove(pfad)
+                                    continue
+                            except Exception:
+                                pass
+                            # ------------------------------------------
+
                             if f in gesehene_dateien_archiv: continue
                             gesehene_dateien_archiv.add(f)
                             
+                            pdfs_gefunden = True
+                            
+                            # Das Datum (Titel) wird nur gedruckt, wenn auch wirklich eine echte PDF da ist
+                            if not titel_angelegt:
+                                ansicht.controls.append(ft.Text(f"📅 {d.strftime('%d.%m.%Y')}", color="yellow", weight="bold", size=14))
+                                titel_angelegt = True
+
                             ist_gesendet = pfad in aktuelles_gesendet_set
                             text_ctrl = ft.Text(f"{f} ✅" if ist_gesendet else f, color="#4CAF50" if ist_gesendet else "white", size=13, expand=True, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS)
                             btn_text, btn_color = ("✅ Gesendet", "#4CAF50") if ist_gesendet else ("📤 Senden", "#2196F3")
@@ -237,8 +267,12 @@ def main(page: ft.Page):
                                 if share_obj: await share_obj.share_files([ft.ShareFile.from_path(p)], text="REWE Bericht")
                             senden_btn.on_click = teilen_archiv
                             ansicht.controls.append(ft.Container(bgcolor="#002200", padding=10, border_radius=15, content=ft.Row([text_ctrl, senden_btn])))
-                        ansicht.controls.append(ft.Divider(color="white24"))
+                        
+                        if titel_angelegt:
+                            ansicht.controls.append(ft.Divider(color="white24"))
                 except: pass
+            
+            if not pdfs_gefunden: ansicht.controls.append(ft.Text("Keine Berichte im Archiv.", color="white54", text_align="center"))
             page.add(ft.SafeArea(ansicht)); page.update()
 
         mitarbeiter = hole_alle_benutzer()
