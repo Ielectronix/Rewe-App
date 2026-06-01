@@ -1066,7 +1066,16 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                         haupt_bereich.controls.extend([ft.Row([og_cb, og_override_cb], wrap=True), ft.Divider(color="white24")])
                         for i in range(1, 6):
                             c = og_controls[i]
-                            haupt_bereich.controls.extend([ft.Text(f"Teilprobe {i}", color="yellow", weight="bold", size=18), c["name"], c["ort"], ft.Text("Herstellungsdatum:", color="red", weight="bold"), d_row(c["h_t"], c["h_m"], c["h_j"]), ft.Text("Verbrauchsdatum:", color="red", weight="bold"), d_row(c["v_t"], c["v_m"], c["v_j"]), c["inhalt"], c["verpackung"], c["temp"], ft.Divider(color="white24")])
+                            haupt_bereich.controls.extend([
+                                ft.Text(f"Teilprobe {i}", color="red", weight="bold", size=20), 
+                                c["name"], c["ort"], 
+                                ft.Text("Herstellungsdatum:", color="red", weight="bold"), d_row(c["h_t"], c["h_m"], c["h_j"]), 
+                                ft.Text("Verbrauchsdatum:", color="red", weight="bold"), d_row(c["v_t"], c["v_m"], c["v_j"]), 
+                                c["inhalt"], c["verpackung"], c["temp"], 
+                                ft.Container(height=15),
+                                ft.Divider(color="white24"),
+                                ft.Container(height=15)
+                            ])
                     elif sub == "okz":
                         haupt_bereich.controls.extend([ft.Text("🔬 OKZ Convenience", color="orange", weight="bold"), og_okz_cb, ft.Divider(color="white24")])
                         for i in range(1, 6):
