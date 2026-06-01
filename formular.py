@@ -332,7 +332,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             og_okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0011_status_{idx}", "R+D"), ["R+D", "R", "P", "-"]), "objekt": combo("Objekt", aktuelle_daten.get(f"0011_objekt_{idx}") or og_okz_def[i]["o"], og_okz_opts), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0011_ort_{idx}", "Produktionsbereich"), ["Kühlraum", "Produktionsbereich", "Theke"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0011_abklatsch_{idx}", og_okz_def[i]["a"])), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0011_tupfer_{idx}", og_okz_def[i]["t"]))}
 
         # ==========================================
-        # VORLAGEN LOGIK 
+        # VORLAGEN LOGIK (KORRIGIERT & SICHER)
         # ==========================================
         alle_vorlagen = lade_vorlagen_lokal()
         vorlagen_status = ft.Text("", weight="bold", size=14) 
@@ -363,6 +363,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             setze_wert(typ_dd, "typ_probenahme")
             setze_wert(bem_in, "bemerkung")
 
+            # --- TRINKWASSER ---
             setze_wert(tw_kalt_cb, "tw_kalt", False)
             setze_wert(tw_override_cb, "tw_override", False)
             setze_wert(tw_zeit_in, "tw_zeit")
@@ -402,6 +403,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             setze_wert(tw_entnahmeort_dd, "tw_entnahmeort")
             setze_wert(tw_bemerkung_dd, "tw_bemerkung_2")
 
+            # --- SCHERBENEIS ---
             setze_wert(se_kalt_cb, "se_kalt", False)
             setze_wert(se_override_cb, "se_override", False)
             setze_wert(se_zeit_in, "se_zeit")
@@ -420,72 +422,102 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             setze_wert(se_okz_cb, "se_abklatsch_cb", False)
             setze_wert(se_okz_bemerkung_dd, "se_abklatsch_bemerkung")
             for idx, c in se_okz_controls.items():
-                setze_wert(c["status"], f"0003_status_{idx}")
+                c["status"].value = v.get(f"0003_status_{idx}", "R+D")
                 setze_wert(c["objekt"], f"0003_objekt_{idx}")
-                setze_wert(c["ort"], f"0003_ort_{idx}")
+                c["ort"].value = v.get(f"0003_ort_{idx}", "Fischabteilung")
                 setze_wert(c["abklatsch"], f"0003_abklatsch_{idx}", False)
                 setze_wert(c["tupfer"], f"0003_tupfer_{idx}", False)
 
-            for prefix in ["hfm_hack", "hfm_mett", "hfm_fzs", "hfm_fzg", "hfm_bio"]:
-                setze_wert(getattr(locals(), f"{prefix}_cb"), f"{prefix}_cb", False)
-                setze_wert(getattr(locals(), f"{prefix}_override_cb"), f"{prefix}_override", False)
-                setze_wert(getattr(locals(), f"{prefix}_entnahmeort_dd"), f"{prefix}_entnahmeort")
-                getattr(locals(), f"{prefix}_herst_tag_dd").value = ""
-                getattr(locals(), f"{prefix}_herst_mon_dd").value = ""
-                getattr(locals(), f"{prefix}_herst_jahr_dd").value = jtoday
-                if hasattr(locals(), f"{prefix}_produkt_in"): setze_wert(getattr(locals(), f"{prefix}_produkt_in"), f"{prefix}_produkt")
-                if hasattr(locals(), f"{prefix}_marinade_in"): setze_wert(getattr(locals(), f"{prefix}_marinade_in"), f"{prefix}_marinade")
-                setze_wert(getattr(locals(), f"{prefix}_inhalt_in"), f"{prefix}_inhalt")
-                setze_wert(getattr(locals(), f"{prefix}_verpackung_dd"), f"{prefix}_verpackung")
-                if hasattr(locals(), f"{prefix}_lief_in"): setze_wert(getattr(locals(), f"{prefix}_lief_in"), f"{prefix}_lief")
-                if hasattr(locals(), f"{prefix}_lief_schwein_in"): setze_wert(getattr(locals(), f"{prefix}_lief_schwein_in"), f"{prefix}_lief_schwein")
-                if hasattr(locals(), f"{prefix}_lief_rind_in"): setze_wert(getattr(locals(), f"{prefix}_lief_rind_in"), f"{prefix}_lief_rind")
-                
-                if hasattr(locals(), f"{prefix}_mhd_tag_dd"):
-                    getattr(locals(), f"{prefix}_mhd_tag_dd").value = ""
-                    getattr(locals(), f"{prefix}_mhd_mon_dd").value = ""
-                    getattr(locals(), f"{prefix}_mhd_jahr_dd").value = ""
-                if hasattr(locals(), f"{prefix}_mhd_s_tag_dd"):
-                    getattr(locals(), f"{prefix}_mhd_s_tag_dd").value = ""
-                    getattr(locals(), f"{prefix}_mhd_s_mon_dd").value = ""
-                    getattr(locals(), f"{prefix}_mhd_s_jahr_dd").value = ""
-                    getattr(locals(), f"{prefix}_mhd_r_tag_dd").value = ""
-                    getattr(locals(), f"{prefix}_mhd_r_mon_dd").value = ""
-                    getattr(locals(), f"{prefix}_mhd_r_jahr_dd").value = ""
-                if hasattr(locals(), f"{prefix}_charge_dd"): setze_wert(getattr(locals(), f"{prefix}_charge_dd"), f"{prefix}_charge")
-                if hasattr(locals(), f"{prefix}_charge_schwein_dd"): setze_wert(getattr(locals(), f"{prefix}_charge_schwein_dd"), f"{prefix}_charge_schwein")
-                if hasattr(locals(), f"{prefix}_charge_rind_dd"): setze_wert(getattr(locals(), f"{prefix}_charge_rind_dd"), f"{prefix}_charge_rind")
-                setze_wert(getattr(locals(), f"{prefix}_temp_in"), f"{prefix}_temp")
-                setze_wert(getattr(locals(), f"{prefix}_bemerkung_dd"), f"{prefix}_bemerkung")
+            # --- HFM FLEISCH (Explizites Laden) ---
+            def set_hfm_base(cb_c, over_c, ort_c, inhalt_c, verp_c, temp_c, bem_c, htag_c, hmon_c, hjahr_c, prefix):
+                setze_wert(cb_c, f"{prefix}_cb", False)
+                setze_wert(over_c, f"{prefix}_override", False)
+                setze_wert(ort_c, f"{prefix}_entnahmeort")
+                setze_wert(inhalt_c, f"{prefix}_inhalt")
+                setze_wert(verp_c, f"{prefix}_verpackung")
+                setze_wert(temp_c, f"{prefix}_temp")
+                setze_wert(bem_c, f"{prefix}_bemerkung")
+                ht, hm, hj = parse_datum(v.get(f"{prefix}_herstelldatum", ""))
+                htag_c.value, hmon_c.value, hjahr_c.value = ht, hm, hj or jtoday
+
+            # Hackfleisch
+            set_hfm_base(hfm_hack_cb, hfm_hack_override_cb, hfm_hack_entnahmeort_dd, hfm_hack_inhalt_in, hfm_hack_verpackung_dd, hfm_hack_temp_in, hfm_hack_bemerkung_dd, hfm_hack_herst_tag_dd, hfm_hack_herst_mon_dd, hfm_hack_herst_jahr_dd, "hfm_hack")
+            setze_wert(hfm_hack_lief_schwein_in, "hfm_hack_lief_schwein")
+            setze_wert(hfm_hack_charge_schwein_dd, "hfm_hack_charge_schwein")
+            mst, msm, msj = parse_datum(v.get("hfm_hack_mhd_schwein", ""))
+            hfm_hack_mhd_s_tag_dd.value, hfm_hack_mhd_s_mon_dd.value, hfm_hack_mhd_s_jahr_dd.value = mst, msm, msj
+            setze_wert(hfm_hack_lief_rind_in, "hfm_hack_lief_rind")
+            setze_wert(hfm_hack_charge_rind_dd, "hfm_hack_charge_rind")
+            mrt, mrm, mrj = parse_datum(v.get("hfm_hack_mhd_rind", ""))
+            hfm_hack_mhd_r_tag_dd.value, hfm_hack_mhd_r_mon_dd.value, hfm_hack_mhd_r_jahr_dd.value = mrt, mrm, mrj
+
+            # Mett
+            set_hfm_base(hfm_mett_cb, hfm_mett_override_cb, hfm_mett_entnahmeort_dd, hfm_mett_inhalt_in, hfm_mett_verpackung_dd, hfm_mett_temp_in, hfm_mett_bemerkung_dd, hfm_mett_herst_tag_dd, hfm_mett_herst_mon_dd, hfm_mett_herst_jahr_dd, "hfm_mett")
+            setze_wert(hfm_mett_lief_in, "hfm_mett_lief")
+            setze_wert(hfm_mett_charge_dd, "hfm_mett_charge")
+            mt, mm, mj = parse_datum(v.get("hfm_mett_mhd", ""))
+            hfm_mett_mhd_tag_dd.value, hfm_mett_mhd_mon_dd.value, hfm_mett_mhd_jahr_dd.value = mt, mm, mj
+
+            # FZS
+            set_hfm_base(hfm_fzs_cb, hfm_fzs_override_cb, hfm_fzs_entnahmeort_dd, hfm_fzs_inhalt_in, hfm_fzs_verpackung_dd, hfm_fzs_temp_in, hfm_fzs_bemerkung_dd, hfm_fzs_herst_tag_dd, hfm_fzs_herst_mon_dd, hfm_fzs_herst_jahr_dd, "hfm_fzs")
+            setze_wert(hfm_fzs_produkt_in, "hfm_fzs_produkt")
+            setze_wert(hfm_fzs_marinade_in, "hfm_fzs_marinade")
+            setze_wert(hfm_fzs_lief_in, "hfm_fzs_lief")
+            setze_wert(hfm_fzs_charge_dd, "hfm_fzs_charge")
+            mt, mm, mj = parse_datum(v.get("hfm_fzs_mhd", ""))
+            hfm_fzs_mhd_tag_dd.value, hfm_fzs_mhd_mon_dd.value, hfm_fzs_mhd_jahr_dd.value = mt, mm, mj
+
+            # FZG
+            set_hfm_base(hfm_fzg_cb, hfm_fzg_override_cb, hfm_fzg_entnahmeort_dd, hfm_fzg_inhalt_in, hfm_fzg_verpackung_dd, hfm_fzg_temp_in, hfm_fzg_bemerkung_dd, hfm_fzg_herst_tag_dd, hfm_fzg_herst_mon_dd, hfm_fzg_herst_jahr_dd, "hfm_fzg")
+            setze_wert(hfm_fzg_produkt_in, "hfm_fzg_produkt")
+            setze_wert(hfm_fzg_marinade_in, "hfm_fzg_marinade")
+            setze_wert(hfm_fzg_lief_in, "hfm_fzg_lief")
+            setze_wert(hfm_fzg_charge_dd, "hfm_fzg_charge")
+            mt, mm, mj = parse_datum(v.get("hfm_fzg_mhd", ""))
+            hfm_fzg_mhd_tag_dd.value, hfm_fzg_mhd_mon_dd.value, hfm_fzg_mhd_jahr_dd.value = mt, mm, mj
+
+            # Bio
+            set_hfm_base(hfm_bio_cb, hfm_bio_override_cb, hfm_bio_entnahmeort_dd, hfm_bio_inhalt_in, hfm_bio_verpackung_dd, hfm_bio_temp_in, hfm_bio_bemerkung_dd, hfm_bio_herst_tag_dd, hfm_bio_herst_mon_dd, hfm_bio_herst_jahr_dd, "hfm_bio")
+            setze_wert(hfm_bio_lief_schwein_in, "hfm_bio_lief_schwein")
+            setze_wert(hfm_bio_charge_schwein_dd, "hfm_bio_charge_schwein")
+            mst, msm, msj = parse_datum(v.get("hfm_bio_mhd_schwein", ""))
+            hfm_bio_mhd_s_tag_dd.value, hfm_bio_mhd_s_mon_dd.value, hfm_bio_mhd_s_jahr_dd.value = mst, msm, msj
+            setze_wert(hfm_bio_lief_rind_in, "hfm_bio_lief_rind")
+            setze_wert(hfm_bio_charge_rind_dd, "hfm_bio_charge_rind")
+            mrt, mrm, mrj = parse_datum(v.get("hfm_bio_mhd_rind", ""))
+            hfm_bio_mhd_r_tag_dd.value, hfm_bio_mhd_r_mon_dd.value, hfm_bio_mhd_r_jahr_dd.value = mrt, mrm, mrj
 
             setze_wert(hfm_okz_cb, "hfm_abklatsch_cb", False)
             setze_wert(hfm_okz_bemerkung_dd, "hfm_abklatsch_bemerkung")
             for idx, c in okz_controls.items():
-                c["status"].value = "R+D"
+                c["status"].value = v.get(f"0010_status_{idx}", "R+D")
                 setze_wert(c["objekt"], f"0010_objekt_{idx}")
-                c["ort"].value = "Kühlraum"
+                c["ort"].value = v.get(f"0010_ort_{idx}", "Kühlraum")
                 setze_wert(c["abklatsch"], f"0010_abklatsch_{idx}", False)
                 setze_wert(c["tupfer"], f"0010_tupfer_{idx}", False)
 
+            # --- CONVENIENCE (OG) ---
             setze_wert(og_cb, "og_cb", False)
             setze_wert(og_override_cb, "og_override", False)
             for i in range(1, 6):
                 idx = f"{i:02d}"; c = og_controls[i]
                 setze_wert(c["name"], f"og_name_{idx}")
-                c["ort"].value = "Produktionsraum"
+                c["ort"].value = v.get(f"og_ort_{idx}", "Produktionsraum")
                 setze_wert(c["inhalt"], f"og_inhalt_{idx}")
-                c["verpackung"].value = "steriler Probenbecher"
+                c["verpackung"].value = v.get(f"og_verp_{idx}", "steriler Probenbecher")
                 setze_wert(c["temp"], f"og_temp_{idx}")
-                c["h_t"].value, c["h_m"].value, c["h_j"].value = "", "", jtoday
-                c["v_t"].value, c["v_m"].value, c["v_j"].value = "", "", ""
+                ht, hm, hj = parse_datum(v.get(f"og_herst_{idx}", ""))
+                c["h_t"].value, c["h_m"].value, c["h_j"].value = ht, hm, hj or jtoday
+                vt, vm, vj = parse_datum(v.get(f"og_verb_{idx}", ""))
+                c["v_t"].value, c["v_m"].value, c["v_j"].value = vt, vm, vj
 
             setze_wert(og_okz_cb, "og_abklatsch_cb", False)
             setze_wert(og_okz_bemerkung_dd, "og_abklatsch_bemerkung_1")
             setze_wert(og_okz_anmerkung_in, "og_abklatsch_bemerkung_2")
             for idx, c in og_okz_controls.items():
-                c["status"].value = "R+D"
+                c["status"].value = v.get(f"0011_status_{idx}", "R+D")
                 setze_wert(c["objekt"], f"0011_objekt_{idx}")
-                c["ort"].value = "Produktionsbereich"
+                c["ort"].value = v.get(f"0011_ort_{idx}", "Produktionsbereich")
                 setze_wert(c["abklatsch"], f"0011_abklatsch_{idx}", False)
                 setze_wert(c["tupfer"], f"0011_tupfer_{idx}", False)
 
@@ -515,13 +547,13 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             page.update()
 
         vorlagen_expansion = ft.ExpansionTile(
-            title=ft.Text("📋 Vorlage", weight="bold", color="white", size=18),
+            title=ft.Text("📋 Vorlagen (Schnellauswahl)", weight="bold", color="white", size=18),
             collapsed_text_color="white", text_color="#4CAF50",
             controls=[
                 ft.Container(bgcolor="#002b00", padding=15, border_radius=10, content=ft.Column([
                     vorlagen_status,
-                    ft.Row([ft.Container(content=vl_dd, expand=True), emoji_btn("📥", lade_v, "#2196F3"), emoji_btn("🗑️", del_v, "#F44336")]),
-                    ft.Row([ft.Container(content=vl_name_in, expand=True), emoji_btn("💾", save_v, "#FF9800")])
+                    ft.Row([ft.Container(content=vl_dd, expand=True), emoji_btn("📥 Laden", lade_v, "#2196F3"), emoji_btn("🗑️ Löschen", del_v, "#F44336")]),
+                    ft.Row([ft.Container(content=vl_name_in, expand=True), emoji_btn("💾 Als Neu Speichern", save_v, "#FF9800")])
                 ]))
             ]
         )
@@ -643,7 +675,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 if hasattr(ctrl, "border_color"):
                     ctrl.border_color = "white"
                 if isinstance(ctrl, ft.Checkbox):
-                    # Setzt die Checkbox wieder auf Standard zurück
                     old_size = ctrl.label_style.size if ctrl.label_style else 16
                     old_weight = ctrl.label_style.weight if ctrl.label_style else "bold"
                     ctrl.label_style = ft.TextStyle(color="white", size=old_size, weight=old_weight)
@@ -660,7 +691,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 if hasattr(ctrl, "border_color"):
                     ctrl.border_color = "red"
                 if isinstance(ctrl, ft.Checkbox):
-                    # Macht den Text der Checkbox ROT und BOLD
                     old_size = ctrl.label_style.size if ctrl.label_style else 16
                     old_weight = ctrl.label_style.weight if ctrl.label_style else "bold"
                     ctrl.label_style = ft.TextStyle(color="red", size=old_size, weight=old_weight)
@@ -708,9 +738,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
             # --- HFM FLEISCH ---
             def check_hfm(cb_ctrl, override_cb, temp, h_t, h_m, l_s, l_r, c_s, c_r, mhd_s_t, mhd_s_m, mhd_r_t, mhd_r_m, name, tab):
-                if override_cb.value: 
-                    return # Überspringt die Prüfung, wenn "Trotzdem speichern" aktiv ist
-
+                if override_cb.value: return 
                 alle_felder = [f for f in [temp, h_t, h_m, l_s, l_r, c_s, c_r, mhd_s_t, mhd_s_m, mhd_r_t, mhd_r_m] if f is not None]
                 daten_vorhanden = any([(f.value or "").strip() for f in alle_felder])
                 
@@ -863,10 +891,21 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 status_text.value = "⏳ Speichere..."; status_text.color = "yellow"; page.update()
                 maerkte = lade_maerkte()
                 d = hole_aktuelle_daten()
+                
                 tour_aktualisiert = False
-                for i, tour in enumerate(maerkte):
-                    if tour.get("marktnummer") == nr_in.value: maerkte[i] = d; tour_aktualisiert = True; break
-                if not tour_aktualisiert: maerkte.append(d)
+                if nr_in.value.strip(): 
+                    for i, tour in enumerate(maerkte):
+                        if tour.get("marktnummer") == nr_in.value: 
+                            maerkte[i] = d
+                            tour_aktualisiert = True
+                            break
+                            
+                if not tour_aktualisiert:
+                    if markt_index is not None and markt_index < len(maerkte):
+                        maerkte[markt_index] = d
+                    else:
+                        maerkte.append(d)
+                        
                 speichere_maerkte(maerkte)
                 status_text.value = "✅ Gespeichert!"; status_text.color = "orange"; page.update()
             except Exception as ex: 
@@ -893,9 +932,23 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 status_text.value = "⏳ PDF..."; status_text.color = "yellow"; page.update()
                 maerkte = lade_maerkte()
                 d = hole_aktuelle_daten()
-                if markt_index is None: maerkte.append(d)
-                else: maerkte[markt_index] = d
+                
+                tour_aktualisiert = False
+                if nr_in.value.strip(): 
+                    for i, tour in enumerate(maerkte):
+                        if tour.get("marktnummer") == nr_in.value: 
+                            maerkte[i] = d
+                            tour_aktualisiert = True
+                            break
+                            
+                if not tour_aktualisiert:
+                    if markt_index is not None and markt_index < len(maerkte):
+                        maerkte[markt_index] = d
+                    else:
+                        maerkte.append(d)
+                        
                 speichere_maerkte(maerkte)
+                
                 try:
                     saved_path = erstelle_bericht(d)
                     fname = os.path.basename(saved_path)
