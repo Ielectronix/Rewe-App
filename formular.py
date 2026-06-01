@@ -349,12 +349,13 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         alle_vorlagen = lade_vorlagen_lokal()
         vorlagen_status = ft.Text("", weight="bold", size=14) 
         
-        # WICHTIG: Das Vorlagen-Dropdown mit explizitem, weißem Pfeil!
+        # OHNE den absturzverursachenden icon_enabled_color Befehl. 
+        # Standard Flet-Verhalten greift hier ein.
         vl_dd = ft.Dropdown(
             options=[ft.dropdown.Option(k) for k in alle_vorlagen.keys()], 
             hint_text="Vorlage wählen...", dense=True, content_padding=15, 
             color="yellow", text_style=ft.TextStyle(color="yellow", size=14), 
-            border_color="white", icon_enabled_color="white" # Das macht den Pfeil sichtbar
+            border_color="white" 
         )
         vl_name_in = tf("Als neue Vorlage speichern", "")
 
