@@ -29,7 +29,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
     markierte_fehler_controls = [] 
     
     fehler_container = ft.Column(spacing=5, visible=False, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
-    status_text = ft.Text("", color="yellow", weight="bold", size=18, text_align=ft.TextAlign.CENTER)
+    status_text = ft.Text("", color="#FF9800", weight="bold", size=18, text_align=ft.TextAlign.CENTER)
 
     tage_opts = [""]+[f"{i:02d}" for i in range(1,32)]
     mon_opts = [""]+[f"{i:02d}" for i in range(1,13)]
@@ -54,7 +54,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 label=label, value=val or "", hint_text=hint, 
                 multiline=multiline,
                 hint_style=ft.TextStyle(color="white54", size=12), 
-                color="yellow", text_style=ft.TextStyle(size=14, color="yellow"), 
+                color="#FF9800", text_style=ft.TextStyle(size=14, color="#FF9800"), 
                 label_style=ft.TextStyle(color="white", size=14), 
                 border_color="white", content_padding=15, width=w, on_change=oc, on_blur=ob
             )
@@ -70,7 +70,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             c = ft.TextField(
                 label=label, value=echter_wert, 
                 multiline=False if is_date else multiline,
-                color="yellow", text_style=ft.TextStyle(size=txt_size, color="yellow"), 
+                color="#FF9800", text_style=ft.TextStyle(size=txt_size, color="#FF9800"), 
                 label_style=ft.TextStyle(color="white", size=lbl_size), 
                 border_color="white", dense=True, content_padding=pad, width=w, on_change=oc
             )
@@ -121,7 +121,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             return ft.Checkbox(
                 label=label, value=bool(val), on_change=oc, 
                 label_style=ft.TextStyle(color="white", size=16 if bold else 14, weight="bold" if bold else "normal"), 
-                fill_color="yellow", check_color="black"
+                fill_color="#FF9800", check_color="black"
             )
 
         def d_row(t_dd, m_dd, j_dd):
@@ -352,7 +352,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         vl_dd = ft.Dropdown(
             options=[ft.dropdown.Option(k) for k in alle_vorlagen.keys()], 
             hint_text="Vorlage wählen...", dense=True, content_padding=15, 
-            color="yellow", text_style=ft.TextStyle(color="yellow", size=14), 
+            color="#FF9800", text_style=ft.TextStyle(color="#FF9800", size=14), 
             border_color="white" 
         )
         vl_name_in = tf("Als neue Vorlage speichern", "")
@@ -555,7 +555,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             vl_dd.options = [ft.dropdown.Option(k) for k in alle_vorlagen.keys()]
             vl_dd.update() 
             vorlagen_status.value = f"✅ Vorlage gespeichert!"
-            vorlagen_status.color = "orange"
+            vorlagen_status.color = "#FF9800"
             vl_name_in.value = ""
             page.update()
 
@@ -901,7 +901,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
             fehler_container.visible = False
             status_text.value = "🔄 REITER GELEERT!"
-            status_text.color = "orange"
+            status_text.color = "#FF9800"
             page.update()
 
         def nur_speichern(e):
@@ -910,7 +910,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             page.update()
 
             try:
-                status_text.value = "⏳ Speichere..."; status_text.color = "yellow"; page.update()
+                status_text.value = "⏳ Speichere..."; status_text.color = "#FF9800"; page.update()
                 maerkte = lade_maerkte()
                 d = hole_aktuelle_daten()
                 
@@ -929,7 +929,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                         maerkte.append(d)
                         
                 speichere_maerkte(maerkte)
-                status_text.value = "✅ Gespeichert!"; status_text.color = "orange"; page.update()
+                status_text.value = "✅ Gespeichert!"; status_text.color = "#FF9800"; page.update()
             except Exception as ex: 
                 status_text.value = "❌ Fehler"; status_text.color = "red"; zeige_fehler(ex)
         
@@ -951,7 +951,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 return
 
             try:
-                status_text.value = "⏳ PDF..."; status_text.color = "yellow"; page.update()
+                status_text.value = "⏳ PDF..."; status_text.color = "#FF9800"; page.update()
                 maerkte = lade_maerkte()
                 d = hole_aktuelle_daten()
                 
@@ -1020,10 +1020,10 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                         sub_nav.controls.append(btn)
                     if sub == "eis": haupt_bereich.controls.extend([ft.Row([se_kalt_cb, se_override_cb], wrap=True), se_zeit_in, se_zapf_dd, ft.Text("Technik:", color="#2196F3", weight="bold"), ft.Row([se_cb_eiswanne, se_cb_fallprobe], wrap=True), se_tech_sonst_in, se_desinf_dd, ft.Text("Auffälligkeiten:", color="#2196F3", weight="bold"), se_cb_ozon, se_auff_sonst_in, se_inhalt_in, se_verpackung_dd, se_entnahmeort_dd, se_temp_in, se_bemerkung_dd])
                     elif sub == "okz":
-                        haupt_bereich.controls.extend([ft.Text("🔬 OKZ Scherbeneis", color="orange", weight="bold"), se_okz_cb, ft.Divider(color="white24")])
+                        haupt_bereich.controls.extend([ft.Text("🔬 OKZ Scherbeneis", color="#FF9800", weight="bold"), se_okz_cb, ft.Divider(color="white24")])
                         for i in range(1, 4):
                             c = se_okz_controls[f"{i:02d}"]
-                            haupt_bereich.controls.extend([ft.Text(f"Probe {i}", color="yellow", weight="bold"), ft.Row([ft.Container(content=c["status"], expand=1), ft.Container(content=c["objekt"], expand=3)]), c["ort"], ft.Row([ft.Container(content=c["abklatsch"], expand=1), ft.Container(content=c["tupfer"], expand=1)]), ft.Divider(color="white24")])
+                            haupt_bereich.controls.extend([ft.Text(f"Probe {i}", color="#FF9800", weight="bold"), ft.Row([ft.Container(content=c["status"], expand=1), ft.Container(content=c["objekt"], expand=3)]), c["ort"], ft.Row([ft.Container(content=c["abklatsch"], expand=1), ft.Container(content=c["tupfer"], expand=1)]), ft.Divider(color="white24")])
                         haupt_bereich.controls.append(se_okz_bemerkung_dd)
                     if page: page.update()
                 sw_se(sub_tab_id if sub_tab_id else "eis")
@@ -1044,10 +1044,10 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                     elif sub == "fzg": haupt_bereich.controls.extend([ft.Row([hfm_fzg_cb, hfm_fzg_override_cb], wrap=True), hfm_fzg_entnahmeort_dd, hfm_fzg_produkt_in, hfm_fzg_marinade_in, ft.Text("Herstellungsdatum:", color="#2196F3", weight="bold"), d_row(hfm_fzg_herst_tag_dd, hfm_fzg_herst_mon_dd, hfm_fzg_herst_jahr_dd), hfm_fzg_inhalt_in, hfm_fzg_verpackung_dd, hfm_fzg_lief_in, ft.Text("MHD:", color="#2196F3", weight="bold"), d_row(hfm_fzg_mhd_tag_dd, hfm_fzg_mhd_mon_dd, hfm_fzg_mhd_jahr_dd), hfm_fzg_charge_dd, hfm_fzg_temp_in, hfm_fzg_bemerkung_dd])
                     elif sub == "bio": haupt_bereich.controls.extend([ft.Row([hfm_bio_cb, hfm_bio_override_cb], wrap=True), hfm_bio_entnahmeort_dd, ft.Text("Herstellungsdatum:", color="#2196F3", weight="bold"), d_row(hfm_bio_herst_tag_dd, hfm_bio_herst_mon_dd, hfm_bio_herst_jahr_dd), hfm_bio_inhalt_in, hfm_bio_verpackung_dd, hfm_bio_lief_schwein_in, hfm_bio_lief_rind_in, ft.Text("MHD (Schwein):", color="#2196F3", weight="bold"), d_row(hfm_bio_mhd_s_tag_dd, hfm_bio_mhd_s_mon_dd, hfm_bio_mhd_s_jahr_dd), ft.Text("MHD (Rind):", color="#2196F3", weight="bold"), d_row(hfm_bio_mhd_r_tag_dd, hfm_bio_mhd_r_mon_dd, hfm_bio_mhd_r_jahr_dd), hfm_bio_charge_schwein_dd, hfm_bio_charge_rind_dd, hfm_bio_temp_in, hfm_bio_bemerkung_dd])
                     elif sub == "okz":
-                        haupt_bereich.controls.extend([ft.Text("🔬 OKZ Fleisch", color="orange", weight="bold"), hfm_okz_cb, ft.Divider(color="white24")])
+                        haupt_bereich.controls.extend([ft.Text("🔬 OKZ Fleisch", color="#FF9800", weight="bold"), hfm_okz_cb, ft.Divider(color="white24")])
                         for i in range(1, 11):
                             c = okz_controls[f"{i:02d}"]
-                            haupt_bereich.controls.extend([ft.Text(f"Probe {i}", color="yellow", weight="bold"), ft.Row([ft.Container(content=c["status"], expand=1), ft.Container(content=c["objekt"], expand=3)]), c["ort"], ft.Row([ft.Container(content=c["abklatsch"], expand=1), ft.Container(content=c["tupfer"], expand=1)]), ft.Divider(color="white24")])
+                            haupt_bereich.controls.extend([ft.Text(f"Probe {i}", color="#FF9800", weight="bold"), ft.Row([ft.Container(content=c["status"], expand=1), ft.Container(content=c["objekt"], expand=3)]), c["ort"], ft.Row([ft.Container(content=c["abklatsch"], expand=1), ft.Container(content=c["tupfer"], expand=1)]), ft.Divider(color="white24")])
                         haupt_bereich.controls.append(hfm_okz_bemerkung_dd)
                     if page: page.update()
                 sw_hfm(sub_tab_id if sub_tab_id else "hack")
@@ -1077,12 +1077,12 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                                 ft.Container(height=15)
                             ])
                     elif sub == "okz":
-                        haupt_bereich.controls.extend([ft.Text("🔬 OKZ Convenience", color="orange", weight="bold"), og_okz_cb, ft.Divider(color="white24")])
+                        haupt_bereich.controls.extend([ft.Text("🔬 OKZ Convenience", color="#FF9800", weight="bold"), og_okz_cb, ft.Divider(color="white24")])
                         for i in range(1, 6):
                             c = og_okz_controls[f"{i:02d}"]
                             if i == 2: haupt_bereich.controls.append(ft.Text("💡 Info: Bei Saftpresse bitte hier auswählen.", color="white54", italic=True, size=14))
-                            haupt_bereich.controls.extend([ft.Text(f"Probe {i}", color="yellow", weight="bold"), ft.Row([ft.Container(content=c["status"], expand=1), ft.Container(content=c["objekt"], expand=3)]), c["ort"], ft.Row([ft.Container(content=c["abklatsch"], expand=1), ft.Container(content=c["tupfer"], expand=1)]), ft.Divider(color="white24")])
-                        haupt_bereich.controls.extend([ft.Text("💡 Wichtig: Wird die Saftpresse beprobt, muss zwingend auch das Messer aufgenommen werden!", color="orange", weight="bold"), og_okz_bemerkung_dd, og_okz_anmerkung_in])
+                            haupt_bereich.controls.extend([ft.Text(f"Probe {i}", color="#FF9800", weight="bold"), ft.Row([ft.Container(content=c["status"], expand=1), ft.Container(content=c["objekt"], expand=3)]), c["ort"], ft.Row([ft.Container(content=c["abklatsch"], expand=1), ft.Container(content=c["tupfer"], expand=1)]), ft.Divider(color="white24")])
+                        haupt_bereich.controls.extend([ft.Text("💡 Wichtig: Wird die Saftpresse beprobt, muss zwingend auch das Messer aufgenommen werden!", color="#FF9800", weight="bold"), og_okz_bemerkung_dd, og_okz_anmerkung_in])
                     if page: page.update()
                 sw_og(sub_tab_id if sub_tab_id else "teil")
             if page: page.update()
