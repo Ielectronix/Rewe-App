@@ -213,10 +213,13 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         hfm_hack_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("hfm_hack_entnahmeort", "Kühlraum"), ort_opts)
         ht, hm, hj = get_herst("hfm_hack_herstelldatum")
         hfm_hack_herst_tag_dd, hfm_hack_herst_mon_dd, hfm_hack_herst_jahr_dd = combo("Tag", ht, tage_opts), combo("Mon", hm, mon_opts), combo("Jahr", hj, jahr_opts)
-        t, m, j = parse_datum(aktuelle_daten.get("hfm_hack_mhd_schwein", ""))
+        
+        t, m, j = parse_datum(aktuelle_daten.get("hfm_hack_mhd_schwein", ""), "", "", jtoday)
         hfm_hack_mhd_s_tag_dd, hfm_hack_mhd_s_mon_dd, hfm_hack_mhd_s_jahr_dd = combo("Tag", t, tage_opts), combo("Mon", m, mon_opts), combo("Jahr", j, jahr_opts)
-        t, m, j = parse_datum(aktuelle_daten.get("hfm_hack_mhd_rind", ""))
+        
+        t, m, j = parse_datum(aktuelle_daten.get("hfm_hack_mhd_rind", ""), "", "", jtoday)
         hfm_hack_mhd_r_tag_dd, hfm_hack_mhd_r_mon_dd, hfm_hack_mhd_r_jahr_dd = combo("Tag", t, tage_opts), combo("Mon", m, mon_opts), combo("Jahr", j, jahr_opts)
+        
         hfm_hack_inhalt_in = tf("Inhalt", aktuelle_daten.get("hfm_hack_inhalt", ""))
         hfm_hack_verpackung_dd = combo("Verpackung", aktuelle_daten.get("hfm_hack_verpackung", "steriler Probenbeutel"), verp_opts)
         hfm_hack_lief_schwein_in = tf("Lieferant (Schwein)", aktuelle_daten.get("hfm_hack_lief_schwein", ""))
@@ -231,8 +234,10 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         hfm_mett_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("hfm_mett_entnahmeort", "Kühlraum"), ort_opts)
         ht, hm, hj = get_herst("hfm_mett_herstelldatum")
         hfm_mett_herst_tag_dd, hfm_mett_herst_mon_dd, hfm_mett_herst_jahr_dd = combo("Tag", ht, tage_opts), combo("Mon", hm, mon_opts), combo("Jahr", hj, jahr_opts)
-        t, m, j = parse_datum(aktuelle_daten.get("hfm_mett_mhd", ""))
+        
+        t, m, j = parse_datum(aktuelle_daten.get("hfm_mett_mhd", ""), "", "", jtoday)
         hfm_mett_mhd_tag_dd, hfm_mett_mhd_mon_dd, hfm_mett_mhd_jahr_dd = combo("Tag", t, tage_opts), combo("Mon", m, mon_opts), combo("Jahr", j, jahr_opts)
+        
         hfm_mett_inhalt_in = tf("Inhalt", aktuelle_daten.get("hfm_mett_inhalt", ""))
         hfm_mett_verpackung_dd = combo("Verpackung", aktuelle_daten.get("hfm_mett_verpackung", "steriler Probenbeutel"), verp_opts)
         hfm_mett_lief_in = tf("Lieferant Rohware", aktuelle_daten.get("hfm_mett_lief", ""))
@@ -247,8 +252,10 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         hfm_fzs_marinade_in = tf("Marinade", aktuelle_daten.get("hfm_fzs_marinade", ""))
         ht, hm, hj = get_herst("hfm_fzs_herstelldatum")
         hfm_fzs_herst_tag_dd, hfm_fzs_herst_mon_dd, hfm_fzs_herst_jahr_dd = combo("Tag", ht, tage_opts), combo("Mon", hm, mon_opts), combo("Jahr", hj, jahr_opts)
-        t, m, j = parse_datum(aktuelle_daten.get("hfm_fzs_mhd", ""))
+        
+        t, m, j = parse_datum(aktuelle_daten.get("hfm_fzs_mhd", ""), "", "", jtoday)
         hfm_fzs_mhd_tag_dd, hfm_fzs_mhd_mon_dd, hfm_fzs_mhd_jahr_dd = combo("Tag", t, tage_opts), combo("Mon", m, mon_opts), combo("Jahr", j, jahr_opts)
+        
         hfm_fzs_inhalt_in = tf("Inhalt", aktuelle_daten.get("hfm_fzs_inhalt", ""))
         hfm_fzs_verpackung_dd = combo("Verpackung", aktuelle_daten.get("hfm_fzs_verpackung", "steriler Probenbeutel"), verp_opts)
         hfm_fzs_lief_in = tf("Lieferant Rohware", aktuelle_daten.get("hfm_fzs_lief", ""))
@@ -263,8 +270,10 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         hfm_fzg_marinade_in = tf("Marinade", aktuelle_daten.get("hfm_fzg_marinade", ""))
         ht, hm, hj = get_herst("hfm_fzg_herstelldatum")
         hfm_fzg_herst_tag_dd, hfm_fzg_herst_mon_dd, hfm_fzg_herst_jahr_dd = combo("Tag", ht, tage_opts), combo("Mon", hm, mon_opts), combo("Jahr", hj, jahr_opts)
-        t, m, j = parse_datum(aktuelle_daten.get("hfm_fzg_mhd", ""))
+        
+        t, m, j = parse_datum(aktuelle_daten.get("hfm_fzg_mhd", ""), "", "", jtoday)
         hfm_fzg_mhd_tag_dd, hfm_fzg_mhd_mon_dd, hfm_fzg_mhd_jahr_dd = combo("Tag", t, tage_opts), combo("Mon", m, mon_opts), combo("Jahr", j, jahr_opts)
+        
         hfm_fzg_inhalt_in = tf("Inhalt", aktuelle_daten.get("hfm_fzg_inhalt", ""))
         hfm_fzg_verpackung_dd = combo("Verpackung", aktuelle_daten.get("hfm_fzg_verpackung", "steriler Probenbeutel"), verp_opts)
         hfm_fzg_lief_in = tf("Lieferant Rohware", aktuelle_daten.get("hfm_fzg_lief", ""))
@@ -277,10 +286,13 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         hfm_bio_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("hfm_bio_entnahmeort", "Produktionsraum"), ort_opts)
         ht, hm, hj = get_herst("hfm_bio_herstelldatum")
         hfm_bio_herst_tag_dd, hfm_bio_herst_mon_dd, hfm_bio_herst_jahr_dd = combo("Tag", ht, tage_opts), combo("Mon", hm, mon_opts), combo("Jahr", hj, jahr_opts)
-        t, m, j = parse_datum(aktuelle_daten.get("hfm_bio_mhd_schwein", ""))
+        
+        t, m, j = parse_datum(aktuelle_daten.get("hfm_bio_mhd_schwein", ""), "", "", jtoday)
         hfm_bio_mhd_s_tag_dd, hfm_bio_mhd_s_mon_dd, hfm_bio_mhd_s_jahr_dd = combo("Tag", t, tage_opts), combo("Mon", m, mon_opts), combo("Jahr", j, jahr_opts)
-        t, m, j = parse_datum(aktuelle_daten.get("hfm_bio_mhd_rind", ""))
+        
+        t, m, j = parse_datum(aktuelle_daten.get("hfm_bio_mhd_rind", ""), "", "", jtoday)
         hfm_bio_mhd_r_tag_dd, hfm_bio_mhd_r_mon_dd, hfm_bio_mhd_r_jahr_dd = combo("Tag", t, tage_opts), combo("Mon", m, mon_opts), combo("Jahr", j, jahr_opts)
+        
         hfm_bio_inhalt_in = tf("Inhalt", aktuelle_daten.get("hfm_bio_inhalt", ""))
         hfm_bio_verpackung_dd = combo("Verpackung", aktuelle_daten.get("hfm_bio_verpackung", "steriler Probenbecher"), verp_opts)
         hfm_bio_lief_schwein_in = tf("Lieferant (Schwein)", aktuelle_daten.get("hfm_bio_lief_schwein", ""))
@@ -309,7 +321,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         for i in range(1, 6):
             idx = f"{i:02d}"
             ht, hm, hj = parse_datum(aktuelle_daten.get(f"og_herst_{idx}", ""), "", "", jtoday)
-            vt, vm, vj = parse_datum(aktuelle_daten.get(f"og_verb_{idx}", ""))
+            vt, vm, vj = parse_datum(aktuelle_daten.get(f"og_verb_{idx}", ""), "", "", jtoday)
             og_controls[i] = {
                 "name": tf(f"Name Teilprobe {i}", aktuelle_daten.get(f"og_name_{idx}", "")),
                 "ort": combo("Entnahmeort", aktuelle_daten.get(f"og_ort_{idx}", "Produktionsraum"), ["Produktionsraum", "Bedientheke", "Vorbereitungsraum", "Kühlraum", "SB-Theke", "Salatbar", "Saftpresse"]),
@@ -332,7 +344,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             og_okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0011_status_{idx}", "R+D"), ["R+D", "R", "P", "-"]), "objekt": combo("Objekt", aktuelle_daten.get(f"0011_objekt_{idx}") or og_okz_def[i]["o"], og_okz_opts), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0011_ort_{idx}", "Produktionsbereich"), ["Kühlraum", "Produktionsbereich", "Theke"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0011_abklatsch_{idx}", og_okz_def[i]["a"])), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0011_tupfer_{idx}", og_okz_def[i]["t"]))}
 
         # ==========================================
-        # VORLAGEN LOGIK (KORRIGIERT & SICHER)
+        # VORLAGEN LOGIK (NEUES LAYOUT FÜR PLATZ)
         # ==========================================
         alle_vorlagen = lade_vorlagen_lokal()
         vorlagen_status = ft.Text("", weight="bold", size=14) 
@@ -428,7 +440,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 setze_wert(c["abklatsch"], f"0003_abklatsch_{idx}", False)
                 setze_wert(c["tupfer"], f"0003_tupfer_{idx}", False)
 
-            # --- HFM FLEISCH (Explizites Laden) ---
+            # --- HFM FLEISCH ---
             def set_hfm_base(cb_c, over_c, ort_c, inhalt_c, verp_c, temp_c, bem_c, htag_c, hmon_c, hjahr_c, prefix):
                 setze_wert(cb_c, f"{prefix}_cb", False)
                 setze_wert(over_c, f"{prefix}_override", False)
@@ -444,18 +456,18 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             set_hfm_base(hfm_hack_cb, hfm_hack_override_cb, hfm_hack_entnahmeort_dd, hfm_hack_inhalt_in, hfm_hack_verpackung_dd, hfm_hack_temp_in, hfm_hack_bemerkung_dd, hfm_hack_herst_tag_dd, hfm_hack_herst_mon_dd, hfm_hack_herst_jahr_dd, "hfm_hack")
             setze_wert(hfm_hack_lief_schwein_in, "hfm_hack_lief_schwein")
             setze_wert(hfm_hack_charge_schwein_dd, "hfm_hack_charge_schwein")
-            mst, msm, msj = parse_datum(v.get("hfm_hack_mhd_schwein", ""))
+            mst, msm, msj = parse_datum(v.get("hfm_hack_mhd_schwein", ""), "", "", jtoday)
             hfm_hack_mhd_s_tag_dd.value, hfm_hack_mhd_s_mon_dd.value, hfm_hack_mhd_s_jahr_dd.value = mst, msm, msj
             setze_wert(hfm_hack_lief_rind_in, "hfm_hack_lief_rind")
             setze_wert(hfm_hack_charge_rind_dd, "hfm_hack_charge_rind")
-            mrt, mrm, mrj = parse_datum(v.get("hfm_hack_mhd_rind", ""))
+            mrt, mrm, mrj = parse_datum(v.get("hfm_hack_mhd_rind", ""), "", "", jtoday)
             hfm_hack_mhd_r_tag_dd.value, hfm_hack_mhd_r_mon_dd.value, hfm_hack_mhd_r_jahr_dd.value = mrt, mrm, mrj
 
             # Mett
             set_hfm_base(hfm_mett_cb, hfm_mett_override_cb, hfm_mett_entnahmeort_dd, hfm_mett_inhalt_in, hfm_mett_verpackung_dd, hfm_mett_temp_in, hfm_mett_bemerkung_dd, hfm_mett_herst_tag_dd, hfm_mett_herst_mon_dd, hfm_mett_herst_jahr_dd, "hfm_mett")
             setze_wert(hfm_mett_lief_in, "hfm_mett_lief")
             setze_wert(hfm_mett_charge_dd, "hfm_mett_charge")
-            mt, mm, mj = parse_datum(v.get("hfm_mett_mhd", ""))
+            mt, mm, mj = parse_datum(v.get("hfm_mett_mhd", ""), "", "", jtoday)
             hfm_mett_mhd_tag_dd.value, hfm_mett_mhd_mon_dd.value, hfm_mett_mhd_jahr_dd.value = mt, mm, mj
 
             # FZS
@@ -464,7 +476,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             setze_wert(hfm_fzs_marinade_in, "hfm_fzs_marinade")
             setze_wert(hfm_fzs_lief_in, "hfm_fzs_lief")
             setze_wert(hfm_fzs_charge_dd, "hfm_fzs_charge")
-            mt, mm, mj = parse_datum(v.get("hfm_fzs_mhd", ""))
+            mt, mm, mj = parse_datum(v.get("hfm_fzs_mhd", ""), "", "", jtoday)
             hfm_fzs_mhd_tag_dd.value, hfm_fzs_mhd_mon_dd.value, hfm_fzs_mhd_jahr_dd.value = mt, mm, mj
 
             # FZG
@@ -473,18 +485,18 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             setze_wert(hfm_fzg_marinade_in, "hfm_fzg_marinade")
             setze_wert(hfm_fzg_lief_in, "hfm_fzg_lief")
             setze_wert(hfm_fzg_charge_dd, "hfm_fzg_charge")
-            mt, mm, mj = parse_datum(v.get("hfm_fzg_mhd", ""))
+            mt, mm, mj = parse_datum(v.get("hfm_fzg_mhd", ""), "", "", jtoday)
             hfm_fzg_mhd_tag_dd.value, hfm_fzg_mhd_mon_dd.value, hfm_fzg_mhd_jahr_dd.value = mt, mm, mj
 
             # Bio
             set_hfm_base(hfm_bio_cb, hfm_bio_override_cb, hfm_bio_entnahmeort_dd, hfm_bio_inhalt_in, hfm_bio_verpackung_dd, hfm_bio_temp_in, hfm_bio_bemerkung_dd, hfm_bio_herst_tag_dd, hfm_bio_herst_mon_dd, hfm_bio_herst_jahr_dd, "hfm_bio")
             setze_wert(hfm_bio_lief_schwein_in, "hfm_bio_lief_schwein")
             setze_wert(hfm_bio_charge_schwein_dd, "hfm_bio_charge_schwein")
-            mst, msm, msj = parse_datum(v.get("hfm_bio_mhd_schwein", ""))
+            mst, msm, msj = parse_datum(v.get("hfm_bio_mhd_schwein", ""), "", "", jtoday)
             hfm_bio_mhd_s_tag_dd.value, hfm_bio_mhd_s_mon_dd.value, hfm_bio_mhd_s_jahr_dd.value = mst, msm, msj
             setze_wert(hfm_bio_lief_rind_in, "hfm_bio_lief_rind")
             setze_wert(hfm_bio_charge_rind_dd, "hfm_bio_charge_rind")
-            mrt, mrm, mrj = parse_datum(v.get("hfm_bio_mhd_rind", ""))
+            mrt, mrm, mrj = parse_datum(v.get("hfm_bio_mhd_rind", ""), "", "", jtoday)
             hfm_bio_mhd_r_tag_dd.value, hfm_bio_mhd_r_mon_dd.value, hfm_bio_mhd_r_jahr_dd.value = mrt, mrm, mrj
 
             setze_wert(hfm_okz_cb, "hfm_abklatsch_cb", False)
@@ -508,7 +520,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 setze_wert(c["temp"], f"og_temp_{idx}")
                 ht, hm, hj = parse_datum(v.get(f"og_herst_{idx}", ""))
                 c["h_t"].value, c["h_m"].value, c["h_j"].value = ht, hm, hj or jtoday
-                vt, vm, vj = parse_datum(v.get(f"og_verb_{idx}", ""))
+                vt, vm, vj = parse_datum(v.get(f"og_verb_{idx}", ""), "", "", jtoday)
                 c["v_t"].value, c["v_m"].value, c["v_j"].value = vt, vm, vj
 
             setze_wert(og_okz_cb, "og_abklatsch_cb", False)
@@ -552,8 +564,16 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             controls=[
                 ft.Container(bgcolor="#002b00", padding=15, border_radius=10, content=ft.Column([
                     vorlagen_status,
-                    ft.Row([ft.Container(content=vl_dd, expand=True), emoji_btn("📥 Laden", lade_v, "#2196F3"), emoji_btn("🗑️ Löschen", del_v, "#F44336")]),
-                    ft.Row([ft.Container(content=vl_name_in, expand=True), emoji_btn("💾 Als Neu Speichern", save_v, "#FF9800")])
+                    vl_dd, # Nimmt jetzt die volle Breite ein!
+                    ft.Row([
+                        ft.Container(content=emoji_btn("📥 Laden", lade_v, "#2196F3"), expand=True), 
+                        ft.Container(content=emoji_btn("🗑️ Löschen", del_v, "#F44336"), expand=True)
+                    ]),
+                    ft.Container(height=5),
+                    vl_name_in, # Nimmt ebenfalls die volle Breite ein!
+                    ft.Row([
+                        ft.Container(content=emoji_btn("💾 Als Neu Speichern", save_v, "#FF9800"), expand=True)
+                    ])
                 ]))
             ]
         )
@@ -822,15 +842,15 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                     hfm_hack_entnahmeort_dd.value = "Kühlraum"
                     hfm_hack_herst_tag_dd.value, hfm_hack_herst_mon_dd.value, hfm_hack_herst_jahr_dd.value = "", "", jtoday
                     hfm_hack_inhalt_in.value, hfm_hack_verpackung_dd.value, hfm_hack_lief_schwein_in.value, hfm_hack_lief_rind_in.value = "", "steriler Probenbeutel", "", ""
-                    hfm_hack_mhd_s_tag_dd.value, hfm_hack_mhd_s_mon_dd.value, hfm_hack_mhd_s_jahr_dd.value = "", "", ""
-                    hfm_hack_mhd_r_tag_dd.value, hfm_hack_mhd_r_mon_dd.value, hfm_hack_mhd_r_jahr_dd.value = "", "", ""
+                    hfm_hack_mhd_s_tag_dd.value, hfm_hack_mhd_s_mon_dd.value, hfm_hack_mhd_s_jahr_dd.value = "", "", jtoday
+                    hfm_hack_mhd_r_tag_dd.value, hfm_hack_mhd_r_mon_dd.value, hfm_hack_mhd_r_jahr_dd.value = "", "", jtoday
                     hfm_hack_charge_schwein_dd.value, hfm_hack_charge_rind_dd.value, hfm_hack_temp_in.value, hfm_hack_bemerkung_dd.value = "", "", "", ""
                 elif sub == "mett":
                     hfm_mett_cb.value, hfm_mett_override_cb.value = False, False
                     hfm_mett_entnahmeort_dd.value = "Kühlraum"
                     hfm_mett_herst_tag_dd.value, hfm_mett_herst_mon_dd.value, hfm_mett_herst_jahr_dd.value = "", "", jtoday
                     hfm_mett_inhalt_in.value, hfm_mett_verpackung_dd.value, hfm_mett_lief_in.value = "", "steriler Probenbeutel", ""
-                    hfm_mett_mhd_tag_dd.value, hfm_mett_mhd_mon_dd.value, hfm_mett_mhd_jahr_dd.value = "", "", ""
+                    hfm_mett_mhd_tag_dd.value, hfm_mett_mhd_mon_dd.value, hfm_mett_mhd_jahr_dd.value = "", "", jtoday
                     hfm_mett_charge_dd.value, hfm_mett_temp_in.value, hfm_mett_bemerkung_dd.value = "", "", ""
                 elif sub == "fzs":
                     hfm_fzs_cb.value, hfm_fzs_override_cb.value = False, False
@@ -838,7 +858,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                     hfm_fzs_produkt_in.value, hfm_fzs_marinade_in.value, hfm_fzs_inhalt_in.value = "", "", ""
                     hfm_fzs_herst_tag_dd.value, hfm_fzs_herst_mon_dd.value, hfm_fzs_herst_jahr_dd.value = "", "", jtoday
                     hfm_fzs_verpackung_dd.value = "steriler Probenbeutel"
-                    hfm_fzs_lief_in.value, hfm_fzs_mhd_tag_dd.value, hfm_fzs_mhd_mon_dd.value, hfm_fzs_mhd_jahr_dd.value = "", "", "", ""
+                    hfm_fzs_lief_in.value, hfm_fzs_mhd_tag_dd.value, hfm_fzs_mhd_mon_dd.value, hfm_fzs_mhd_jahr_dd.value = "", "", jtoday
                     hfm_fzs_charge_dd.value, hfm_fzs_temp_in.value, hfm_fzs_bemerkung_dd.value = "", "", ""
                 elif sub == "fzg":
                     hfm_fzg_cb.value, hfm_fzg_override_cb.value = False, False
@@ -846,15 +866,15 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                     hfm_fzg_produkt_in.value, hfm_fzg_marinade_in.value, hfm_fzg_inhalt_in.value = "", "", ""
                     hfm_fzg_herst_tag_dd.value, hfm_fzg_herst_mon_dd.value, hfm_fzg_herst_jahr_dd.value = "", "", jtoday
                     hfm_fzg_verpackung_dd.value = "steriler Probenbeutel"
-                    hfm_fzg_lief_in.value, hfm_fzg_mhd_tag_dd.value, hfm_fzg_mhd_mon_dd.value, hfm_fzg_mhd_jahr_dd.value = "", "", "", ""
+                    hfm_fzg_lief_in.value, hfm_fzg_mhd_tag_dd.value, hfm_fzg_mhd_mon_dd.value, hfm_fzg_mhd_jahr_dd.value = "", "", jtoday
                     hfm_fzg_charge_dd.value, hfm_fzg_temp_in.value, hfm_fzg_bemerkung_dd.value = "", "", ""
                 elif sub == "bio":
                     hfm_bio_cb.value, hfm_bio_override_cb.value = False, False
                     hfm_bio_entnahmeort_dd.value = "Produktionsraum"
                     hfm_bio_herst_tag_dd.value, hfm_bio_herst_mon_dd.value, hfm_bio_herst_jahr_dd.value = "", "", jtoday
                     hfm_bio_inhalt_in.value, hfm_bio_verpackung_dd.value, hfm_bio_lief_schwein_in.value, hfm_bio_lief_rind_in.value = "", "steriler Probenbecher", "", ""
-                    hfm_bio_mhd_s_tag_dd.value, hfm_bio_mhd_s_mon_dd.value, hfm_bio_mhd_s_jahr_dd.value = "", "", ""
-                    hfm_bio_mhd_r_tag_dd.value, hfm_bio_mhd_r_mon_dd.value, hfm_bio_mhd_r_jahr_dd.value = "", "", ""
+                    hfm_bio_mhd_s_tag_dd.value, hfm_bio_mhd_s_mon_dd.value, hfm_bio_mhd_s_jahr_dd.value = "", "", jtoday
+                    hfm_bio_mhd_r_tag_dd.value, hfm_bio_mhd_r_mon_dd.value, hfm_bio_mhd_r_jahr_dd.value = "", "", jtoday
                     hfm_bio_charge_schwein_dd.value, hfm_bio_charge_rind_dd.value, hfm_bio_temp_in.value, hfm_bio_bemerkung_dd.value = "", "", "", ""
                 elif sub == "okz":
                     hfm_okz_cb.value, hfm_okz_bemerkung_dd.value = False, ""
@@ -870,7 +890,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                         c["name"].value, c["inhalt"].value, c["temp"].value = "", "", ""
                         c["ort"].value, c["verpackung"].value = "Produktionsraum", "steriler Probenbecher"
                         c["h_t"].value, c["h_m"].value, c["h_j"].value = "", "", jtoday
-                        c["v_t"].value, c["v_m"].value, c["v_j"].value = "", "", ""
+                        c["v_t"].value, c["v_m"].value, c["v_j"].value = "", "", jtoday
                 elif sub == "okz":
                     og_okz_cb.value, og_okz_bemerkung_dd.value, og_okz_anmerkung_in.value = False, "", ""
                     for idx, c in og_okz_controls.items():
