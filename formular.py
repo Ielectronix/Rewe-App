@@ -89,7 +89,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             return ft.ElevatedButton(content=ft.Text(text, size=16, weight="bold"), on_click=oc, bgcolor="#0b1a0b", color=farbe, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=20, side=ft.BorderSide(width=2, color=farbe)))
             
         def emoji_btn(text, oc, farbe):
-            return ft.ElevatedButton(text, on_click=oc, bgcolor="#1a1a1a", color=farbe, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=15, side=ft.BorderSide(width=1.5, color=farbe)))
+            return ft.ElevatedButton(content=ft.Text(text, size=14, weight="bold"), on_click=oc, bgcolor="#1a1a1a", color=farbe, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=15, side=ft.BorderSide(width=1.5, color=farbe)))
 
         def parse_datum(d, dt="", dm="", dj=""):
             if not d: return dt, dm, dj
@@ -349,10 +349,12 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         alle_vorlagen = lade_vorlagen_lokal()
         vorlagen_status = ft.Text("", weight="bold", size=14) 
         
+        # WICHTIG: Das Vorlagen-Dropdown mit explizitem, weißem Pfeil!
         vl_dd = ft.Dropdown(
             options=[ft.dropdown.Option(k) for k in alle_vorlagen.keys()], 
             hint_text="Vorlage wählen...", dense=True, content_padding=15, 
-            color="yellow", text_style=ft.TextStyle(color="yellow", size=14), border_color="white"
+            color="yellow", text_style=ft.TextStyle(color="yellow", size=14), 
+            border_color="white", icon_enabled_color="white" # Das macht den Pfeil sichtbar
         )
         vl_name_in = tf("Als neue Vorlage speichern", "")
 
@@ -558,23 +560,25 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             vl_name_in.value = ""
             page.update()
 
+        # WICHTIG: Hier ist das Layout auf volle Breite (STRETCH) gestellt
         vorlagen_expansion = ft.ExpansionTile(
             title=ft.Text("📋 Vorlagen (Schnellauswahl)", weight="bold", color="white", size=18),
             collapsed_text_color="white", text_color="#4CAF50",
             controls=[
-                ft.Container(bgcolor="#002b00", padding=15, border_radius=10, content=ft.Column([
-                    vorlagen_status,
-                    vl_dd, # Nimmt jetzt die volle Breite ein!
-                    ft.Row([
-                        ft.Container(content=emoji_btn("📥 Laden", lade_v, "#2196F3"), expand=True), 
-                        ft.Container(content=emoji_btn("🗑️ Löschen", del_v, "#F44336"), expand=True)
-                    ]),
-                    ft.Container(height=5),
-                    vl_name_in, # Nimmt ebenfalls die volle Breite ein!
-                    ft.Row([
-                        ft.Container(content=emoji_btn("💾 Als Neu Speichern", save_v, "#FF9800"), expand=True)
-                    ])
-                ]))
+                ft.Container(bgcolor="#002b00", padding=15, border_radius=10, content=ft.Column(
+                    horizontal_alignment=ft.CrossAxisAlignment.STRETCH, # <--- VERHINDERT TREPPEN-LAYOUT
+                    controls=[
+                        vorlagen_status,
+                        vl_dd, 
+                        ft.Row([
+                            ft.Container(content=emoji_btn("📥 Laden", lade_v, "#2196F3"), expand=1), 
+                            ft.Container(content=emoji_btn("🗑️ Löschen", del_v, "#F44336"), expand=1)
+                        ], spacing=10),
+                        ft.Container(height=5),
+                        vl_name_in,
+                        emoji_btn("💾 Als Neu Speichern", save_v, "#FF9800")
+                    ]
+                ))
             ]
         )
 
