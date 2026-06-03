@@ -18,9 +18,6 @@ def speichere_vorlagen_lokal(daten):
     except: pass
 
 def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboard, zeige_fehler, markt_index):
-    # =========================================================================
-    # SCOPE-SICHERHEIT: Alle Variablen ganz oben definieren!
-    # =========================================================================
     haupt_bereich = ft.Column(spacing=15, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
     top_nav = ft.Row(wrap=True, alignment=ft.MainAxisAlignment.CENTER, spacing=5)
     
@@ -78,10 +75,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             
             c.suffix = ft.PopupMenuButton(
                 items=items, 
-                content=ft.Container(
-                    content=ft.Text("▼", color="white", size=icon_sz), 
-                    padding=pad 
-                )
+                content=ft.Container(content=ft.Text("▼", color="white", size=icon_sz), padding=pad)
             )
             return c
             
@@ -344,7 +338,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             og_okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0011_status_{idx}", "R+D"), ["R+D", "R", "P", "-"]), "objekt": combo("Objekt", aktuelle_daten.get(f"0011_objekt_{idx}") or og_okz_def[i]["o"], og_okz_opts), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0011_ort_{idx}", "Produktionsbereich"), ["Kühlraum", "Produktionsbereich", "Theke"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0011_abklatsch_{idx}", og_okz_def[i]["a"])), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0011_tupfer_{idx}", og_okz_def[i]["t"]))}
 
         # ==========================================
-        # VORLAGEN LOGIK (NEUES LAYOUT FÜR PLATZ)
+        # VORLAGEN LOGIK 
         # ==========================================
         alle_vorlagen = lade_vorlagen_lokal()
         vorlagen_status = ft.Text("", weight="bold", size=14) 
@@ -940,13 +934,23 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
             errs = check_pflichtfelder()
             if errs:
+                # =============================================================
+                # INTELLIGENTER REITER-SPRUNG: Wechselt sofort zum Fehler-Tab!
+                # =============================================================
+                first_err = errs[0]
+                switch_tab(first_err["tab"], first_err["sub"])
+                
                 fehler_container.controls.clear()
                 fehler_container.controls.append(ft.Text("⚠️ BITTE PRÜFEN (Fehler sind rot markiert):", color="red", weight="bold", size=16))
                 
-                for i, err in enumerate(errs):
-                    fehler_container.controls.append(ft.Text(f"{i+1}. {err['msg']}", color="#ffcccc", size=14))
+                for i, err_item in enumerate(errs):
+                    fehler_container.controls.append(ft.Text(f"{i+1}. {err_item['msg']}", color="#ffcccc", size=14))
                 
                 fehler_container.visible = True
+                try: fehler_container.update()
+                except: pass
+                try: ansicht.update()
+                except: pass
                 page.update()
                 return
 
