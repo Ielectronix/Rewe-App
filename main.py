@@ -7,6 +7,7 @@ import asyncio
 
 LOGO_PFAD = os.path.join("assets", "bilacon_logo_transparent.png")
 START_LOGO_PFAD = os.path.join("assets", "bilacon_logo_transparent1.png")
+GESENDET_FILE = "gesendet_log.json" # <--- NEU: Permanente Speicherung!
 
 def main(page: ft.Page):
     page.title = "Rewe Monitoring"
@@ -23,20 +24,23 @@ def main(page: ft.Page):
         from pdf_generator import get_all_rewe_bases
         from formular import zeige_maske_ui
 
+        # --- NEUE LOGIK FÜR PERMANENTEN POSTAUSGANG ---
         def lade_gesendet():
             try:
-                if page.client_storage.contains_key("gesendet_pdfs"):
-                    daten = page.client_storage.get("gesendet_pdfs")
-                    if daten: return set(daten)
+                if os.path.exists(GESENDET_FILE):
+                    with open(GESENDET_FILE, "r", encoding="utf-8") as f:
+                        return set(json.load(f))
             except: pass
             return set()
 
-        def markiere_als_gesendet(dateiname):
+        def markiere_als_gesendet(pfad):
             gesendet = lade_gesendet()
-            gesendet.add(dateiname)
+            gesendet.add(pfad)
             try:
-                page.client_storage.set("gesendet_pdfs", list(gesendet))
+                with open(GESENDET_FILE, "w", encoding="utf-8") as f:
+                    json.dump(list(gesendet), f, ensure_ascii=False, indent=4)
             except: pass
+        # -----------------------------------------------
 
         def get_erweiterte_bases():
             try: 
@@ -154,27 +158,33 @@ def main(page: ft.Page):
                 gesehene_dateien = set()
 
                 def erstelle_eintrag(dateiname, pfad):
-                    ist_gesendet = dateiname in aktuelles_gesendet_set
+                    ist_gesendet = pfad in aktuelles_gesendet_set
                     text_ctrl = ft.Text(f"{dateiname} ✅" if ist_gesendet else dateiname, color="#4CAF50" if ist_gesendet else "white", size=13, expand=True, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS)
                     btn_text = "✅ Gesendet" if ist_gesendet else "📤 Senden"
                     btn_color = "#4CAF50" if ist_gesendet else "#2196F3"
                     senden_btn = ft.ElevatedButton(content=ft.Text(btn_text, size=12, weight="bold"), bgcolor="#0b1a0b", color=btn_color, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=15), padding=8, side=ft.BorderSide(width=1.5, color=btn_color)))
                     container = ft.Container(bgcolor="#002200", padding=10, border_radius=15)
+                    
                     async def teilen_jetzt(e):
                         text_ctrl.value = f"{dateiname} ✅"; text_ctrl.color = "#4CAF50"; text_ctrl.update()
                         senden_btn.content.value = "✅ Gesendet"; senden_btn.color = "#4CAF50"; senden_btn.style.side = ft.BorderSide(width=1.5, color="#4CAF50"); senden_btn.update()
-                        markiere_als_gesendet(dateiname); aktuelles_gesendet_set.add(dateiname)
+                        markiere_als_gesendet(pfad)
+                        aktuelles_gesendet_set.add(pfad)
                         await asyncio.sleep(0.3)
                         if share_obj: await share_obj.share_files([ft.ShareFile.from_path(pfad)], text="REWE Bericht")
                     senden_btn.on_click = teilen_jetzt
+                    
                     def loeschen(e):
                         try:
                             if os.path.exists(pfad): os.remove(pfad)
-                            if dateiname in aktuelles_gesendet_set:
-                                aktuelles_gesendet_set.remove(dateiname)
-                                page.client_storage.set("gesendet_pdfs", list(aktuelles_gesendet_set))
+                            if pfad in aktuelles_gesendet_set:
+                                aktuelles_gesendet_set.remove(pfad)
+                                # Löscht es auch aus der Datei
+                                with open(GESENDET_FILE, "w", encoding="utf-8") as f:
+                                    json.dump(list(aktuelles_gesendet_set), f, ensure_ascii=False, indent=4)
                         except: pass
                         container.visible = False; container.update()
+                        
                     container.content = ft.Row([text_ctrl, senden_btn, small_btn("🗑️", loeschen, "#F44336")])
                     return container
 
@@ -187,9 +197,9 @@ def main(page: ft.Page):
                                 pfad = os.path.normpath(os.path.join(ordner, f))
                                 
                                 try:
-                                    if os.path.getsize(pfad) < 2048:
+                                    if os.path.getsize(pfad) < 2048: 
                                         os.remove(pfad)
-                                        continue
+                                        continue 
                                 except Exception:
                                     pass
 
@@ -198,7 +208,7 @@ def main(page: ft.Page):
                                 pdfs_gefunden = True
                                 ansicht.controls.append(erstelle_eintrag(f, pfad))
                 
-                if not pdfs_gefunden: ansicht.controls.append(ft.Text("Keine Berichte gefunden.\nFehlerhafte oder unvollständige Berichte wurden aussortiert.", color="white54", text_align="center"))
+                if not pdfs_gefunden: ansicht.controls.append(ft.Text("Keine Berichte gefunden.\nFehlerhafte Berichte wurden aussortiert.", color="white54", text_align="center"))
                 page.add(ft.SafeArea(ansicht)); page.update()
             except Exception as e:
                 page.add(ft.Text(f"CRASH Postausgang: {e}", color="red", weight="bold")); page.update()
@@ -251,14 +261,14 @@ def main(page: ft.Page):
                                 ansicht.controls.append(ft.Text(f"📅 {d.strftime('%d.%m.%Y')}", color="yellow", weight="bold", size=14))
                                 titel_angelegt = True
 
-                            ist_gesendet = f in aktuelles_gesendet_set
+                            ist_gesendet = pfad in aktuelles_gesendet_set
                             text_ctrl = ft.Text(f"{f} ✅" if ist_gesendet else f, color="#4CAF50" if ist_gesendet else "white", size=13, expand=True, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS)
                             btn_text, btn_color = ("✅ Gesendet", "#4CAF50") if ist_gesendet else ("📤 Senden", "#2196F3")
                             senden_btn = ft.ElevatedButton(content=ft.Text(btn_text, size=12, weight="bold"), bgcolor="#0b1a0b", color=btn_color, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=15), padding=8, side=ft.BorderSide(width=1.5, color=btn_color)))
                             async def teilen_archiv(e, p=pfad, tc=text_ctrl, btn=senden_btn, dateiname=f):
                                 tc.value = f"{dateiname} ✅"; tc.color = "#4CAF50"; tc.update()
                                 btn.content.value = "✅ Gesendet"; btn.color = "#4CAF50"; btn.style.side = ft.BorderSide(width=1.5, color="#4CAF50"); btn.update()
-                                markiere_als_gesendet(dateiname); await asyncio.sleep(0.3)
+                                markiere_als_gesendet(p); await asyncio.sleep(0.3)
                                 if share_obj: await share_obj.share_files([ft.ShareFile.from_path(p)], text="REWE Bericht")
                             senden_btn.on_click = teilen_archiv
                             ansicht.controls.append(ft.Container(bgcolor="#002200", padding=10, border_radius=15, content=ft.Row([text_ctrl, senden_btn])))
