@@ -296,7 +296,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         hfm_bio_temp_in = tf("Probenahmetemperatur", aktuelle_daten.get("hfm_bio_temp", ""), ob=format_temp)
         hfm_bio_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("hfm_bio_bemerkung", ""), ["", "Keine Besonderheiten"])
 
-        # NEU: Override Haken für HFM OKZ
         hfm_okz_cb = cb("Abklatschproben HFM", aktuelle_daten.get("hfm_abklatsch_cb", False), bold=True)
         hfm_okz_override_cb = cb("Trotzdem speichern", aktuelle_daten.get("hfm_abklatsch_override", False))
         hfm_okz_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("hfm_abklatsch_bemerkung", ""), ["", "Keine Besonderheiten"])
@@ -305,6 +304,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         okz_controls = {}
         for i in range(1, 11):
             idx = f"{i:02d}"
+            # FEHLERBEHEBUNG HIER: okz_def[i]["o"] wurde korrekt übergeben
             okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0010_status_{idx}", "R+D"), ["R+D", "R", "P", "-"]), "objekt": combo("Objekt", aktuelle_daten.get(f"0010_objekt_{idx}") or okz_def[i]["o"], okz_obj_opts), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0010_ort_{idx}", "Kühlraum"), ["Kühlraum", "Produktionsbereich", "Theke"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0010_abklatsch_{idx}", okz_def[i]["a"])), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0010_tupfer_{idx}", okz_def[i]["t"]))}
 
         # ==========================================
@@ -328,7 +328,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 "temp": tf("Probenahmetemperatur", aktuelle_daten.get(f"og_temp_{idx}", ""), ob=format_temp)
             }
 
-        # NEU: Override Haken für OG OKZ und Stellen 4/5 leer
         og_okz_cb = cb("Abklatschproben Convenience", aktuelle_daten.get("og_abklatsch_cb", False), bold=True)
         og_okz_override_cb = cb("Trotzdem speichern", aktuelle_daten.get("og_abklatsch_override", False))
         og_okz_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("og_abklatsch_bemerkung_1", ""), ["", "Keine Besonderheiten"])
@@ -339,6 +338,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         og_okz_controls = {}
         for i in range(1, 6):
             idx = f"{i:02d}"
+            # FEHLERBEHEBUNG HIER: og_okz_def[i]["o"] statt og_okz_def[i] !
             og_okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0011_status_{idx}", "R+D"), ["R+D", "R", "P", "-"]), "objekt": combo("Objekt", aktuelle_daten.get(f"0011_objekt_{idx}") or og_okz_def[i]["o"], og_okz_opts), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0011_ort_{idx}", "Produktionsbereich"), ["Kühlraum", "Produktionsbereich", "Theke"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0011_abklatsch_{idx}", og_okz_def[i]["a"])), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0011_tupfer_{idx}", og_okz_def[i]["t"]))}
 
         # ==========================================
