@@ -304,7 +304,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         okz_controls = {}
         for i in range(1, 11):
             idx = f"{i:02d}"
-            # FEHLERBEHEBUNG HIER: okz_def[i]["o"] wurde korrekt übergeben
             okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0010_status_{idx}", "R+D"), ["R+D", "R", "P", "-"]), "objekt": combo("Objekt", aktuelle_daten.get(f"0010_objekt_{idx}") or okz_def[i]["o"], okz_obj_opts), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0010_ort_{idx}", "Kühlraum"), ["Kühlraum", "Produktionsbereich", "Theke"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0010_abklatsch_{idx}", okz_def[i]["a"])), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0010_tupfer_{idx}", okz_def[i]["t"]))}
 
         # ==========================================
@@ -338,7 +337,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         og_okz_controls = {}
         for i in range(1, 6):
             idx = f"{i:02d}"
-            # FEHLERBEHEBUNG HIER: og_okz_def[i]["o"] statt og_okz_def[i] !
             og_okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0011_status_{idx}", "R+D"), ["R+D", "R", "P", "-"]), "objekt": combo("Objekt", aktuelle_daten.get(f"0011_objekt_{idx}") or og_okz_def[i]["o"], og_okz_opts), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0011_ort_{idx}", "Produktionsbereich"), ["Kühlraum", "Produktionsbereich", "Theke"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0011_abklatsch_{idx}", og_okz_def[i]["a"])), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0011_tupfer_{idx}", og_okz_def[i]["t"]))}
 
         # ==========================================
@@ -786,20 +784,29 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             check_hfm(hfm_fzg_cb, hfm_fzg_override_cb, hfm_fzg_temp_in, hfm_fzg_herst_tag_dd, hfm_fzg_herst_mon_dd, hfm_fzg_lief_in, None, hfm_fzg_charge_dd, None, None, None, hfm_fzg_mhd_tag_dd, hfm_fzg_mhd_mon_dd, "FZ Geflügel", "fzg")
             check_hfm(hfm_bio_cb, hfm_bio_override_cb, hfm_bio_temp_in, hfm_bio_herst_tag_dd, hfm_bio_herst_mon_dd, hfm_bio_lief_schwein_in, hfm_bio_lief_rind_in, hfm_bio_charge_schwein_dd, hfm_bio_charge_rind_dd, hfm_bio_mhd_s_tag_dd, hfm_bio_mhd_s_mon_dd, hfm_bio_mhd_r_tag_dd, hfm_bio_mhd_r_mon_dd, "Bio Hack", "bio")
 
-            # --- HFM OKZ Prüfung ---
+            # --- HFM OKZ Prüfung (INTELLIGENT) ---
             if not hfm_okz_override_cb.value:
-                hfm_okz_has_data = False
+                hfm_okz_modified = False
+                hfm_okz_valid_data = False
                 for i in range(1, 11):
                     c = okz_controls[f"{i:02d}"]
                     obj_val = (c["objekt"].value or "").strip()
+                    def_o = okz_def[i]["o"]
+                    def_a = okz_def[i]["a"]
+                    def_t = okz_def[i]["t"]
+                    
+                    # Wurde etwas manuell durch den Benutzer verändert?
+                    if obj_val != def_o or c["abklatsch"].value != def_a or c["tupfer"].value != def_t:
+                        hfm_okz_modified = True
+                        
+                    # Sind überhaupt effektiv Daten zum Senden vorhanden?
                     if obj_val or c["abklatsch"].value or c["tupfer"].value:
-                        hfm_okz_has_data = True
-                        break
-                
-                if hfm_okz_has_data and not hfm_okz_cb.value:
-                    err("HFM OKZ: Daten eingetragen, aber Haupt-Haken vergessen!", "hfm", "okz", hfm_okz_cb)
-                elif hfm_okz_cb.value and not hfm_okz_has_data:
-                    err("HFM OKZ: Haupt-Haken gesetzt, aber keine Proben eingegeben!", "hfm", "okz", hfm_okz_cb)
+                        hfm_okz_valid_data = True
+                        
+                if hfm_okz_modified and not hfm_okz_cb.value:
+                    err("HFM OKZ: Daten manuell geändert, aber Haupt-Haken vergessen!", "hfm", "okz", hfm_okz_cb)
+                elif hfm_okz_cb.value and not hfm_okz_valid_data:
+                    err("HFM OKZ: Haupt-Haken gesetzt, aber alle Proben sind leer!", "hfm", "okz", hfm_okz_cb)
                 elif hfm_okz_cb.value:
                     for i in range(1, 11):
                         c = okz_controls[f"{i:02d}"]
@@ -813,7 +820,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                         elif (has_a or has_t) and not obj_val:
                             err(f"HFM OKZ (Probe {i}): Haken gesetzt, aber Objekt fehlt!", "hfm", "okz", c["objekt"])
 
-            # --- CONVENIENCE (OG) ---
+            # --- CONVENIENCE (OG) TEILPROBEN ---
             if not og_override_cb.value:
                 og_daten_vorhanden = False
                 for i in range(1, 6):
@@ -831,20 +838,27 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                             if not (c["temp"].value or "").strip(): err(f"OG (Probe {i}): Temperatur fehlt", "og", "teil", c["temp"])
                             check_datum_komplett(c["h_t"], c["h_m"], f"OG (Probe {i}): Herstellungsdatum", "og", "teil")
 
-            # --- CONVENIENCE OKZ Prüfung ---
+            # --- CONVENIENCE OKZ Prüfung (INTELLIGENT) ---
             if not og_okz_override_cb.value:
-                og_okz_has_data = False
+                og_okz_modified = False
+                og_okz_valid_data = False
                 for i in range(1, 6):
                     c = og_okz_controls[f"{i:02d}"]
                     obj_val = (c["objekt"].value or "").strip()
+                    def_o = og_okz_def[i]["o"]
+                    def_a = og_okz_def[i]["a"]
+                    def_t = og_okz_def[i]["t"]
+                    
+                    if obj_val != def_o or c["abklatsch"].value != def_a or c["tupfer"].value != def_t:
+                        og_okz_modified = True
+                        
                     if obj_val or c["abklatsch"].value or c["tupfer"].value:
-                        og_okz_has_data = True
-                        break
-                
-                if og_okz_has_data and not og_okz_cb.value:
-                    err("Convenience OKZ: Daten eingetragen, aber Haupt-Haken vergessen!", "og", "okz", og_okz_cb)
-                elif og_okz_cb.value and not og_okz_has_data:
-                    err("Convenience OKZ: Haupt-Haken gesetzt, aber keine Proben eingegeben!", "og", "okz", og_okz_cb)
+                        og_okz_valid_data = True
+                        
+                if og_okz_modified and not og_okz_cb.value:
+                    err("Convenience OKZ: Daten manuell geändert, aber Haupt-Haken vergessen!", "og", "okz", og_okz_cb)
+                elif og_okz_cb.value and not og_okz_valid_data:
+                    err("Convenience OKZ: Haupt-Haken gesetzt, aber alle Proben sind leer!", "og", "okz", og_okz_cb)
                 elif og_okz_cb.value:
                     for i in range(1, 6):
                         c = og_okz_controls[f"{i:02d}"]
