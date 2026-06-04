@@ -296,7 +296,9 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         hfm_bio_temp_in = tf("Probenahmetemperatur", aktuelle_daten.get("hfm_bio_temp", ""), ob=format_temp)
         hfm_bio_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("hfm_bio_bemerkung", ""), ["", "Keine Besonderheiten"])
 
+        # NEU: Override Haken für HFM OKZ
         hfm_okz_cb = cb("Abklatschproben HFM", aktuelle_daten.get("hfm_abklatsch_cb", False), bold=True)
+        hfm_okz_override_cb = cb("Trotzdem speichern", aktuelle_daten.get("hfm_abklatsch_override", False))
         hfm_okz_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("hfm_abklatsch_bemerkung", ""), ["", "Keine Besonderheiten"])
         okz_obj_opts = ["", "Fleischwolf-Auflage", "Fleischwolf-Lochscheibe", "Fleischwolf-Auswurf", "Fleischwolf-Spirale", "Wand am Fleischwolf", "Hackstecher", "Schaufel", "Thekenschale", "Messer", "Schneidebrett", "Auflage Knochensäge", "Tisch", "Fleischwanne", "Kühlhausgriff", "Schüssel", "Seifenspender"]
         okz_def = {1: {"o": "Fleischwolf-Auflage", "a": True, "t": False}, 2: {"o": "Fleischwolf-Auswurf", "a": True, "t": True}, 3: {"o": "Thekenschale", "a": True, "t": False}, 4: {"o": "Hackstecher", "a": True, "t": True}, 5: {"o": "Messer", "a": True, "t": False}, 6: {"o": "Schneidebrett", "a": True, "t": False}, 7: {"o": "Wand am Fleischwolf", "a": True, "t": True}, 8: {"o": "", "a": False, "t": False}, 9: {"o": "", "a": False, "t": False}, 10: {"o": "", "a": False, "t": False}}
@@ -326,16 +328,18 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 "temp": tf("Probenahmetemperatur", aktuelle_daten.get(f"og_temp_{idx}", ""), ob=format_temp)
             }
 
+        # NEU: Override Haken für OG OKZ und Stellen 4/5 leer
         og_okz_cb = cb("Abklatschproben Convenience", aktuelle_daten.get("og_abklatsch_cb", False), bold=True)
+        og_okz_override_cb = cb("Trotzdem speichern", aktuelle_daten.get("og_abklatsch_override", False))
         og_okz_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("og_abklatsch_bemerkung_1", ""), ["", "Keine Besonderheiten"])
         og_okz_anmerkung_in = tf("Anmerkung", aktuelle_daten.get("og_abklatsch_bemerkung_2", ""), multiline=True)
         
         og_okz_opts = ["", "Schneidebrett", "Messer", "Saftpresse Auffanggitter", "Saftpresse Rückwand", "Saftpresse Auslass", "Waagenauflage", "Schüssel", "Löffel", "GN-Behälter"]
-        og_okz_def = {1: {"o": "Schneidebrett", "a": True, "t": True}, 2: {"o": "Messer", "a": True, "t": True}, 3: {"o": "Waagenauflage", "a": True, "t": False}, 4: {"o": "Schüssel", "a": True, "t": False}, 5: {"o": "Löffel", "a": True, "t": False}}
+        og_okz_def = {1: {"o": "Schneidebrett", "a": True, "t": True}, 2: {"o": "Messer", "a": True, "t": True}, 3: {"o": "Waagenauflage", "a": True, "t": False}, 4: {"o": "", "a": False, "t": False}, 5: {"o": "", "a": False, "t": False}}
         og_okz_controls = {}
         for i in range(1, 6):
             idx = f"{i:02d}"
-            og_okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0011_status_{idx}", "R+D"), ["R+D", "R", "P", "-"]), "objekt": combo("Objekt", aktuelle_daten.get(f"0011_objekt_{idx}") or og_okz_def[i], og_okz_opts), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0011_ort_{idx}", "Produktionsbereich"), ["Kühlraum", "Produktionsbereich", "Theke"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0011_abklatsch_{idx}", og_okz_def[i]["a"])), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0011_tupfer_{idx}", og_okz_def[i]["t"]))}
+            og_okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0011_status_{idx}", "R+D"), ["R+D", "R", "P", "-"]), "objekt": combo("Objekt", aktuelle_daten.get(f"0011_objekt_{idx}") or og_okz_def[i]["o"], og_okz_opts), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0011_ort_{idx}", "Produktionsbereich"), ["Kühlraum", "Produktionsbereich", "Theke"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0011_abklatsch_{idx}", og_okz_def[i]["a"])), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0011_tupfer_{idx}", og_okz_def[i]["t"]))}
 
         # ==========================================
         # VORLAGEN LOGIK 
@@ -487,6 +491,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             hfm_bio_mhd_r_tag_dd.value, hfm_bio_mhd_r_mon_dd.value, hfm_bio_mhd_r_jahr_dd.value = mrt, mrm, mrj
 
             setze_wert(hfm_okz_cb, "hfm_abklatsch_cb", False)
+            setze_wert(hfm_okz_override_cb, "hfm_abklatsch_override", False)
             setze_wert(hfm_okz_bemerkung_dd, "hfm_abklatsch_bemerkung")
             for idx, c in okz_controls.items():
                 c["status"].value = v.get(f"0010_status_{idx}", "R+D")
@@ -510,6 +515,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 c["v_t"].value, c["v_m"].value, c["v_j"].value = vt, vm, vj
 
             setze_wert(og_okz_cb, "og_abklatsch_cb", False)
+            setze_wert(og_okz_override_cb, "og_abklatsch_override", False)
             setze_wert(og_okz_bemerkung_dd, "og_abklatsch_bemerkung_1")
             setze_wert(og_okz_anmerkung_in, "og_abklatsch_bemerkung_2")
             for idx, c in og_okz_controls.items():
@@ -641,9 +647,11 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 "hfm_bio_mhd_rind": get_date_str(hfm_bio_mhd_r_tag_dd.value, hfm_bio_mhd_r_mon_dd.value, hfm_bio_mhd_r_jahr_dd.value), 
                 "hfm_bio_charge_schwein": hfm_bio_charge_schwein_dd.value, "hfm_bio_charge_rind": hfm_bio_charge_rind_dd.value, 
                 "hfm_bio_temp": hfm_bio_temp_in.value, "hfm_bio_bemerkung": hfm_bio_bemerkung_dd.value, 
-                "hfm_abklatsch_cb": bool(hfm_okz_cb.value), "hfm_abklatsch_bemerkung": hfm_okz_bemerkung_dd.value,
                 
-                "og_cb": bool(og_cb.value), "og_override": bool(og_override_cb.value), "og_abklatsch_cb": bool(og_okz_cb.value), 
+                "hfm_abklatsch_cb": bool(hfm_okz_cb.value), "hfm_abklatsch_override": bool(hfm_okz_override_cb.value), "hfm_abklatsch_bemerkung": hfm_okz_bemerkung_dd.value,
+                
+                "og_cb": bool(og_cb.value), "og_override": bool(og_override_cb.value), 
+                "og_abklatsch_cb": bool(og_okz_cb.value), "og_abklatsch_override": bool(og_okz_override_cb.value),
                 "og_abklatsch_bemerkung_1": og_okz_bemerkung_dd.value, "og_abklatsch_bemerkung_2": og_okz_anmerkung_in.value,
             }
 
@@ -778,6 +786,33 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             check_hfm(hfm_fzg_cb, hfm_fzg_override_cb, hfm_fzg_temp_in, hfm_fzg_herst_tag_dd, hfm_fzg_herst_mon_dd, hfm_fzg_lief_in, None, hfm_fzg_charge_dd, None, None, None, hfm_fzg_mhd_tag_dd, hfm_fzg_mhd_mon_dd, "FZ Geflügel", "fzg")
             check_hfm(hfm_bio_cb, hfm_bio_override_cb, hfm_bio_temp_in, hfm_bio_herst_tag_dd, hfm_bio_herst_mon_dd, hfm_bio_lief_schwein_in, hfm_bio_lief_rind_in, hfm_bio_charge_schwein_dd, hfm_bio_charge_rind_dd, hfm_bio_mhd_s_tag_dd, hfm_bio_mhd_s_mon_dd, hfm_bio_mhd_r_tag_dd, hfm_bio_mhd_r_mon_dd, "Bio Hack", "bio")
 
+            # --- HFM OKZ Prüfung ---
+            if not hfm_okz_override_cb.value:
+                hfm_okz_has_data = False
+                for i in range(1, 11):
+                    c = okz_controls[f"{i:02d}"]
+                    obj_val = (c["objekt"].value or "").strip()
+                    if obj_val or c["abklatsch"].value or c["tupfer"].value:
+                        hfm_okz_has_data = True
+                        break
+                
+                if hfm_okz_has_data and not hfm_okz_cb.value:
+                    err("HFM OKZ: Daten eingetragen, aber Haupt-Haken vergessen!", "hfm", "okz", hfm_okz_cb)
+                elif hfm_okz_cb.value and not hfm_okz_has_data:
+                    err("HFM OKZ: Haupt-Haken gesetzt, aber keine Proben eingegeben!", "hfm", "okz", hfm_okz_cb)
+                elif hfm_okz_cb.value:
+                    for i in range(1, 11):
+                        c = okz_controls[f"{i:02d}"]
+                        obj_val = (c["objekt"].value or "").strip()
+                        has_a = c["abklatsch"].value
+                        has_t = c["tupfer"].value
+                        
+                        if obj_val and not (has_a or has_t):
+                            err(f"HFM OKZ (Probe {i}): Objekt gewählt, aber kein Abklatsch/Tupfer angekreuzt!", "hfm", "okz", c["abklatsch"])
+                            markiere_extra(c["tupfer"])
+                        elif (has_a or has_t) and not obj_val:
+                            err(f"HFM OKZ (Probe {i}): Haken gesetzt, aber Objekt fehlt!", "hfm", "okz", c["objekt"])
+
             # --- CONVENIENCE (OG) ---
             if not og_override_cb.value:
                 og_daten_vorhanden = False
@@ -795,6 +830,33 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                         if (c["name"].value or "").strip():
                             if not (c["temp"].value or "").strip(): err(f"OG (Probe {i}): Temperatur fehlt", "og", "teil", c["temp"])
                             check_datum_komplett(c["h_t"], c["h_m"], f"OG (Probe {i}): Herstellungsdatum", "og", "teil")
+
+            # --- CONVENIENCE OKZ Prüfung ---
+            if not og_okz_override_cb.value:
+                og_okz_has_data = False
+                for i in range(1, 6):
+                    c = og_okz_controls[f"{i:02d}"]
+                    obj_val = (c["objekt"].value or "").strip()
+                    if obj_val or c["abklatsch"].value or c["tupfer"].value:
+                        og_okz_has_data = True
+                        break
+                
+                if og_okz_has_data and not og_okz_cb.value:
+                    err("Convenience OKZ: Daten eingetragen, aber Haupt-Haken vergessen!", "og", "okz", og_okz_cb)
+                elif og_okz_cb.value and not og_okz_has_data:
+                    err("Convenience OKZ: Haupt-Haken gesetzt, aber keine Proben eingegeben!", "og", "okz", og_okz_cb)
+                elif og_okz_cb.value:
+                    for i in range(1, 6):
+                        c = og_okz_controls[f"{i:02d}"]
+                        obj_val = (c["objekt"].value or "").strip()
+                        has_a = c["abklatsch"].value
+                        has_t = c["tupfer"].value
+                        
+                        if obj_val and not (has_a or has_t):
+                            err(f"Convenience OKZ (Probe {i}): Objekt gewählt, aber kein Abklatsch/Tupfer angekreuzt!", "og", "okz", c["abklatsch"])
+                            markiere_extra(c["tupfer"])
+                        elif (has_a or has_t) and not obj_val:
+                            err(f"Convenience OKZ (Probe {i}): Haken gesetzt, aber Objekt fehlt!", "og", "okz", c["objekt"])
 
             return errors
 
@@ -875,7 +937,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                     hfm_bio_mhd_r_tag_dd.value, hfm_bio_mhd_r_mon_dd.value, hfm_bio_mhd_r_jahr_dd.value = "", "", jtoday
                     hfm_bio_charge_schwein_dd.value, hfm_bio_charge_rind_dd.value, hfm_bio_temp_in.value, hfm_bio_bemerkung_dd.value = "", "", "", ""
                 elif sub == "okz":
-                    hfm_okz_cb.value, hfm_okz_bemerkung_dd.value = False, ""
+                    hfm_okz_cb.value, hfm_okz_override_cb.value, hfm_okz_bemerkung_dd.value = False, False, ""
                     for idx, c in okz_controls.items():
                         c["status"].value, c["objekt"].value, c["ort"].value = "R+D", okz_def[int(idx)]["o"], "Kühlraum"
                         c["abklatsch"].value, c["tupfer"].value = okz_def[int(idx)]["a"], okz_def[int(idx)]["t"]
@@ -890,7 +952,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                         c["h_t"].value, c["h_m"].value, c["h_j"].value = "", "", jtoday
                         c["v_t"].value, c["v_m"].value, c["v_j"].value = "", "", jtoday
                 elif sub == "okz":
-                    og_okz_cb.value, og_okz_bemerkung_dd.value, og_okz_anmerkung_in.value = False, "", ""
+                    og_okz_cb.value, og_okz_override_cb.value, og_okz_bemerkung_dd.value, og_okz_anmerkung_in.value = False, False, "", ""
                     for idx, c in og_okz_controls.items():
                         c["status"].value, c["objekt"].value, c["ort"].value = "R+D", og_okz_def[int(idx)]["o"], "Produktionsbereich"
                         c["abklatsch"].value, c["tupfer"].value = og_okz_def[int(idx)]["a"], og_okz_def[int(idx)]["t"]
@@ -1063,7 +1125,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                         haupt_bereich.controls.extend([ft.Row([hfm_bio_cb, hfm_bio_override_cb], wrap=True), hfm_bio_entnahmeort_dd, ft.Text("Herstellungsdatum:", color="#2196F3", weight="bold"), d_row(hfm_bio_herst_tag_dd, hfm_bio_herst_mon_dd, hfm_bio_herst_jahr_dd), hfm_bio_inhalt_in, hfm_bio_verpackung_dd, hfm_bio_lief_schwein_in, hfm_bio_lief_rind_in, ft.Text("MHD (Schwein):", color="#2196F3", weight="bold"), d_row(hfm_bio_mhd_s_tag_dd, hfm_bio_mhd_s_mon_dd, hfm_bio_mhd_s_jahr_dd), ft.Text("MHD (Rind):", color="#2196F3", weight="bold"), d_row(hfm_bio_mhd_r_tag_dd, hfm_bio_mhd_r_mon_dd, hfm_bio_mhd_r_jahr_dd), hfm_bio_charge_schwein_dd, hfm_bio_charge_rind_dd, hfm_bio_temp_in, hfm_bio_bemerkung_dd])
                     elif sub == "okz":
                         tab_title.value = "HFM OKZ"
-                        haupt_bereich.controls.extend([ft.Row([hfm_okz_cb]), ft.Divider(color="white24")])
+                        haupt_bereich.controls.extend([ft.Row([hfm_okz_cb, hfm_okz_override_cb], wrap=True), ft.Divider(color="white24")])
                         for i in range(1, 11):
                             c = okz_controls[f"{i:02d}"]
                             haupt_bereich.controls.extend([ft.Text(f"Probe {i}", color="#FF9800", weight="bold"), ft.Row([ft.Container(content=c["status"], expand=1), ft.Container(content=c["objekt"], expand=3)]), c["ort"], ft.Row([ft.Container(content=c["abklatsch"], expand=1), ft.Container(content=c["tupfer"], expand=1)]), ft.Divider(color="white24")])
@@ -1099,7 +1161,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                             ])
                     elif sub == "okz":
                         tab_title.value = "Convenience OKZ"
-                        haupt_bereich.controls.extend([ft.Row([og_okz_cb]), ft.Divider(color="white24")])
+                        haupt_bereich.controls.extend([ft.Row([og_okz_cb, og_okz_override_cb], wrap=True), ft.Divider(color="white24")])
                         for i in range(1, 6):
                             c = og_okz_controls[f"{i:02d}"]
                             if i == 2: haupt_bereich.controls.append(ft.Text("💡 Info: Bei Saftpresse bitte hier auswählen.", color="white54", italic=True, size=14))
