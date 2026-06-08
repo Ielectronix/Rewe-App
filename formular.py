@@ -144,7 +144,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         typ_dd = combo("Typ der Probenahme", aktuelle_daten.get("typ_probenahme", "Standard"), ["Standard", "Nachkontrolle", "Mehrwöchig"])
 
         # ==========================================
-        # TRINKWASSER
+        # TRINKWASSER & SCHERBENEIS
         # ==========================================
         tw_kalt_cb = cb("Trinkwasser kalt", aktuelle_daten.get("tw_kalt", False), bold=True)
         tw_override_cb = cb("Trotzdem speichern", aktuelle_daten.get("tw_override", False))
@@ -171,12 +171,8 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         cb_auff_dusche, cb_auff_handbrause, cb_auff_sonst = cb("Entnahme Dusche", aktuelle_daten.get("tw_auff_dusche", False)), cb("Handbrause", aktuelle_daten.get("tw_auff_handbrause", False)), cb("Sonstiges", aktuelle_daten.get("tw_auff_sonstiges", False))
         tw_auff_sonstiges_in, tw_inhalt_in = tf("Auffälligkeiten (Sonstiges)", aktuelle_daten.get("tw_auff_sonst_text", ""), multiline=True), tf("Inhalt", aktuelle_daten.get("tw_inhalt", ""))
 
-        # ==========================================
-        # SCHERBENEIS
-        # ==========================================
         se_kalt_cb = cb("Scherbeneis Eigenkontrolle", aktuelle_daten.get("se_kalt", False), bold=True)
         se_override_cb = cb("Trotzdem speichern", aktuelle_daten.get("se_override", False))
-        
         se_zeit_in = tf("Probenahmezeit", aktuelle_daten.get("se_zeit", ""), ob=format_zeit)
         se_zapf_dd = combo("Zapfstelle (Eis)", aktuelle_daten.get("se_zapf", "Eismaschine"), ["Eismaschine"])
         se_cb_eiswanne, se_cb_fallprobe = cb("Eiswanne/Schöpfprobe", aktuelle_daten.get("se_cb_eiswanne", False)), cb("Fallprobe", aktuelle_daten.get("se_cb_fallprobe", True))
@@ -189,15 +185,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         se_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("se_entnahmeort", "Fischabteilung-Eismaschine"), ort_opts)
         se_temp_in = tf("Probenahmetemperatur", aktuelle_daten.get("se_temp", ""), ob=format_temp)
         se_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("se_bemerkung", ""), ["", "Keine Besonderheiten"])
-
-        se_okz_cb = cb("Abklatschproben Scherbeneis", aktuelle_daten.get("se_abklatsch_cb", False), bold=True)
-        se_okz_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("se_abklatsch_bemerkung", ""), ["", "Keine Besonderheiten"])
-        se_okz_opts = ["", "Eiswanne innen rechts", "Eiswanne innen links", "Auswurfrohr", "Eisschaufel", "Eiswanne", "Eismaschine innen", "Klappe/Deckel", "Sonstiges"]
-        se_okz_def = {1: "Eiswanne innen rechts", 2: "Eiswanne innen links", 3: "Auswurfrohr"}
-        se_okz_controls = {}
-        for i in range(1, 4):
-            idx = f"{i:02d}"
-            se_okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0003_status_{idx}", "R+D"), ["R+D", "R", "P", "-"]), "objekt": combo("Objekt", aktuelle_daten.get(f"0003_objekt_{idx}") or se_okz_def[i], se_okz_opts), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0003_ort_{idx}", "Fischabteilung"), ["Fischabteilung", "Metzgerei", "Produktionsbereich", "Kühlraum"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0003_abklatsch_{idx}", True)), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0003_tupfer_{idx}", True))}
 
         # ==========================================
         # FLEISCH (HFM)
@@ -426,14 +413,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             setze_wert(se_entnahmeort_dd, "se_entnahmeort")
             setze_wert(se_temp_in, "se_temp")
             setze_wert(se_bemerkung_dd, "se_bemerkung")
-            setze_wert(se_okz_cb, "se_abklatsch_cb", False)
-            setze_wert(se_okz_bemerkung_dd, "se_abklatsch_bemerkung")
-            for idx, c in se_okz_controls.items():
-                c["status"].value = v.get(f"0003_status_{idx}", "R+D")
-                setze_wert(c["objekt"], f"0003_objekt_{idx}")
-                c["ort"].value = v.get(f"0003_ort_{idx}", "Fischabteilung")
-                setze_wert(c["abklatsch"], f"0003_abklatsch_{idx}", False)
-                setze_wert(c["tupfer"], f"0003_tupfer_{idx}", False)
 
             def set_hfm_base(cb_c, over_c, ort_c, inhalt_c, verp_c, temp_c, bem_c, htag_c, hmon_c, hjahr_c, prefix):
                 setze_wert(cb_c, f"{prefix}_cb", False)
@@ -607,7 +586,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 "se_cb_ozon": bool(se_cb_ozon.value), "se_auff_sonst": se_auff_sonst_in.value, "se_inhalt": get_val(se_inhalt_in, "ca. 1000ml"), 
                 "se_verpackung": get_val(se_verpackung_dd, "steriler Probenbeutel"), "se_entnahmeort": get_val(se_entnahmeort_dd, "Fischabteilung-Eismaschine"), 
                 "se_temp": se_temp_in.value, "se_bemerkung": se_bemerkung_dd.value, 
-                "se_abklatsch_cb": bool(se_okz_cb.value), "se_abklatsch_bemerkung": se_okz_bemerkung_dd.value,
                 
                 "hfm_hack_cb": bool(hfm_hack_cb.value), "hfm_hack_override": bool(hfm_hack_override_cb.value), "hfm_hack_entnahmeort": get_val(hfm_hack_entnahmeort_dd, "Kühlraum"), 
                 "hfm_hack_herstelldatum": get_date_str(hfm_hack_herst_tag_dd.value, hfm_hack_herst_mon_dd.value, hfm_hack_herst_jahr_dd.value), 
@@ -652,13 +630,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 "og_abklatsch_cb": bool(og_okz_cb.value), "og_abklatsch_override": bool(og_okz_override_cb.value),
                 "og_abklatsch_bemerkung_1": og_okz_bemerkung_dd.value, "og_abklatsch_bemerkung_2": og_okz_anmerkung_in.value,
             }
-
-            for idx, c in se_okz_controls.items(): 
-                d[f"0003_status_{idx}"] = get_val(c["status"], "R+D")
-                d[f"0003_objekt_{idx}"] = get_val(c["objekt"], se_okz_def[int(idx)])
-                d[f"0003_ort_{idx}"] = c["ort"].value
-                d[f"0003_abklatsch_{idx}"] = bool(c["abklatsch"].value)
-                d[f"0003_tupfer_{idx}"] = bool(c["tupfer"].value)
 
             for idx, c in okz_controls.items(): 
                 d[f"0010_status_{idx}"] = get_val(c["status"], "R+D")
@@ -735,30 +706,30 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             if not tw_override_cb.value:
                 tw_daten = any([(tw_temp_in.value or "").strip(), (tw_zeit_in.value or "").strip()])
                 if tw_daten and not tw_kalt_cb.value: 
-                    err("Trinkwasser: Daten eingetragen, aber Haken vergessen!", "tw", None, tw_kalt_cb)
+                    err("Trinkwasser: Daten eingetragen, aber Haken vergessen!", "tw", "wasser", tw_kalt_cb)
                 elif tw_kalt_cb.value:
-                    if not (tw_temp_in.value or "").strip(): err("Trinkwasser: Temperatur fehlt", "tw", None, tw_temp_in)
-                    if not (tw_zeit_in.value or "").strip(): err("Trinkwasser: Uhrzeit fehlt", "tw", None, tw_zeit_in)
+                    if not (tw_temp_in.value or "").strip(): err("Trinkwasser: Temperatur fehlt", "tw", "wasser", tw_temp_in)
+                    if not (tw_zeit_in.value or "").strip(): err("Trinkwasser: Uhrzeit fehlt", "tw", "wasser", tw_zeit_in)
                     
                     armaturen_cbs = [cb_pn, cb_zwei, cb_sensor, cb_knie, cb_ein, cb_ein_g, cb_eck]
                     anzahl_angekreuzt = sum(1 for c in armaturen_cbs if c.value)
                     
                     if anzahl_angekreuzt == 0:
                         for c in armaturen_cbs: markiere_extra(c)
-                        err("Trinkwasser: Bitte genau EINE Entnahmestelle ankreuzen!", "tw", None, cb_pn)
+                        err("Trinkwasser: Bitte genau EINE Entnahmestelle ankreuzen!", "tw", "wasser", cb_pn)
                     elif anzahl_angekreuzt > 1:
                         for c in armaturen_cbs: 
                             if c.value: markiere_extra(c)
-                        err("Trinkwasser: Es darf nur EINE Entnahmestelle angekreuzt sein!", "tw", None, cb_pn)
+                        err("Trinkwasser: Es darf nur EINE Entnahmestelle angekreuzt sein!", "tw", "wasser", cb_pn)
 
             # --- Scherbeneis ---
             if not se_override_cb.value:
                 se_daten = any([(se_temp_in.value or "").strip(), (se_zeit_in.value or "").strip()])
                 if se_daten and not se_kalt_cb.value: 
-                    err("Scherbeneis: Daten eingetragen, aber Haken vergessen!", "se", "eis", se_kalt_cb)
+                    err("Scherbeneis: Daten eingetragen, aber Haken vergessen!", "tw", "eis", se_kalt_cb)
                 elif se_kalt_cb.value:
-                    if not (se_temp_in.value or "").strip(): err("Scherbeneis: Temperatur fehlt", "se", "eis", se_temp_in)
-                    if not (se_zeit_in.value or "").strip(): err("Scherbeneis: Uhrzeit fehlt", "se", "eis", se_zeit_in)
+                    if not (se_temp_in.value or "").strip(): err("Scherbeneis: Temperatur fehlt", "tw", "eis", se_temp_in)
+                    if not (se_zeit_in.value or "").strip(): err("Scherbeneis: Uhrzeit fehlt", "tw", "eis", se_zeit_in)
 
             # --- HFM FLEISCH ---
             def check_hfm(cb_ctrl, override_cb, temp, h_t, h_m, l_s, l_r, c_s, c_r, mhd_s_t, mhd_s_m, mhd_r_t, mhd_r_m, name, tab):
@@ -795,11 +766,9 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                     def_a = okz_def[i]["a"]
                     def_t = okz_def[i]["t"]
                     
-                    # Wurde etwas manuell durch den Benutzer verändert?
                     if obj_val != def_o or c["abklatsch"].value != def_a or c["tupfer"].value != def_t:
                         hfm_okz_modified = True
                         
-                    # Sind überhaupt effektiv Daten zum Senden vorhanden?
                     if obj_val or c["abklatsch"].value or c["tupfer"].value:
                         hfm_okz_valid_data = True
                         
@@ -887,28 +856,25 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 typ_dd.value = "Standard"
                 tag_dd.value, mon_dd.value, jahr_dd.value = htoday, mtoday, jtoday
             elif t == "tw":
-                for c in [tw_kalt_cb, tw_override_cb, cb_pn, cb_zwei, cb_sensor, cb_knie, cb_ein, cb_ein_g, cb_eck, cb_auff_ja, cb_auff_nein, cb_auff_perl, cb_auff_verkalk, cb_auff_verbrueh, cb_auff_durchlauf, cb_auff_eck_zu, cb_auff_unterbau, cb_auff_nichtmoeglich, cb_auff_dusche, cb_auff_handbrause, cb_auff_sonst]: c.value = False
-                for c in [tw_zeit_in, tw_temp_in, tw_tempkonst_in, tw_zapf_sonst_dd, tw_auff_sonstiges_in, tw_bemerkung_dd, tw_inhalt_in]: c.value = ""
-                tw_desinf_dd.value = "Abflammen"
-                tw_zapf_dd.value = "Spülbecken"
-                tw_inaktiv_dd.value = "Na-Thiosulfat"
-                tw_kurz1_dd.value, tw_kurz2_dd.value, tw_kurz3_dd.value, tw_kurz4_dd.value = "1 - nicht wahrnehmbar", "1 - nicht wahrnehmbar", "1 - nicht wahrnehmbar", "1 - nicht wahrnehmbar"
-                tw_zweck_dd.value = "Zweck B"
-                tw_verpackung_dd.value = "500ml Kunststoff-Flasche mit Natriumthiosulfat"
-                tw_entnahmeort_dd.value = "Metzgerei"
-            elif t == "se":
-                for c in [se_kalt_cb, se_override_cb, se_cb_eiswanne, se_cb_ozon, se_okz_cb]: c.value = False
-                se_cb_fallprobe.value = True
-                for c in [se_zeit_in, se_tech_sonst_in, se_auff_sonst_in, se_inhalt_in, se_temp_in, se_bemerkung_dd, se_okz_bemerkung_dd]: c.value = ""
-                se_zapf_dd.value = "Eismaschine"
-                se_desinf_dd.value = "ohne Desinfektion"
-                se_verpackung_dd.value = "steriler Probenbeutel"
-                se_entnahmeort_dd.value = "Fischabteilung-Eismaschine"
-                for idx, c in se_okz_controls.items():
-                    c["status"].value = "R+D"
-                    c["objekt"].value = se_okz_def[int(idx)]
-                    c["ort"].value = "Fischabteilung"
-                    c["abklatsch"].value, c["tupfer"].value = True, True
+                sub = current_sub_tab_state[0]
+                if sub == "wasser":
+                    for c in [tw_kalt_cb, tw_override_cb, cb_pn, cb_zwei, cb_sensor, cb_knie, cb_ein, cb_ein_g, cb_eck, cb_auff_ja, cb_auff_nein, cb_auff_perl, cb_auff_verkalk, cb_auff_verbrueh, cb_auff_durchlauf, cb_auff_eck_zu, cb_auff_unterbau, cb_auff_nichtmoeglich, cb_auff_dusche, cb_auff_handbrause, cb_auff_sonst]: c.value = False
+                    for c in [tw_zeit_in, tw_temp_in, tw_tempkonst_in, tw_zapf_sonst_dd, tw_auff_sonstiges_in, tw_bemerkung_dd, tw_inhalt_in]: c.value = ""
+                    tw_desinf_dd.value = "Abflammen"
+                    tw_zapf_dd.value = "Spülbecken"
+                    tw_inaktiv_dd.value = "Na-Thiosulfat"
+                    tw_kurz1_dd.value, tw_kurz2_dd.value, tw_kurz3_dd.value, tw_kurz4_dd.value = "1 - nicht wahrnehmbar", "1 - nicht wahrnehmbar", "1 - nicht wahrnehmbar", "1 - nicht wahrnehmbar"
+                    tw_zweck_dd.value = "Zweck B"
+                    tw_verpackung_dd.value = "500ml Kunststoff-Flasche mit Natriumthiosulfat"
+                    tw_entnahmeort_dd.value = "Metzgerei"
+                elif sub == "eis":
+                    for c in [se_kalt_cb, se_override_cb, se_cb_eiswanne, se_cb_ozon]: c.value = False
+                    se_cb_fallprobe.value = True
+                    for c in [se_zeit_in, se_tech_sonst_in, se_auff_sonst_in, se_inhalt_in, se_temp_in, se_bemerkung_dd]: c.value = ""
+                    se_zapf_dd.value = "Eismaschine"
+                    se_desinf_dd.value = "ohne Desinfektion"
+                    se_verpackung_dd.value = "steriler Probenbeutel"
+                    se_entnahmeort_dd.value = "Fischabteilung-Eismaschine"
             elif t == "hfm":
                 sub = current_sub_tab_state[0]
                 if sub == "hack":
@@ -1075,7 +1041,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             nonlocal top_nav, haupt_bereich
             current_tab_state[0] = tab_id
             haupt_bereich.controls.clear(); top_nav.controls.clear()
-            tabs = [("stamm", "Stammdaten"), ("tw", "Trinkwasser"), ("se", "Scherbeneis"), ("hfm", "HFM"), ("og", "Convenience")]
+            tabs = [("stamm", "Stammdaten"), ("tw", "Trinkwasser"), ("hfm", "HFM"), ("og", "Convenience")]
             for tid, tname in tabs:
                 is_act = (tid == tab_id)
                 btn = ft.ElevatedButton(tname, on_click=lambda e, t=tid: switch_tab(t), bgcolor="#004400" if is_act else "#1a1a1a", color="white",
@@ -1085,31 +1051,25 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             if tab_id == "stamm":
                 haupt_bereich.controls.extend([vorlagen_expansion, ft.Divider(color="white24"), ft.Text("Stammdaten", size=24, weight="bold", color="#FF9800", text_align=ft.TextAlign.CENTER), datum_row, adr_in, nr_in, auft_in, ag_dd, name_in, typ_dd, bem_in])
             elif tab_id == "tw":
-                haupt_bereich.controls.extend([ft.Text("Trinkwasser", size=24, weight="bold", color="#FF9800", text_align=ft.TextAlign.CENTER), ft.Row([tw_kalt_cb, tw_override_cb], wrap=True), tw_zeit_in, tw_temp_in, tw_tempkonst_in, ft.Divider(color="white24"), ft.Text("Probenahme / Zapfstelle:", color="#2196F3", weight="bold"), tw_entnahmeort_dd, tw_zapf_dd, tw_zapf_sonst_dd, tw_desinf_dd, ft.Row([cb_pn, cb_zwei, cb_sensor, cb_knie], wrap=True), ft.Row([cb_ein, cb_ein_g, cb_eck], wrap=True), ft.Divider(color="white24"), ft.Text("Sensorik & Analytik:", color="#2196F3", weight="bold"), tw_inaktiv_dd, tw_kurz1_dd, tw_kurz2_dd, tw_kurz3_dd, tw_kurz4_dd, ft.Divider(color="white24"), ft.Text("Auffälligkeiten:", color="#2196F3", weight="bold"), ft.Row([cb_auff_ja, cb_auff_nein], wrap=True), cb_auff_perl, cb_auff_verkalk, cb_auff_verbrueh, cb_auff_durchlauf, cb_auff_unterbau, cb_auff_eck_zu, cb_auff_nichtmoeglich, cb_auff_dusche, cb_auff_handbrause, cb_auff_sonst, tw_auff_sonstiges_in, ft.Divider(color="white24"), tw_zweck_dd, tw_inhalt_in, tw_verpackung_dd, tw_bemerkung_dd])
-            elif tab_id == "se":
-                tab_title = ft.Text("Scherbeneis", size=24, weight="bold", color="#FF9800", text_align=ft.TextAlign.CENTER)
+                tab_title = ft.Text("Trinkwasser & Eis", size=24, weight="bold", color="#FF9800", text_align=ft.TextAlign.CENTER)
                 sub_nav = ft.Row(wrap=True, alignment=ft.MainAxisAlignment.CENTER)
                 haupt_bereich.controls.extend([tab_title, sub_nav])
-                def sw_se(sub):
+                def sw_tw(sub):
                     current_sub_tab_state[0] = sub
                     haupt_bereich.controls[2:] = []
                     sub_nav.controls.clear()
-                    for sid, sname in [("eis", "❄️ Eis"), ("okz", "🔬 OKZ")]:
+                    for sid, sname in [("wasser", "🚰 Trinkwasser"), ("eis", "❄️ Scherbeneis")]:
                         is_active = (sid == sub)
-                        btn = ft.ElevatedButton(sname, on_click=lambda e, s=sid: sw_se(s), bgcolor="#004400" if is_active else "#1a1a1a", color="white", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=12, side=ft.BorderSide(width=1.5, color="#4CAF50")))
+                        btn = ft.ElevatedButton(sname, on_click=lambda e, s=sid: sw_tw(s), bgcolor="#004400" if is_active else "#1a1a1a", color="white", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=12, side=ft.BorderSide(width=1.5, color="#4CAF50")))
                         sub_nav.controls.append(btn)
-                    if sub == "eis":
+                    if sub == "wasser":
+                        tab_title.value = "Trinkwasser"
+                        haupt_bereich.controls.extend([ft.Row([tw_kalt_cb, tw_override_cb], wrap=True), tw_zeit_in, tw_temp_in, tw_tempkonst_in, ft.Divider(color="white24"), ft.Text("Probenahme / Zapfstelle:", color="#2196F3", weight="bold"), tw_entnahmeort_dd, tw_zapf_dd, tw_zapf_sonst_dd, tw_desinf_dd, ft.Row([cb_pn, cb_zwei, cb_sensor, cb_knie], wrap=True), ft.Row([cb_ein, cb_ein_g, cb_eck], wrap=True), ft.Divider(color="white24"), ft.Text("Sensorik & Analytik:", color="#2196F3", weight="bold"), tw_inaktiv_dd, tw_kurz1_dd, tw_kurz2_dd, tw_kurz3_dd, tw_kurz4_dd, ft.Divider(color="white24"), ft.Text("Auffälligkeiten:", color="#2196F3", weight="bold"), ft.Row([cb_auff_ja, cb_auff_nein], wrap=True), cb_auff_perl, cb_auff_verkalk, cb_auff_verbrueh, cb_auff_durchlauf, cb_auff_unterbau, cb_auff_eck_zu, cb_auff_nichtmoeglich, cb_auff_dusche, cb_auff_handbrause, cb_auff_sonst, tw_auff_sonstiges_in, ft.Divider(color="white24"), tw_zweck_dd, tw_inhalt_in, tw_verpackung_dd, tw_bemerkung_dd])
+                    elif sub == "eis":
                         tab_title.value = "Scherbeneis"
                         haupt_bereich.controls.extend([ft.Row([se_kalt_cb, se_override_cb], wrap=True), se_zeit_in, se_zapf_dd, ft.Text("Technik:", color="#2196F3", weight="bold"), ft.Row([se_cb_eiswanne, se_cb_fallprobe], wrap=True), se_tech_sonst_in, se_desinf_dd, ft.Text("Auffälligkeiten:", color="#2196F3", weight="bold"), se_cb_ozon, se_auff_sonst_in, se_inhalt_in, se_verpackung_dd, se_entnahmeort_dd, se_temp_in, se_bemerkung_dd])
-                    elif sub == "okz":
-                        tab_title.value = "Scherbeneis OKZ"
-                        haupt_bereich.controls.extend([ft.Row([se_okz_cb]), ft.Divider(color="white24")])
-                        for i in range(1, 4):
-                            c = se_okz_controls[f"{i:02d}"]
-                            haupt_bereich.controls.extend([ft.Text(f"Probe {i}", color="#FF9800", weight="bold"), ft.Row([ft.Container(content=c["status"], expand=1), ft.Container(content=c["objekt"], expand=3)]), c["ort"], ft.Row([ft.Container(content=c["abklatsch"], expand=1), ft.Container(content=c["tupfer"], expand=1)]), ft.Divider(color="white24")])
-                        haupt_bereich.controls.append(se_okz_bemerkung_dd)
                     if page: page.update()
-                sw_se(sub_tab_id if sub_tab_id else "eis")
+                sw_tw(sub_tab_id if sub_tab_id else "wasser")
             elif tab_id == "hfm":
                 tab_title = ft.Text("HFM Fleisch", size=24, weight="bold", color="#FF9800", text_align=ft.TextAlign.CENTER)
                 sub_nav = ft.Row(wrap=True, alignment=ft.MainAxisAlignment.CENTER)
