@@ -157,7 +157,7 @@ def sammle_alle_daten(daten):
     if c_r: w["tf_0004_00_ZS-002081_Rindfleisch: XXX"] = f"Rindfleisch: {c_r}"
     
     w["tf_0004_00_ZS-1441"] = formatiere_temperatur(get_val("hfm_hack_temp"))
-    w["dd_0004_00_ZS-001796"] = get_val("hfm_hack_bemerkung")
+    w["dd_0004_00_ZS-001796"] = get_val("hfm_hack_check_bemerkung")
 
     # --- METT ---
     check("hfm_mett_cb", "cb_0006_00")
@@ -171,8 +171,8 @@ def sammle_alle_daten(daten):
     w["tf_0006_00_ZS-1441"] = formatiere_temperatur(get_val("hfm_mett_temp"))
     w["dd_0006_00_ZS-001796"] = get_val("hfm_mett_bemerkung")
     
-    m_mett = get_val("hfm_mett_mhd")
-    if m_mett.replace(".", "").strip(): w["tf_0006_00_ZS-001835"] = m_mett
+    extra_mett = get_val("hfm_mett_mhd")
+    if extra_mett.replace(".", "").strip(): w["tf_0006_00_ZS-001835"] = extra_mett
 
     # --- FZS Schwein ---
     check("hfm_fzs_cb", "cb_0008_00")
@@ -220,7 +220,7 @@ def sammle_alle_daten(daten):
             check(f"{prefix}_abklatsch_{app_idx}", f"cb_{prefix}_{pdf_idx}_ZS-002294")
             check(f"{prefix}_tupfer_{app_idx}", f"cb_{prefix}_{pdf_idx}_ZS-002295")
 
-    check("hfm_abklatsch_cb", "cb_0010_00")
+    check("hfm_okz_cb", "cb_0010_00")
     w["tf_0010_00"] = "Abklatschproben HFM"
     w["dd_0010_00_ZS-001796"] = get_val("hfm_abklatsch_bemerkung")
     map_abklatsch("0010", 1, 10)
@@ -231,7 +231,12 @@ def sammle_alle_daten(daten):
     for i in range(1, 6):
         idx = f"{i:02d}" 
         val = get_val(f"og_name_{idx}")
-        if val: w[f"tf_0009_00_ Teilprobe {i}:"] = f"Teilprobe {i}:{val}"
+        
+        # FIX: Der Reihen-Index wird nun korrekt mit 'idx' übergeben (01, 02, 03...) statt starr '00'!
+        if val: 
+            w[f"tf_0009_{idx}_ Teilprobe {i}:"] = f"Teilprobe {i}:{val}"
+            w[f"tf_0009_{idx}"] = val  # Fallback-ID für geänderte REWE Formularfelder
+            
         w[f"dd_0009_{idx}_ZS-001799"] = get_val(f"og_ort_{idx}")
         w[f"cal_0009_{idx}_ZS-001810"] = get_val(f"og_herst_{idx}")
         w[f"tf_0009_{idx}_ZS-1527"] = get_val(f"og_verb_{idx}")
@@ -239,52 +244,16 @@ def sammle_alle_daten(daten):
         w[f"dd_0009_{idx}_ZS-001798"] = get_val(f"og_verp_{idx}")
         w[f"tf_0009_{idx}_ZS-1441"] = formatiere_temperatur(get_val(f"og_temp_{idx}"))
 
+    # --- CONVENIENCE OKZ ---
     check("og_abklatsch_cb", "cb_0011_00")
     w["tf_0011_00"] = "Obst-Gemüse Abklatschproben"
     w["dd_0011_00_ZS-001796"] = get_val("og_abklatsch_bemerkung_1")
     w["Anmerkung"] = get_val("og_abklatsch_bemerkung_2")
     map_abklatsch("0011", 1, 5)
 
-    check("se_abklatsch_cb", "cb_0003_00")
-    w["tf_0003_00"] = "Abklatschproben Scherbeneismaschine"
-    w["dd_0003_00_ZS-001796"] = get_val("se_abklatsch_bemerkung")
-    map_abklatsch("0003", 1, 3)
-
-    # --- BIO HACKFLEISCH ---
-    check("hfm_bio_cb", "cb_0005_00")
-    w["tf_0005_00"] = "Biohackfleisch"
-    w["dd_0005_00_ZS-001799"] = get_val("hfm_bio_entnahmeort", "Produktionsraum")
-    
-    bio_herst = get_val("hfm_bio_herstelldatum")
-    if bio_herst.replace(".", "").strip():
-        w["cal_0005_00_ZS-001810"] = bio_herst
-        w["tf_0005_00_ZS-001810"] = bio_herst
-        w["cal_0005_00"] = bio_herst
-
-    w["tf_0005_00_ZS-1215"] = get_val("hfm_bio_inhalt", "jeweils ca. 200 g")
-    w["dd_0005_00_ZS-001798"] = get_val("hfm_bio_verpackung", "steriler Probenbecher")
-    
-    l_s_bio = get_val("hfm_bio_lief_schwein")
-    if l_s_bio: w["tf_0005_00_ZS-1209_Schweinefleisch: XXX"] = f"Schweinefleisch: {l_s_bio}"
-    c_s_bio = get_val("hfm_bio_charge_schwein")
-    if c_s_bio: w["tf_0005_00_ZS-002081_Schweinefleisch: XXX"] = f"Schweinefleisch: {c_s_bio}"
-    
-    l_r_bio = get_val("hfm_bio_lief_rind")
-    if l_r_bio: w["tf_0005_00_ZS-1209_Rindfleisch: XXX"] = f"Rindfleisch: {l_r_bio}"
-    c_r_bio = get_val("hfm_bio_charge_rind")
-    if c_r_bio: w["tf_0005_00_ZS-002081_Rindfleisch: XXX"] = f"Rindfleisch: {c_r_bio}"
-
-    m_r_bio = get_val("hfm_bio_mhd_rind")
-    if m_r_bio.replace(".", "").strip(): w["tf_0005_00_ZS-001835_Rindfleisch: XXX"] = f"Rindfleisch: {m_r_bio}"
-    m_s_bio = get_val("hfm_bio_mhd_schwein")
-    if m_s_bio.replace(".", "").strip(): w["tf_0005_00_ZS-001835_Schweinefleisch: XXX"] = f"Schweinefleisch: {m_s_bio}"
-    
-    w["tf_0005_00_ZS-1441"] = formatiere_temperatur(get_val("hfm_bio_temp"))
-    w["dd_0005_00_ZS-001796"] = get_val("hfm_bio_bemerkung")
-
     return w
 
-# --- HAUPT-FUNKTION (LIMS Panzerknacker FIX) ---
+# --- HAUPT-FUNKTION ---
 
 def erstelle_bericht(daten):
     master_pfad = os.path.join("assets", "Rewe_PDF.pdf")
@@ -309,8 +278,6 @@ def erstelle_bericht(daten):
     else:
         writer.append(reader_master)
     
-    # WICHTIG: KEIN manuelles Überschreiben des AcroForm-Root-Objekts mehr! 
-    # Das hatte die Verknüpfung der LIMS-IDs zerstört. Nur noch NeedAppearances setzen:
     if "/AcroForm" in writer.root_object:
         writer.root_object["/AcroForm"].update({NameObject("/NeedAppearances"): BooleanObject(True)})
 
@@ -318,17 +285,14 @@ def erstelle_bericht(daten):
     text_mapping = {k: str(v) for k, v in mapping.items() if not isinstance(v, bool)}
     
     for page in writer.pages:
-        # Normales Schreiben der Textfelder durch pypdf
         writer.update_page_form_field_values(page, text_mapping)
         
-        # PANZERKNACKER FÜR KAPUTTE FELDER UND KONTROLLKÄSTCHEN (LIMS-Gerecht!)
         if "/Annots" in page:
             for annot_ref in page["/Annots"]:
                 annot = annot_ref.get_object()
                 current_obj = annot
                 f_id = None
                 
-                # Wir klettern den Baum hoch, um das ECHTE Feld zu finden (das braucht LIMS!)
                 while current_obj:
                     if "/T" in current_obj:
                         f_id = clean_id(str(current_obj["/T"]).strip("()"))
@@ -339,7 +303,7 @@ def erstelle_bericht(daten):
                         break
                 if not f_id: continue
 
-                # HAKEN / CHECKBOXEN KNACKEN
+                # HAKEN / CHECKBOXEN
                 if f_id in mapping and isinstance(mapping[f_id], bool):
                     val = mapping[f_id]
                     on_state = NameObject("/Yes")
@@ -348,18 +312,14 @@ def erstelle_bericht(daten):
                             if k != "/Off": on_state = NameObject(k); break
                     state = on_state if val else NameObject("/Off")
                     
-                    # 1. Für LIMS: Den Wert (/V) direkt im echten Formularfeld-Objekt speichern!
                     current_obj.update({NameObject("/V"): state})
-                    
-                    # 2. Für PDF-Viewer: Das Aussehen (/AS) auf dem Zeichnungs-Widget (Annot) aktualisieren!
                     annot.update({NameObject("/AS"): state})
                 
-                # TEXTFELDER (Falls pypdf sie ausgelassen hat)
+                # TEXTFELDER FALLBACK
                 elif f_id in mapping and not isinstance(mapping[f_id], bool):
                     val = str(mapping[f_id])
                     if val and val != "..":
                         current_obj.update({NameObject("/V"): create_string_object(val)})
-                        # Acrobat Render-Flag löschen, damit er den Text neu zeichnet
                         if "/AP" in annot:
                             del annot["/AP"]
 
