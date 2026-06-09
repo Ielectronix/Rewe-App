@@ -1056,13 +1056,14 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             for i, (tid, tname) in enumerate(tabs):
                 is_act = (tid == tab_id)
                 btn = ft.ElevatedButton(
-                    content=ft.Text(tname, size=14, weight="bold"),
+                    content=ft.Text(tname, size=13, weight="bold", text_align=ft.TextAlign.CENTER),
                     on_click=lambda e, t=tid: switch_tab(t),
                     bgcolor="#004400" if is_act else "#1a1a1a",
                     color="white",
+                    height=65, 
                     style=ft.ButtonStyle(
                         shape=ft.RoundedRectangleBorder(radius=10), 
-                        padding=15, 
+                        padding=5, 
                         side=ft.BorderSide(width=1.5, color="#4CAF50")
                     )
                 )
