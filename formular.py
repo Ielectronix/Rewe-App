@@ -1040,13 +1040,45 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         def switch_tab(tab_id, sub_tab_id=None):
             nonlocal top_nav, haupt_bereich
             current_tab_state[0] = tab_id
-            haupt_bereich.controls.clear(); top_nav.controls.clear()
-            tabs = [("stamm", "Stammdaten"), ("tw", "Trinkwasser"), ("hfm", "HFM"), ("og", "Convenience")]
-            for tid, tname in tabs:
+            haupt_bereich.controls.clear()
+            top_nav.controls.clear()
+            
+            tabs = [
+                ("stamm", "📋 Stammdaten"), 
+                ("tw", "🚰 Trinkwasser & Eis"), 
+                ("hfm", "🥩 HFM Fleisch"), 
+                ("og", "🥗 Convenience")
+            ]
+            
+            zeile1_controls = []
+            zeile2_controls = []
+            
+            for i, (tid, tname) in enumerate(tabs):
                 is_act = (tid == tab_id)
-                btn = ft.ElevatedButton(tname, on_click=lambda e, t=tid: switch_tab(t), bgcolor="#004400" if is_act else "#1a1a1a", color="white",
-                                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=12, side=ft.BorderSide(width=1.5, color="#4CAF50")))
-                top_nav.controls.append(btn)
+                btn = ft.ElevatedButton(
+                    content=ft.Text(tname, size=14, weight="bold"),
+                    on_click=lambda e, t=tid: switch_tab(t),
+                    bgcolor="#004400" if is_act else "#1a1a1a",
+                    color="white",
+                    style=ft.ButtonStyle(
+                        shape=ft.RoundedRectangleBorder(radius=10), 
+                        padding=15, 
+                        side=ft.BorderSide(width=1.5, color="#4CAF50")
+                    )
+                )
+                btn_container = ft.Container(content=btn, expand=1)
+                
+                if i < 2:
+                    zeile1_controls.append(btn_container)
+                else:
+                    zeile2_controls.append(btn_container)
+                    
+            top_nav.controls.append(
+                ft.Column([
+                    ft.Row(controls=zeile1_controls, spacing=10),
+                    ft.Row(controls=zeile2_controls, spacing=10)
+                ], spacing=10, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
+            )
             
             if tab_id == "stamm":
                 haupt_bereich.controls.extend([vorlagen_expansion, ft.Divider(color="white24"), ft.Text("Stammdaten", size=24, weight="bold", color="#FF9800", text_align=ft.TextAlign.CENTER), datum_row, adr_in, nr_in, auft_in, ag_dd, name_in, typ_dd, bem_in])
@@ -1058,7 +1090,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                     current_sub_tab_state[0] = sub
                     haupt_bereich.controls[2:] = []
                     sub_nav.controls.clear()
-                    for sid, sname in [("wasser", "🚰 Trinkwasser"), ("eis", "❄️ Scherbeneis")]:
+                    for sid, sname in [("wasser", "𚚰 Trinkwasser"), ("eis", "❄️ Scherbeneis")]:
                         is_active = (sid == sub)
                         btn = ft.ElevatedButton(sname, on_click=lambda e, s=sid: sw_tw(s), bgcolor="#004400" if is_active else "#1a1a1a", color="white", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=12, side=ft.BorderSide(width=1.5, color="#4CAF50")))
                         sub_nav.controls.append(btn)
