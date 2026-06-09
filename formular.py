@@ -262,27 +262,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         hfm_fzg_temp_in = tf("Probenahmetemperatur", aktuelle_daten.get("hfm_fzg_temp", ""), ob=format_temp)
         hfm_fzg_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("hfm_fzg_bemerkung", ""), ["", "Keine Besonderheiten"])
 
-        hfm_bio_cb = cb("Bio-Hackfleisch", aktuelle_daten.get("hfm_bio_cb", False), bold=True)
-        hfm_bio_override_cb = cb("Trotzdem speichern", aktuelle_daten.get("hfm_bio_override", False))
-        hfm_bio_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("hfm_bio_entnahmeort", "Produktionsraum"), ort_opts)
-        ht, hm, hj = get_herst("hfm_bio_herstelldatum")
-        hfm_bio_herst_tag_dd, hfm_bio_herst_mon_dd, hfm_bio_herst_jahr_dd = combo("Tag", ht, tage_opts), combo("Mon", hm, mon_opts), combo("Jahr", hj, jahr_opts)
-        
-        t, m, j = parse_datum(aktuelle_daten.get("hfm_bio_mhd_schwein", ""), "", "", jtoday)
-        hfm_bio_mhd_s_tag_dd, hfm_bio_mhd_s_mon_dd, hfm_bio_mhd_s_jahr_dd = combo("Tag", t, tage_opts), combo("Mon", m, mon_opts), combo("Jahr", j, jahr_opts)
-        
-        t, m, j = parse_datum(aktuelle_daten.get("hfm_bio_mhd_rind", ""), "", "", jtoday)
-        hfm_bio_mhd_r_tag_dd, hfm_bio_mhd_r_mon_dd, hfm_bio_mhd_r_jahr_dd = combo("Tag", t, tage_opts), combo("Mon", m, mon_opts), combo("Jahr", j, jahr_opts)
-        
-        hfm_bio_inhalt_in = tf("Inhalt", aktuelle_daten.get("hfm_bio_inhalt", ""))
-        hfm_bio_verpackung_dd = combo("Verpackung", aktuelle_daten.get("hfm_bio_verpackung", "steriler Probenbecher"), verp_opts)
-        hfm_bio_lief_schwein_in = tf("Lieferant (Schwein)", aktuelle_daten.get("hfm_bio_lief_schwein", ""))
-        hfm_bio_lief_rind_in = tf("Lieferant (Rind)", aktuelle_daten.get("hfm_bio_lief_rind", ""))
-        hfm_bio_charge_schwein_dd = combo("Charge Schwein", aktuelle_daten.get("hfm_bio_charge_schwein", ""), c_opts_s)
-        hfm_bio_charge_rind_dd = combo("Charge Rind", aktuelle_daten.get("hfm_bio_charge_rind", ""), c_opts_r)
-        hfm_bio_temp_in = tf("Probenahmetemperatur", aktuelle_daten.get("hfm_bio_temp", ""), ob=format_temp)
-        hfm_bio_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("hfm_bio_bemerkung", ""), ["", "Keine Besonderheiten"])
-
         hfm_okz_cb = cb("Abklatschproben HFM", aktuelle_daten.get("hfm_abklatsch_cb", False), bold=True)
         hfm_okz_override_cb = cb("Trotzdem speichern", aktuelle_daten.get("hfm_abklatsch_override", False))
         hfm_okz_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("hfm_abklatsch_bemerkung", ""), ["", "Keine Besonderheiten"])
@@ -457,16 +436,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             mt, mm, mj = parse_datum(v.get("hfm_fzg_mhd", ""), "", "", jtoday)
             hfm_fzg_mhd_tag_dd.value, hfm_fzg_mhd_mon_dd.value, hfm_fzg_mhd_jahr_dd.value = mt, mm, mj
 
-            set_hfm_base(hfm_bio_cb, hfm_bio_override_cb, hfm_bio_entnahmeort_dd, hfm_bio_inhalt_in, hfm_bio_verpackung_dd, hfm_bio_temp_in, hfm_bio_bemerkung_dd, hfm_bio_herst_tag_dd, hfm_bio_herst_mon_dd, hfm_bio_herst_jahr_dd, "hfm_bio")
-            setze_wert(hfm_bio_lief_schwein_in, "hfm_bio_lief_schwein")
-            setze_wert(hfm_bio_charge_schwein_dd, "hfm_bio_charge_schwein")
-            mst, msm, msj = parse_datum(v.get("hfm_bio_mhd_schwein", ""), "", "", jtoday)
-            hfm_bio_mhd_s_tag_dd.value, hfm_bio_mhd_s_mon_dd.value, hfm_bio_mhd_s_jahr_dd.value = mst, msm, msj
-            setze_wert(hfm_bio_lief_rind_in, "hfm_bio_lief_rind")
-            setze_wert(hfm_bio_charge_rind_dd, "hfm_bio_charge_rind")
-            mrt, mrm, mrj = parse_datum(v.get("hfm_bio_mhd_rind", ""), "", "", jtoday)
-            hfm_bio_mhd_r_tag_dd.value, hfm_bio_mhd_r_mon_dd.value, hfm_bio_mhd_r_jahr_dd.value = mrt, mrm, mrj
-
             setze_wert(hfm_okz_cb, "hfm_abklatsch_cb", False)
             setze_wert(hfm_okz_override_cb, "hfm_abklatsch_override", False)
             setze_wert(hfm_okz_bemerkung_dd, "hfm_abklatsch_bemerkung")
@@ -616,14 +585,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 "hfm_fzg_lief": hfm_fzg_lief_in.value, "hfm_fzg_mhd": get_date_str(hfm_fzg_mhd_tag_dd.value, hfm_fzg_mhd_mon_dd.value, hfm_fzg_mhd_jahr_dd.value), 
                 "hfm_fzg_charge": hfm_fzg_charge_dd.value, "hfm_fzg_temp": hfm_fzg_temp_in.value, "hfm_fzg_bemerkung": hfm_fzg_bemerkung_dd.value,
                 
-                "hfm_bio_cb": bool(hfm_bio_cb.value), "hfm_bio_override": bool(hfm_bio_override_cb.value), "hfm_bio_entnahmeort": get_val(hfm_bio_entnahmeort_dd, "Produktionsraum"), 
-                "hfm_bio_inhalt": get_val(hfm_bio_inhalt_in, "jeweils ca. 200 g"), "hfm_bio_verpackung": get_val(hfm_bio_verpackung_dd, "steriler Probenbecher"), 
-                "hfm_bio_lief_schwein": hfm_bio_lief_schwein_in.value, "hfm_bio_lief_rind": hfm_bio_lief_rind_in.value, 
-                "hfm_bio_mhd_schwein": get_date_str(hfm_bio_mhd_s_tag_dd.value, hfm_bio_mhd_s_mon_dd.value, hfm_bio_mhd_s_jahr_dd.value), 
-                "hfm_bio_mhd_rind": get_date_str(hfm_bio_mhd_r_tag_dd.value, hfm_bio_mhd_r_mon_dd.value, hfm_bio_mhd_r_jahr_dd.value), 
-                "hfm_bio_charge_schwein": hfm_bio_charge_schwein_dd.value, "hfm_bio_charge_rind": hfm_bio_charge_rind_dd.value, 
-                "hfm_bio_temp": hfm_bio_temp_in.value, "hfm_bio_bemerkung": hfm_bio_bemerkung_dd.value, 
-                
                 "hfm_abklatsch_cb": bool(hfm_okz_cb.value), "hfm_abklatsch_override": bool(hfm_okz_override_cb.value), "hfm_abklatsch_bemerkung": hfm_okz_bemerkung_dd.value,
                 
                 "og_cb": bool(og_cb.value), "og_override": bool(og_override_cb.value), 
@@ -753,7 +714,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             check_hfm(hfm_mett_cb, hfm_mett_override_cb, hfm_mett_temp_in, hfm_mett_herst_tag_dd, hfm_mett_herst_mon_dd, hfm_mett_lief_in, None, hfm_mett_charge_dd, None, None, None, hfm_mett_mhd_tag_dd, hfm_mett_mhd_mon_dd, "Mett", "mett")
             check_hfm(hfm_fzs_cb, hfm_fzs_override_cb, hfm_fzs_temp_in, hfm_fzs_herst_tag_dd, hfm_fzs_herst_mon_dd, hfm_fzs_lief_in, None, hfm_fzs_charge_dd, None, None, None, hfm_fzs_mhd_tag_dd, hfm_fzs_mhd_mon_dd, "FZ Schwein", "fzs")
             check_hfm(hfm_fzg_cb, hfm_fzg_override_cb, hfm_fzg_temp_in, hfm_fzg_herst_tag_dd, hfm_fzg_herst_mon_dd, hfm_fzg_lief_in, None, hfm_fzg_charge_dd, None, None, None, hfm_fzg_mhd_tag_dd, hfm_fzg_mhd_mon_dd, "FZ Geflügel", "fzg")
-            check_hfm(hfm_bio_cb, hfm_bio_override_cb, hfm_bio_temp_in, hfm_bio_herst_tag_dd, hfm_bio_herst_mon_dd, hfm_bio_lief_schwein_in, hfm_bio_lief_rind_in, hfm_bio_charge_schwein_dd, hfm_bio_charge_rind_dd, hfm_bio_mhd_s_tag_dd, hfm_bio_mhd_s_mon_dd, hfm_bio_mhd_r_tag_dd, hfm_bio_mhd_r_mon_dd, "Bio Hack", "bio")
 
             # --- HFM OKZ Prüfung (INTELLIGENT) ---
             if not hfm_okz_override_cb.value:
@@ -908,14 +868,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                     hfm_fzg_verpackung_dd.value = "steriler Probenbeutel"
                     hfm_fzg_lief_in.value, hfm_fzg_mhd_tag_dd.value, hfm_fzg_mhd_mon_dd.value, hfm_fzg_mhd_jahr_dd.value = "", "", jtoday
                     hfm_fzg_charge_dd.value, hfm_fzg_temp_in.value, hfm_fzg_bemerkung_dd.value = "", "", ""
-                elif sub == "bio":
-                    hfm_bio_cb.value, hfm_bio_override_cb.value = False, False
-                    hfm_bio_entnahmeort_dd.value = "Produktionsraum"
-                    hfm_bio_herst_tag_dd.value, hfm_bio_herst_mon_dd.value, hfm_bio_herst_jahr_dd.value = "", "", jtoday
-                    hfm_bio_inhalt_in.value, hfm_bio_verpackung_dd.value, hfm_bio_lief_schwein_in.value, hfm_bio_lief_rind_in.value = "", "steriler Probenbecher", "", ""
-                    hfm_bio_mhd_s_tag_dd.value, hfm_bio_mhd_s_mon_dd.value, hfm_bio_mhd_s_jahr_dd.value = "", "", jtoday
-                    hfm_bio_mhd_r_tag_dd.value, hfm_bio_mhd_r_mon_dd.value, hfm_bio_mhd_r_jahr_dd.value = "", "", jtoday
-                    hfm_bio_charge_schwein_dd.value, hfm_bio_charge_rind_dd.value, hfm_bio_temp_in.value, hfm_bio_bemerkung_dd.value = "", "", "", ""
                 elif sub == "okz":
                     hfm_okz_cb.value, hfm_okz_override_cb.value, hfm_okz_bemerkung_dd.value = False, False, ""
                     for idx, c in okz_controls.items():
@@ -1111,7 +1063,8 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                     current_sub_tab_state[0] = sub
                     haupt_bereich.controls[2:] = []
                     sub_nav.controls.clear()
-                    for sid, sname in [("hack","🥩 Hack"), ("mett","🍖 Mett"), ("fzs","🐷 FZS"), ("fzg","🐔 FZG"), ("bio","🥩 Bio"), ("okz","🔬 OKZ")]:
+                    # BIO WURDE HIER RESTLOS ENTFERNT!
+                    for sid, sname in [("hack","🥩 Hack"), ("mett","🍖 Mett"), ("fzs","🐷 FZS"), ("fzg","🐔 FZG"), ("okz","🔬 OKZ")]:
                         is_sub_act = (sid == sub)
                         btn = ft.ElevatedButton(sname, on_click=lambda e, s=sid: sw_hfm(s), bgcolor="#004400" if is_sub_act else "#1a1a1a", color="white", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=5, side=ft.BorderSide(width=1, color="#4CAF50")))
                         sub_nav.controls.append(btn)
@@ -1127,9 +1080,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                     elif sub == "fzg":
                         tab_title.value = "HFM Fleisch Geflügel Zubereitung"
                         haupt_bereich.controls.extend([ft.Row([hfm_fzg_cb, hfm_fzg_override_cb], wrap=True), hfm_fzg_entnahmeort_dd, hfm_fzg_produkt_in, hfm_fzg_marinade_in, ft.Text("Herstellungsdatum:", color="#2196F3", weight="bold"), d_row(hfm_fzg_herst_tag_dd, hfm_fzg_herst_mon_dd, hfm_fzg_herst_jahr_dd), hfm_fzg_inhalt_in, hfm_fzg_verpackung_dd, hfm_fzg_lief_in, ft.Text("MHD:", color="#2196F3", weight="bold"), d_row(hfm_fzg_mhd_tag_dd, hfm_fzg_mhd_mon_dd, hfm_fzg_mhd_jahr_dd), hfm_fzg_charge_dd, hfm_fzg_temp_in, hfm_fzg_bemerkung_dd])
-                    elif sub == "bio":
-                        tab_title.value = "HFM Bio Fleisch"
-                        haupt_bereich.controls.extend([ft.Row([hfm_bio_cb, hfm_bio_override_cb], wrap=True), hfm_bio_entnahmeort_dd, ft.Text("Herstellungsdatum:", color="#2196F3", weight="bold"), d_row(hfm_bio_herst_tag_dd, hfm_bio_herst_mon_dd, hfm_bio_herst_jahr_dd), hfm_bio_inhalt_in, hfm_bio_verpackung_dd, hfm_bio_lief_schwein_in, hfm_bio_lief_rind_in, ft.Text("MHD (Schwein):", color="#2196F3", weight="bold"), d_row(hfm_bio_mhd_s_tag_dd, hfm_bio_mhd_s_mon_dd, hfm_bio_mhd_s_jahr_dd), ft.Text("MHD (Rind):", color="#2196F3", weight="bold"), d_row(hfm_bio_mhd_r_tag_dd, hfm_bio_mhd_r_mon_dd, hfm_bio_mhd_r_jahr_dd), hfm_bio_charge_schwein_dd, hfm_bio_charge_rind_dd, hfm_bio_temp_in, hfm_bio_bemerkung_dd])
                     elif sub == "okz":
                         tab_title.value = "HFM OKZ"
                         haupt_bereich.controls.extend([ft.Row([hfm_okz_cb, hfm_okz_override_cb], wrap=True), ft.Divider(color="white24")])
