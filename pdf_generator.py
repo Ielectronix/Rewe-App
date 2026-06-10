@@ -1,11 +1,36 @@
+"""
+pdf_generator.py
+================
+Dieses Modul stellt die Kern-Schnittstelle zwischen der Flet-Benutzeroberfläche
+und der finalen PDF-Druckvorlage bereit.
+
+Funktionsweise:
+1. Es nimmt die serialisierten Formulardaten aus der App entgegen.
+2. Formatiert Eingaben wie Uhrzeiten und Temperaturen nach DIN-Vorgaben.
+3. Sucht stur nach der REWE-Master-Vorlage (Rewe_PDF.pdf) im assets-Ordner.
+4. Schreibt die Werte über die pypdf-Bibliothek direkt in die AcroForm-Felder.
+
+IT-Hinweis zum LIMS-Workflow:
+Das REWE-Labor-Informations-System (LIMS) erfordert, dass Formularwerte sowohl auf
+Daten-Ebene (/V) im Field-Dictionary als auch auf Darstellungs-Ebene (/AS) im
+Annotation-Widget gesetzt werden. Dieses Modul implementiert einen automatischen
+Hierarchie-Scan (Tree-Walk), um defekte PDF-Feldstrukturen LIMS-gerecht zu korrigieren.
+"""
+
 import os
 import datetime
 from pypdf import PdfReader, PdfWriter
 from pypdf.generic import NameObject, DictionaryObject, create_string_object, BooleanObject
 
-# --- HELFER-FUNKTIONEN ---
+# =========================================================================
+# INTERNAL HELPER FUNCTIONS (Datenbereinigung & Konvertierung)
+# =========================================================================
 
 def formatiere_uhrzeit(wert):
+    """
+    Normalisiert Zeiteingaben für den Formulardruck.
+    Beispiel: '1430' oder '14.30' -> '14:30 Uhr'
+    """
     if not wert or str(wert).strip() == "": return ""
     w = str(wert).strip().lower().replace("uhr", "").replace(" ", "").strip()
     if len(w) == 4 and w.isdigit(): w = f"{w[:2]}:{w[2:]}"
@@ -13,23 +38,33 @@ def formatiere_uhrzeit(wert):
     return f"{w} Uhr"
 
 def formatiere_temperatur(wert):
+    """
+    Normalisiert Temperatureingaben nach Laborstandard.
+    Beispiel: '4.5' oder '4,5' -> '+ 4,5 °C'
+    """
     if not wert or str(wert).strip() == "": return ""
     w = str(wert).strip().replace("°C", "").replace("°", "").replace(" C", "").replace("C", "").strip().replace(".", ",")
     if not w.startswith("+") and not w.startswith("-"): w = f"+ {w}"
     return f"{w} °C"
 
 def clean_id(raw_id):
+    """Bereinigt ausgelesene PDF-Feld-IDs von unsichtbaren Steuerzeichen (Kopierschutz/LIMS)."""
     return str(raw_id).replace("\r", "").replace("\n", "").replace("\t", "").strip()
 
-# --- ORDNER-LOGIK ---
+# =========================================================================
+# FILE-SYSTEM & STORAGE LOGIC (Cross-Platform Windows / Android)
+# =========================================================================
 
 def get_all_rewe_bases():
-    if os.name == 'nt':
+    """Definiert die OS-spezifischen Speicherpfade für die Berichte (Tablet & PC)."""
+    if os.name == 'nt':  # Windows Desktop
         desktop = os.path.join(os.path.expanduser('~'), 'Desktop')
         return [os.path.join(desktop, 'MeineApp'), os.path.join(desktop, 'Rewe_Monitoring')]
+    # Android Betriebssystem (Speicherung im Download-Verzeichnis des Tablets)
     return ["/storage/emulated/0/Download/Rewe_Monitoring", "/storage/emulated/0/Download"]
 
 def create_base_folder():
+    """Ermittelt dynamisch das beschreibbare Zielverzeichnis im Dateisystem."""
     for base in get_all_rewe_bases() + [os.getcwd()]:
         try:
             if not os.path.exists(base): os.makedirs(base, exist_ok=True)
@@ -38,6 +73,7 @@ def create_base_folder():
     return os.getcwd()
 
 def get_tages_ordner():
+    """Erstellt für jeden Einsatztag einen isolierten Unterordner (ISO 8601: YYYY-MM-DD)."""
     t_ordner = os.path.join(create_base_folder(), datetime.datetime.now().strftime('%Y-%m-%d'))
     try:
         os.makedirs(t_ordner, exist_ok=True)
@@ -45,8 +81,10 @@ def get_tages_ordner():
         pass
     return t_ordner
 
-# --- DATEN-MAPPING (Die Brücke zwischen App und PDF) ---
-
+# =========================================================================
+# DATA MAPPING LAYER (Die Brücke zwischen App und PDF AcroForm)
+# Verbindet die Variablen der Python UI mit den LIMS-Schlüsselnummern der PDF.
+# =========================================================================
 def sammle_alle_daten(daten):
     w = {}
 
@@ -58,7 +96,7 @@ def sammle_alle_daten(daten):
     def check(key, pdf_id):
         w[pdf_id] = bool(daten.get(key))
 
-    # --- STAMMDATEN ---
+    # --- KATEGORIE: STAMMDATEN ---
     w["cal_templateLaborderprobenahmeDatum"] = get_val("datum")
     w["tf_0000_00_ZS-1408"] = get_val("marktnummer")
     w["tf_0000_00_ZS-001870"] = get_val("adresse") 
@@ -68,7 +106,7 @@ def sammle_alle_daten(daten):
     w["tf_0000_00_ZS-002000"] = get_val("auftragsnummer")
     w["dd_0000_00_ZS-001796"] = get_val("bemerkung")
 
-    # --- TRINKWASSER ---
+    # --- KATEGORIE: TRINKWASSER ---
     check("tw_kalt", "cb_0001_00")
     w["tf_0001_00"] = "Trinkwasser kalt"
     w["tf_0001_00_probenahmeUhrzeit"] = formatiere_uhrzeit(get_val("tw_zeit"))
@@ -77,6 +115,7 @@ def sammle_alle_daten(daten):
     w["dd_0001_00_PE_ZS-002255"] = get_val("tw_desinf", "Sprühdesinfektion")
     w["dd_0001_00_PE_ZS-002318"] = get_val("tw_zapf", "Spülbecken")
     
+    # Armaturen-Typen (Exklusiv-Auswahl)
     check("tw_cb_pn", "cb_0001_00_PE_ZS-002304_PN-Hahn")
     check("tw_cb_ein", "cb_0001_00_PE_ZS-002304_ Einhebel-Mischarmatur")
     check("tw_cb_zwei", "cb_0001_00_PE_ZS-002304_ Zweigriff-Mischarmatur")
@@ -86,17 +125,19 @@ def sammle_alle_daten(daten):
     check("tw_cb_knie", "cb_0001_00_PE_ZS-002304_ Armatur mit Kniebestätigung")
     w["cb_0001_00_PE_ZS-002304_Sonstiges"] = get_val("tw_zapf_sonst")
 
+    # Sensorische Analytik (Vor-Ort-Parameter)
     w["dd_0001_00_PE_ZS-001948"] = get_val("tw_inaktiv", "Na-Thiosulfat")
     w["dd_0001_00_PE_ZS-002305_Farbe"] = get_val("tw_kurz1", "1 - nicht wahrnehmbar")
     w["dd_0001_00_PE_ZS-002305_ Trübung"] = get_val("tw_kurz2", "1 - nicht wahrnehmbar")
     w["dd_0001_00_PE_ZS-002305_ Bodensatz"] = get_val("tw_kurz3", "1 - nicht wahrnehmbar")
     w["dd_0001_00_PE_ZS-002305_ Geruch"] = get_val("tw_kurz4", "1 - nicht wahrnehmbar")
     
+    # Auffälligkeiten im Markt
     check("tw_auff_ja", "cb_0001_00_PE_ZS-1268_ja")
     check("tw_auff_nein", "cb_0001_00_PE_ZS-1268_ nein")
     check("tw_auff_perlator", "cb_0001_00_PE_ZS-1268_ Perlator nicht entfernbar")
     check("tw_auff_kalk", "cb_0001_00_PE_ZS-1268_ Starke Verkalkung")
-    check("tw_auff_verbrueh", "cb_0001_00_PE_ZS-1268_ Armatur mit Verbrühschutz")
+    check("tw_auff_verbrueh", "cb_0001_00_PE_ZS-1268_ Armatur with Verbrühschutz")
     check("tw_auff_durchlauf", "cb_0001_00_PE_ZS-1268_ Durchlauferhitzer")
     check("tw_auff_unterbau", "cb_0001_00_PE_ZS-1268_ Unterbauspeicher [L]")
     check("tw_auff_eckventil", "cb_0001_00_PE_ZS-1268_ Eckventil warm/kalt geschlossen")
@@ -112,7 +153,7 @@ def sammle_alle_daten(daten):
     w["dd_0001_00_ZS-001799"] = get_val("tw_entnahmeort", "Metzgerei")
     w["dd_0001_00_ZS-001796"] = get_val("tw_bemerkung_2")
 
-    # --- SCHERBENEIS ---
+    # --- KATEGORIE: SCHERBENEIS (EIGENKONTROLLE) ---
     check("se_kalt", "cb_0002_00")
     w["tf_0002_00"] = "Scherbeneis Eigenkontrolle"
     w["tf_0002_00_probenahmeUhrzeit"] = formatiere_uhrzeit(get_val("se_zeit"))
@@ -129,7 +170,7 @@ def sammle_alle_daten(daten):
     w["tf_0002_00_ZS-1441"] = formatiere_temperatur(get_val("se_temp"))
     w["dd_0002_00_ZS-001796"] = get_val("se_bemerkung")
 
-    # --- HACKFLEISCH ---
+    # --- KATEGORIE: HFM FLEISCH HACKFLEISCH ---
     check("hfm_hack_cb", "cb_0004_00")
     w["tf_0004_00"] = "Hackfleisch gemischt"
     w["dd_0004_00_ZS-001799"] = get_val("hfm_hack_entnahmeort", "Kühlraum")
@@ -141,6 +182,7 @@ def sammle_alle_daten(daten):
         w["cal_0004_00_ZS-001810"] = hack_herst
         w["tf_0004_00_ZS-001810"] = hack_herst
 
+    # Chargensplittung Schwein / Rind
     l_s = get_val("hfm_hack_lief_schwein")
     if l_s: w["tf_0004_00_ZS-1209_Schweinefleisch: XXX"] = f"Schweinefleisch: {l_s}"
     l_r = get_val("hfm_hack_lief_rind")
@@ -159,7 +201,7 @@ def sammle_alle_daten(daten):
     w["tf_0004_00_ZS-1441"] = formatiere_temperatur(get_val("hfm_hack_temp"))
     w["dd_0004_00_ZS-001796"] = get_val("hfm_hack_check_bemerkung")
 
-    # --- METT ---
+    # --- KATEGORIE: HFM FLEISCH SCHWEINEMETT ---
     check("hfm_mett_cb", "cb_0006_00")
     w["tf_0006_00"] = "gewürztes Schweinemett"
     w["dd_0006_00_ZS-001799"] = get_val("hfm_mett_entnahmeort", "Kühlraum")
@@ -170,11 +212,10 @@ def sammle_alle_daten(daten):
     w["tf_0006_00_ZS-002081"] = get_val("hfm_mett_charge")
     w["tf_0006_00_ZS-1441"] = formatiere_temperatur(get_val("hfm_mett_temp"))
     w["dd_0006_00_ZS-001796"] = get_val("hfm_mett_bemerkung")
-    
     extra_mett = get_val("hfm_mett_mhd")
     if extra_mett.replace(".", "").strip(): w["tf_0006_00_ZS-001835"] = extra_mett
 
-    # --- FZS Schwein ---
+    # --- KATEGORIE: HFM FLEISCH ZUBEREITUNG SCHWEIN (FZS) ---
     check("hfm_fzs_cb", "cb_0008_00")
     w["tf_0008_00"] = "Fleischzubereitung Schwein"
     p, m = get_val("hfm_fzs_produkt"), get_val("hfm_fzs_marinade")
@@ -190,7 +231,7 @@ def sammle_alle_daten(daten):
     m_fzs = get_val("hfm_fzs_mhd")
     if m_fzs.replace(".", "").strip(): w["tf_0008_00_ZS-001835"] = m_fzs
 
-    # --- FZG Geflügel ---
+    # --- KATEGORIE: HFM FLEISCH ZUBEREITUNG GEFLÜGEL (FZG) ---
     check("hfm_fzg_cb", "cb_0007_00")
     w["tf_0007_00"] = "Fleischzubereitung Geflügel"
     p, m = get_val("hfm_fzg_produkt"), get_val("hfm_fzg_marinade")
@@ -206,7 +247,7 @@ def sammle_alle_daten(daten):
     m_fzg = get_val("hfm_fzg_mhd")
     if m_fzg.replace(".", "").strip(): w["tf_0007_00_ZS-001835"] = m_fzg
 
-    # --- ABKLATSCHPROBEN HFM ---
+    # --- ITERATIVES ABKLATSCH-MAPPING (Generische Schleife für Umgebungsuntersuchungen) ---
     def map_abklatsch(prefix, start_idx, num_items):
         for i in range(1, num_items + 1):
             pdf_idx = f"{start_idx + i - 1:02d}" 
@@ -220,22 +261,23 @@ def sammle_alle_daten(daten):
             check(f"{prefix}_abklatsch_{app_idx}", f"cb_{prefix}_{pdf_idx}_ZS-002294")
             check(f"{prefix}_tupfer_{app_idx}", f"cb_{prefix}_{pdf_idx}_ZS-002295")
 
+    # --- KATEGORIE: ABKLATSCHPROBEN FLEISCHWOLF (HFM OKZ) ---
     check("hfm_okz_cb", "cb_0010_00")
     w["tf_0010_00"] = "Abklatschproben HFM"
     w["dd_0010_00_ZS-001796"] = get_val("hfm_abklatsch_bemerkung")
     map_abklatsch("0010", 1, 10)
 
-    # --- CONVENIENCE / PROBEN ---
+    # --- KATEGORIE: CONVENIENCE OBST & GEMÜSE (TEILPROBEN) ---
     check("og_cb", "cb_0009_00")
     w["tf_0009_00"] = "Obst-/Gemüse Convenience"
     for i in range(1, 6):
         idx = f"{i:02d}" 
         val = get_val(f"og_name_{idx}")
         
-        # FIX: Der Reihen-Index wird nun korrekt mit 'idx' übergeben (01, 02, 03...) statt starr '00'!
+        # Symmetrisches Zeilenmapping (Behebt den 'Teilprobe 1 Überschreibungs-Bug')
         if val: 
             w[f"tf_0009_{idx}_ Teilprobe {i}:"] = f"Teilprobe {i}:{val}"
-            w[f"tf_0009_{idx}"] = val  # Fallback-ID für geänderte REWE Formularfelder
+            w[f"tf_0009_{idx}"] = val
             
         w[f"dd_0009_{idx}_ZS-001799"] = get_val(f"og_ort_{idx}")
         w[f"cal_0009_{idx}_ZS-001810"] = get_val(f"og_herst_{idx}")
@@ -244,7 +286,7 @@ def sammle_alle_daten(daten):
         w[f"dd_0009_{idx}_ZS-001798"] = get_val(f"og_verp_{idx}")
         w[f"tf_0009_{idx}_ZS-1441"] = formatiere_temperatur(get_val(f"og_temp_{idx}"))
 
-    # --- CONVENIENCE OKZ ---
+    # --- KATEGORIE: CONVENIENCE ABKLATSCHPROBEN (OKZ) ---
     check("og_abklatsch_cb", "cb_0011_00")
     w["tf_0011_00"] = "Obst-Gemüse Abklatschproben"
     w["dd_0011_00_ZS-001796"] = get_val("og_abklatsch_bemerkung_1")
@@ -253,14 +295,17 @@ def sammle_alle_daten(daten):
 
     return w
 
-# --- HAUPT-FUNKTION ---
-
+# =========================================================================
+# HAUPT-SCHREIB-FUNKTION (PDF WRITER CORE)
+# Lädt die leere Vorlage und erzeugt die finale LIMS-konforme PDF.
+# =========================================================================
 def erstelle_bericht(daten):
+    # Zugriff auf das neue, vollständige Masterdokument (keine Splitting-Reste mehr)
     master_pfad = os.path.join("assets", "Rewe_PDF.pdf")
-    neu_pfad = os.path.join("assets", "hfm_neu.pdf")
     
     if not os.path.exists(master_pfad): return f"FEHLER: {master_pfad} fehlt!"
 
+    # Erzeugen eines eindeutigen Audit-Dateinamens zur Vermeidung von Overwrites
     zeit_jetzt = datetime.datetime.now().strftime('%H-%M-%S')
     datum_heute = datetime.datetime.now().strftime('%Y-%m-%d')
     dateiname = f"REWE_{daten.get('marktnummer', 'Unbekannt')}_{datum_heute}_{zeit_jetzt}.pdf"
@@ -270,29 +315,35 @@ def erstelle_bericht(daten):
     reader_master = PdfReader(master_pfad)
     writer = PdfWriter()
     
-    if os.path.exists(neu_pfad):
-        reader_neu = PdfReader(neu_pfad)
-        writer.append(reader_master, pages=list(range(0, 5)))
-        writer.append(reader_neu)
-        writer.append(reader_master, pages=list(range(5, len(reader_master.pages))))
-    else:
-        writer.append(reader_master)
+    # Vorlage in den Streaming-Buffer laden
+    writer.append(reader_master)
     
+    # Setzt die NeedAppearances-Flag. Verhindert, dass ausgefüllte Texte unsichtbar bleiben,
+    # da Acrobat/Viewer gezwungen werden, die Feldgrafiken zur Laufzeit frisch zu zeichnen.
     if "/AcroForm" in writer.root_object:
         writer.root_object["/AcroForm"].update({NameObject("/NeedAppearances"): BooleanObject(True)})
 
     mapping = sammle_alle_daten(daten)
+    # Filtere boolesche Werte (Checkboxen) von den Strings (Textfelder) für getrennte Routinen
     text_mapping = {k: str(v) for k, v in mapping.items() if not isinstance(v, bool)}
     
     for page in writer.pages:
+        # High-Speed Bulk-Injection für fehlerfreie Standard-Textfelder
         writer.update_page_form_field_values(page, text_mapping)
         
+        # -------------------------------------------------------------
+        # DEEP OBJECT RESOLUTION WORKAROUND (Für LIMS-Systeme)
+        # Wenn Radio-Buttons oder Checkboxen im PDF-Objektbaum als hierarchische
+        # Eltern-Kind-Strukturen (/Parent) angelegt sind, scheitert pypdf's Feldupdate.
+        # Dieser manuelle Tree-Walk erzwingt den Haken auf Daten- und Grafik-Ebene.
+        # -------------------------------------------------------------
         if "/Annots" in page:
             for annot_ref in page["/Annots"]:
                 annot = annot_ref.get_object()
                 current_obj = annot
                 f_id = None
                 
+                # Baum nach oben wandern, um den echten LIMS-Daten-Key (/T) zu extrahieren
                 while current_obj:
                     if "/T" in current_obj:
                         f_id = clean_id(str(current_obj["/T"]).strip("()"))
@@ -303,26 +354,32 @@ def erstelle_bericht(daten):
                         break
                 if not f_id: continue
 
-                # HAKEN / CHECKBOXEN
+                # ROUTINE 1: CHECKBOXEN & HAKEN HARD-CODED SETZEN
                 if f_id in mapping and isinstance(mapping[f_id], bool):
                     val = mapping[f_id]
-                    on_state = NameObject("/Yes")
+                    on_state = NameObject("/Yes")  # PDF-Standard-On-Zustand
+                    
+                    # Dynamische Ermittlung des gerätespezifischen On-Namens aus dem Appearance-Dictionary (/AP)
                     if "/AP" in annot and "/N" in annot["/AP"]:
                         for k in annot["/AP"]["/N"].keys():
                             if k != "/Off": on_state = NameObject(k); break
                     state = on_state if val else NameObject("/Off")
                     
+                    # Wert in die Daten-Ebene schreiben (Wichtig für XML/LIMS Datenparser)
                     current_obj.update({NameObject("/V"): state})
+                    # Wert in die Sicht-Ebene schreiben (Wichtig für die visuelle Darstellung im Acrobat Reader)
                     annot.update({NameObject("/AS"): state})
                 
-                # TEXTFELDER FALLBACK
+                # ROUTINE 2: TEXTFELD-FALLBACK (Sicherheits-Injektion für fehlerhafte LIMS-Formulare)
                 elif f_id in mapping and not isinstance(mapping[f_id], bool):
                     val = str(mapping[f_id])
                     if val and val != "..":
                         current_obj.update({NameObject("/V"): create_string_object(val)})
+                        # Alte Vorkomprimierungen (/AP) verwerfen, damit der Viewer den Text neu rendert
                         if "/AP" in annot:
                             del annot["/AP"]
 
+    # Binäres Schreiben des Streams auf den Festspeicher des Gerätes
     with open(ziel_pfad, "wb") as f: writer.write(f)
-    print(f"✅ Bericht erstellt: {ziel_pfad}")
+    print(f"✅ Bericht erfolgreich erstellt: {ziel_pfad}")
     return ziel_pfad
