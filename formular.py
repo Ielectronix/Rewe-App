@@ -1,3 +1,16 @@
+"""
+formular.py
+===========
+Dieses Modul baut die gesamte grafische Benutzeroberfläche (UI) für die Dateneingabe auf.
+Es nutzt das Flet-Framework (Flutter für Python), um die Reiter (Tabs) für Stammdaten, 
+Trinkwasser, HFM Fleisch und Convenience dynamisch zu rendern.
+Zusätzlich enthält es die gesamte Geschäftslogik:
+- Formatierung von Eingaben (Zeit, Temperatur, Gramm)
+- Pflichtfeld-Prüfungen mit dynamischem Reiter-Wechsel bei Fehlern
+- Datensammlung und Weitergabe an den PDF-Generator
+- Lokale Vorlagen-Verwaltung (Templates)
+"""
+
 import flet as ft
 import datetime
 import json
@@ -5,7 +18,12 @@ import os
 from datenverwaltung import lade_maerkte, speichere_maerkte, lade_benutzer
 from pdf_generator import erstelle_bericht
 
+# =========================================================================
+# LOKALE VORLAGEN-VERWALTUNG (Schnellauswahl)
+# Speichert wiederkehrende Formular-Eingaben lokal in einer JSON-Datei ab.
+# =========================================================================
 def lade_vorlagen_lokal():
+    """Lädt gespeicherte Vorlagen aus der lokalen JSON-Datei."""
     try:
         if os.path.exists("tour_vorlagen.json"):
             with open("tour_vorlagen.json", "r", encoding="utf-8") as f: return json.load(f)
@@ -13,21 +31,32 @@ def lade_vorlagen_lokal():
     return {}
 
 def speichere_vorlagen_lokal(daten):
+    """Speichert das aktuelle Vorlagen-Dictionary sicher in der JSON-Datei."""
     try:
         with open("tour_vorlagen.json", "w", encoding="utf-8") as f: json.dump(daten, f, ensure_ascii=False, indent=4)
     except: pass
 
+# =========================================================================
+# HAUPT-UI-FUNKTION
+# Wird von der main.py aufgerufen, um die Eingabemaske zu zeichnen.
+# =========================================================================
 def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboard, zeige_fehler, markt_index):
+    # Container für den dynamischen Inhalt der Reiter
     haupt_bereich = ft.Column(spacing=15, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
+    # Obere Navigationsleiste für die Haupt-Reiter
     top_nav = ft.Row(wrap=True, alignment=ft.MainAxisAlignment.CENTER, spacing=5)
     
+    # State-Management-Workaround für verschachtelte Funktionen (Closures in Python)
     current_tab_state = ["stamm"]
     current_sub_tab_state = [""]
+    # Speichert UI-Elemente, die fehlerhaft waren, um sie später wieder weiß zu färben
     markierte_fehler_controls = [] 
     
+    # Container für die Fehlermeldungen am unteren Bildschirmrand
     fehler_container = ft.Column(spacing=5, visible=False, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
     status_text = ft.Text("", color="#FF9800", weight="bold", size=18, text_align=ft.TextAlign.CENTER)
 
+    # Konstanten für Dropdown-Menüs zur Vermeidung von Redundanz
     tage_opts = [""]+[f"{i:02d}" for i in range(1,32)]
     mon_opts = [""]+[f"{i:02d}" for i in range(1,13)]
     jahr_opts = [""]+[str(i) for i in range(2024,2035)]
@@ -38,15 +67,21 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
     verp_opts = ["", "steriler Probenbecher", "steriler Probenbeutel", "Transportverpackung", "Kunststoffbecher mit Anrolldeckel u. etikett", "Pappschale mit Kunststofffolie umwickelt", "tiefgezogene Kunststoffschale mit Anrollfolie", "Styroporschale mit Kunststofffolie umwickelt", "SB-Kunststoffverpackung"]
 
     try:
+        # Basis-Setup des Views
         ansicht.controls.clear()
         ansicht.horizontal_alignment = ft.CrossAxisAlignment.STRETCH 
         
+        # Daten des aktuellen Marktes und Benutzers laden
         maerkte = lade_maerkte()
         v, z = lade_benutzer()
         heute_str = datetime.datetime.now().strftime('%d.%m.%Y')
         aktuelle_daten = maerkte[markt_index] if (markt_index is not None and markt_index < len(maerkte)) else {"datum": heute_str, "mitarbeiter_name": f"{v} {z}".strip()}
 
+        # ---------------------------------------------------------------------
+        # UI-HELPER-FUNKTIONEN (Wrapper zur Einhaltung des DRY-Prinzips)
+        # ---------------------------------------------------------------------
         def tf(label, val, hint="", w=None, oc=None, ob=None, multiline=False):
+            """Erstellt ein standardisiertes TextField."""
             return ft.TextField(
                 label=label, value=val or "", hint_text=hint, 
                 multiline=multiline,
@@ -57,6 +92,11 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             )
 
         def combo(label, val, opts, w=None, oc=None, multiline=True):
+            """
+            Erstellt ein suchbares/schreibbares Dropdown-Menü.
+            Flet's natives Dropdown ist oft schwerfällig auf Mobile, daher dieser
+            hybride Ansatz aus TextField und PopupMenuButton.
+            """
             is_date = label in ["Tag", "Mon", "Jahr"]
             pad = 5 if is_date else 15
             txt_size = 14
@@ -80,11 +120,16 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             return c
             
         def action_btn_form(text, oc, farbe):
+            """Erstellt die großen Haupt-Aktionsbuttons (Speichern, Bericht, etc.)."""
             return ft.ElevatedButton(content=ft.Text(text, size=16, weight="bold"), on_click=oc, bgcolor="#0b1a0b", color=farbe, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=20, side=ft.BorderSide(width=2, color=farbe)))
             
         def emoji_btn(text, oc, farbe):
+            """Erstellt kleinere Aktionsbuttons für z.B. Vorlagenverwaltung."""
             return ft.ElevatedButton(content=ft.Text(text, size=14, weight="bold"), on_click=oc, bgcolor="#1a1a1a", color=farbe, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=15, side=ft.BorderSide(width=1.5, color=farbe)))
 
+        # ---------------------------------------------------------------------
+        # FORMATIERUNGS-FUNKTIONEN FÜR EINGABEFELDER (Live-Überprüfung)
+        # ---------------------------------------------------------------------
         def parse_datum(d, dt="", dm="", dj=""):
             if not d: return dt, dm, dj
             p = d.split(".")
@@ -95,23 +140,27 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             return f"{t}.{m}.{j}" if (t or m or j) else ""
 
         def format_zeit(e):
+            """Formatiert '1430' automatisch zu '14:30'."""
             val = e.control.value or ""
             zahlen = "".join([c for c in val if c.isdigit()])[:4]
             neu = zahlen[:2] + ":" + zahlen[2:] if len(zahlen) >= 3 else zahlen
             if e.control.value != neu: e.control.value = neu; e.control.update()
 
         def format_temp(e):
+            """Hängt automatisch ' °C' an die Eingabe an."""
             val = (e.control.value or "").strip().replace(" °C", "").replace("°C", "").strip()
             if val:
                 e.control.value = val + " °C"
                 e.control.update()
 
         def format_gramm(e):
+            """Hängt automatisch ' g' an, sofern noch nicht vorhanden."""
             val = (e.control.value or "").strip()
             if val and not val.lower().endswith("g") and not val.lower().endswith("ml"):
                 e.control.value = val + " g"; e.control.update()
 
         def cb(label, val, oc=None, bold=False):
+            """Erstellt eine Checkbox im Flet-Format."""
             return ft.Checkbox(
                 label=label, value=bool(val), on_change=oc, 
                 label_style=ft.TextStyle(color="white", size=16 if bold else 14, weight="bold" if bold else "normal"), 
@@ -119,6 +168,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             )
 
         def d_row(t_dd, m_dd, j_dd):
+            """Baut die 3-teilige Datumszeile (Tag, Monat, Jahr)."""
             return ft.Row([ft.Container(content=t_dd, expand=1), ft.Container(content=m_dd, expand=1), ft.Container(content=j_dd, expand=1)], spacing=5)
 
         htoday, mtoday, jtoday = heute_str.split(".")[0], heute_str.split(".")[1], heute_str.split(".")[2]
@@ -129,8 +179,12 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             return val.split(".")[0], val.split(".")[1], val.split(".")[2]
 
         # ==========================================
-        # STAMMDATEN
+        # INITIALISIERUNG DER UI-KONTROLLELEMENTE
+        # Jedes Input-Feld wird hier instanziiert und mit gespeicherten
+        # Daten gefüllt, sofern es sich um das Editieren einer bestehenden Tour handelt.
         # ==========================================
+        
+        # --- STAMMDATEN ---
         d_tag, d_mon, d_jahr = parse_datum(aktuelle_daten.get("datum", heute_str), heute_str.split(".")[0], heute_str.split(".")[1], heute_str.split(".")[2])
         tag_dd, mon_dd, jahr_dd = combo("Tag", d_tag, tage_opts), combo("Mon", d_mon, mon_opts), combo("Jahr", d_jahr, jahr_opts)
         datum_row = ft.Column([ft.Text("Datum der Probenahme", color="#2196F3", weight="bold", size=16), d_row(tag_dd, mon_dd, jahr_dd)])
@@ -143,9 +197,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         ag_dd = combo("Auftraggeber", aktuelle_daten.get("auftraggeber", "03509 - REWE Hackfleischmonitoring"), ["03509 - REWE Hackfleischmonitoring", "3001767 - REWE Dortmund (Hackfleischmonitoring)"])
         typ_dd = combo("Typ der Probenahme", aktuelle_daten.get("typ_probenahme", "Standard"), ["Standard", "Nachkontrolle", "Mehrwöchig"])
 
-        # ==========================================
-        # TRINKWASSER & SCHERBENEIS
-        # ==========================================
+        # --- TRINKWASSER & SCHERBENEIS ---
         tw_kalt_cb = cb("Trinkwasser kalt", aktuelle_daten.get("tw_kalt", False), bold=True)
         tw_override_cb = cb("Trotzdem speichern", aktuelle_daten.get("tw_override", False))
         
@@ -186,29 +238,22 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         se_temp_in = tf("Probenahmetemperatur", aktuelle_daten.get("se_temp", ""), ob=format_temp)
         se_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("se_bemerkung", ""), ["", "Keine Besonderheiten"])
 
-        # ==========================================
-        # FLEISCH (HFM)
-        # ==========================================
+        # --- FLEISCH (HFM) ---
         hfm_hack_cb = cb("Hackfleisch gemischt", aktuelle_daten.get("hfm_hack_cb", False), bold=True)
         hfm_hack_override_cb = cb("Trotzdem speichern", aktuelle_daten.get("hfm_hack_override", False))
         hfm_hack_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("hfm_hack_entnahmeort", "Kühlraum"), ort_opts)
         ht, hm, hj = get_herst("hfm_hack_herstelldatum")
         hfm_hack_herst_tag_dd, hfm_hack_herst_mon_dd, hfm_hack_herst_jahr_dd = combo("Tag", ht, tage_opts), combo("Mon", hm, mon_opts), combo("Jahr", hj, jahr_opts)
-        
         t, m, j = parse_datum(aktuelle_daten.get("hfm_hack_mhd_schwein", ""), "", "", jtoday)
         hfm_hack_mhd_s_tag_dd, hfm_hack_mhd_s_mon_dd, hfm_hack_mhd_s_jahr_dd = combo("Tag", t, tage_opts), combo("Mon", m, mon_opts), combo("Jahr", j, jahr_opts)
-        
         t, m, j = parse_datum(aktuelle_daten.get("hfm_hack_mhd_rind", ""), "", "", jtoday)
         hfm_hack_mhd_r_tag_dd, hfm_hack_mhd_r_mon_dd, hfm_hack_mhd_r_jahr_dd = combo("Tag", t, tage_opts), combo("Mon", m, mon_opts), combo("Jahr", j, jahr_opts)
-        
         hfm_hack_inhalt_in = tf("Inhalt", aktuelle_daten.get("hfm_hack_inhalt", ""))
         hfm_hack_verpackung_dd = combo("Verpackung", aktuelle_daten.get("hfm_hack_verpackung", "steriler Probenbeutel"), verp_opts)
         hfm_hack_lief_schwein_in = tf("Lieferant (Schwein)", aktuelle_daten.get("hfm_hack_lief_schwein", ""))
         hfm_hack_lief_rind_in = tf("Lieferant (Rind)", aktuelle_daten.get("hfm_hack_lief_rind", ""))
         hfm_hack_charge_schwein_dd = combo("Charge Schwein", aktuelle_daten.get("hfm_hack_charge_schwein", ""), c_opts_s)
         hfm_hack_charge_rind_dd = combo("Charge Rind", aktuelle_daten.get("hfm_hack_charge_rind", ""), c_opts_r)
-        
-        # Zeilenumbruch für die max. Temperatur hinzugefügt:
         hfm_hack_temp_in = tf("Probenahmetemperatur\n(max. +7 °C)", aktuelle_daten.get("hfm_hack_temp", ""), ob=format_temp)
         hfm_hack_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("hfm_hack_bemerkung", ""), ["", "Keine Besonderheiten"])
 
@@ -217,16 +262,12 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         hfm_mett_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("hfm_mett_entnahmeort", "Kühlraum"), ort_opts)
         ht, hm, hj = get_herst("hfm_mett_herstelldatum")
         hfm_mett_herst_tag_dd, hfm_mett_herst_mon_dd, hfm_mett_herst_jahr_dd = combo("Tag", ht, tage_opts), combo("Mon", hm, mon_opts), combo("Jahr", hj, jahr_opts)
-        
         t, m, j = parse_datum(aktuelle_daten.get("hfm_mett_mhd", ""), "", "", jtoday)
         hfm_mett_mhd_tag_dd, hfm_mett_mhd_mon_dd, hfm_mett_mhd_jahr_dd = combo("Tag", t, tage_opts), combo("Mon", m, mon_opts), combo("Jahr", j, jahr_opts)
-        
         hfm_mett_inhalt_in = tf("Inhalt", aktuelle_daten.get("hfm_mett_inhalt", ""))
         hfm_mett_verpackung_dd = combo("Verpackung", aktuelle_daten.get("hfm_mett_verpackung", "steriler Probenbeutel"), verp_opts)
         hfm_mett_lief_in = tf("Lieferant Rohware", aktuelle_daten.get("hfm_mett_lief", ""))
         hfm_mett_charge_dd = combo("Charge Rohware", aktuelle_daten.get("hfm_mett_charge", ""), c_opts_s)
-        
-        # Zeilenumbruch für die max. Temperatur hinzugefügt:
         hfm_mett_temp_in = tf("Probenahmetemperatur\n(max. +7 °C)", aktuelle_daten.get("hfm_mett_temp", ""), ob=format_temp)
         hfm_mett_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("hfm_mett_bemerkung", ""), ["", "Keine Besonderheiten"])
 
@@ -237,16 +278,12 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         hfm_fzs_marinade_in = tf("Marinade", aktuelle_daten.get("hfm_fzs_marinade", ""))
         ht, hm, hj = get_herst("hfm_fzs_herstelldatum")
         hfm_fzs_herst_tag_dd, hfm_fzs_herst_mon_dd, hfm_fzs_herst_jahr_dd = combo("Tag", ht, tage_opts), combo("Mon", hm, mon_opts), combo("Jahr", hj, jahr_opts)
-        
         t, m, j = parse_datum(aktuelle_daten.get("hfm_fzs_mhd", ""), "", "", jtoday)
         hfm_fzs_mhd_tag_dd, hfm_fzs_mhd_mon_dd, hfm_fzs_mhd_jahr_dd = combo("Tag", t, tage_opts), combo("Mon", m, mon_opts), combo("Jahr", j, jahr_opts)
-        
         hfm_fzs_inhalt_in = tf("Inhalt", aktuelle_daten.get("hfm_fzs_inhalt", ""))
         hfm_fzs_verpackung_dd = combo("Verpackung", aktuelle_daten.get("hfm_fzs_verpackung", "steriler Probenbeutel"), verp_opts)
         hfm_fzs_lief_in = tf("Lieferant Rohware", aktuelle_daten.get("hfm_fzs_lief", ""))
         hfm_fzs_charge_dd = combo("Charge Rohware", aktuelle_daten.get("hfm_fzs_charge", ""), c_opts_s)
-        
-        # Zeilenumbruch für die max. Temperatur hinzugefügt:
         hfm_fzs_temp_in = tf("Probenahmetemperatur\n(max. +7 °C)", aktuelle_daten.get("hfm_fzs_temp", ""), ob=format_temp)
         hfm_fzs_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("hfm_fzs_bemerkung", ""), ["", "Keine Besonderheiten"])
 
@@ -257,19 +294,16 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         hfm_fzg_marinade_in = tf("Marinade", aktuelle_daten.get("hfm_fzg_marinade", ""))
         ht, hm, hj = get_herst("hfm_fzg_herstelldatum")
         hfm_fzg_herst_tag_dd, hfm_fzg_herst_mon_dd, hfm_fzg_herst_jahr_dd = combo("Tag", ht, tage_opts), combo("Mon", hm, mon_opts), combo("Jahr", hj, jahr_opts)
-        
         t, m, j = parse_datum(aktuelle_daten.get("hfm_fzg_mhd", ""), "", "", jtoday)
         hfm_fzg_mhd_tag_dd, hfm_fzg_mhd_mon_dd, hfm_fzg_mhd_jahr_dd = combo("Tag", t, tage_opts), combo("Mon", m, mon_opts), combo("Jahr", j, jahr_opts)
-        
         hfm_fzg_inhalt_in = tf("Inhalt", aktuelle_daten.get("hfm_fzg_inhalt", ""))
         hfm_fzg_verpackung_dd = combo("Verpackung", aktuelle_daten.get("hfm_fzg_verpackung", "steriler Probenbeutel"), verp_opts)
         hfm_fzg_lief_in = tf("Lieferant Rohware", aktuelle_daten.get("hfm_fzg_lief", ""))
         hfm_fzg_charge_dd = combo("Charge Rohware", aktuelle_daten.get("hfm_fzg_charge", ""), c_opts_g)
-        
-        # Zeilenumbruch für die max. Temperatur hinzugefügt:
         hfm_fzg_temp_in = tf("Probenahmetemperatur\n(max. +4 °C)", aktuelle_daten.get("hfm_fzg_temp", ""), ob=format_temp)
         hfm_fzg_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("hfm_fzg_bemerkung", ""), ["", "Keine Besonderheiten"])
 
+        # Dynamische Erstellung von 10 OKZ-Proben-Blöcken
         hfm_okz_cb = cb("Abklatschproben HFM", aktuelle_daten.get("hfm_abklatsch_cb", False), bold=True)
         hfm_okz_override_cb = cb("Trotzdem speichern", aktuelle_daten.get("hfm_abklatsch_override", False))
         hfm_okz_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("hfm_abklatsch_bemerkung", ""), ["", "Keine Besonderheiten"])
@@ -280,12 +314,11 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             idx = f"{i:02d}"
             okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0010_status_{idx}", "R+D"), ["R+D", "R", "P", "-"]), "objekt": combo("Objekt", aktuelle_daten.get(f"0010_objekt_{idx}") or okz_def[i]["o"], okz_obj_opts), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0010_ort_{idx}", "Kühlraum"), ["Kühlraum", "Produktionsbereich", "Theke"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0010_abklatsch_{idx}", okz_def[i]["a"])), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0010_tupfer_{idx}", okz_def[i]["t"]))}
 
-        # ==========================================
-        # CONVENIENCE (OG)
-        # ==========================================
+        # --- CONVENIENCE (OG) ---
         og_cb = cb("Obst-/Gemüse Convenience", aktuelle_daten.get("og_cb", False), bold=True)
         og_override_cb = cb("Trotzdem speichern", aktuelle_daten.get("og_override", False))
         
+        # Dynamische Erstellung von 5 Teilproben
         og_controls = {}
         for i in range(1, 6):
             idx = f"{i:02d}"
@@ -298,7 +331,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 "v_t": combo("Tag", vt, tage_opts), "v_m": combo("Mon", vm, mon_opts), "v_j": combo("Jahr", vj, jahr_opts),
                 "inhalt": tf("Inhalt", aktuelle_daten.get(f"og_inhalt_{idx}", ""), "Grammzahl", ob=format_gramm),
                 "verpackung": combo("Verpackung", aktuelle_daten.get(f"og_verp_{idx}", "steriler Probenbecher"), verp_opts),
-                # Zeilenumbruch für die max. Temperatur hinzugefügt:
                 "temp": tf("Probenahmetemperatur\n(max. +7 °C)", aktuelle_daten.get(f"og_temp_{idx}", ""), ob=format_temp)
             }
 
@@ -315,7 +347,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             og_okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0011_status_{idx}", "R+D"), ["R+D", "R", "P", "-"]), "objekt": combo("Objekt", aktuelle_daten.get(f"0011_objekt_{idx}") or og_okz_def[i]["o"], og_okz_opts), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0011_ort_{idx}", "Produktionsbereich"), ["Kühlraum", "Produktionsbereich", "Theke"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0011_abklatsch_{idx}", og_okz_def[i]["a"])), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0011_tupfer_{idx}", og_okz_def[i]["t"]))}
 
         # ==========================================
-        # VORLAGEN LOGIK 
+        # VORLAGEN UI-KOMPONENTE
         # ==========================================
         alle_vorlagen = lade_vorlagen_lokal()
         vorlagen_status = ft.Text("", weight="bold", size=14) 
@@ -329,6 +361,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         vl_name_in = tf("Als neue Vorlage speichern", "")
 
         def lade_v(e):
+            """Füllt alle Felder der App mit den gespeicherten Daten einer Vorlage."""
             if not vl_dd.value: return
             v = alle_vorlagen.get(vl_dd.value, {})
             
@@ -347,6 +380,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             setze_wert(typ_dd, "typ_probenahme")
             setze_wert(bem_in, "bemerkung")
 
+            # Einspielen der Trinkwasser-Daten
             setze_wert(tw_kalt_cb, "tw_kalt", False)
             setze_wert(tw_override_cb, "tw_override", False)
             setze_wert(tw_zeit_in, "tw_zeit")
@@ -386,6 +420,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             setze_wert(tw_entnahmeort_dd, "tw_entnahmeort")
             setze_wert(tw_bemerkung_dd, "tw_bemerkung_2")
 
+            # Einspielen der Scherbeneis-Daten
             setze_wert(se_kalt_cb, "se_kalt", False)
             setze_wert(se_override_cb, "se_override", False)
             setze_wert(se_zeit_in, "se_zeit")
@@ -413,6 +448,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 ht, hm, hj = parse_datum(v.get(f"{prefix}_herstelldatum", ""))
                 htag_c.value, hmon_c.value, hjahr_c.value = ht, hm, hj or jtoday
 
+            # Einspielen Hack, Mett, FZS, FZG
             set_hfm_base(hfm_hack_cb, hfm_hack_override_cb, hfm_hack_entnahmeort_dd, hfm_hack_inhalt_in, hfm_hack_verpackung_dd, hfm_hack_temp_in, hfm_hack_bemerkung_dd, hfm_hack_herst_tag_dd, hfm_hack_herst_mon_dd, hfm_hack_herst_jahr_dd, "hfm_hack")
             setze_wert(hfm_hack_lief_schwein_in, "hfm_hack_lief_schwein")
             setze_wert(hfm_hack_charge_schwein_dd, "hfm_hack_charge_schwein")
@@ -445,6 +481,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             mt, mm, mj = parse_datum(v.get("hfm_fzg_mhd", ""), "", "", jtoday)
             hfm_fzg_mhd_tag_dd.value, hfm_fzg_mhd_mon_dd.value, hfm_fzg_mhd_jahr_dd.value = mt, mm, mj
 
+            # Einspielen OKZ HFM
             setze_wert(hfm_okz_cb, "hfm_abklatsch_cb", False)
             setze_wert(hfm_okz_override_cb, "hfm_abklatsch_override", False)
             setze_wert(hfm_okz_bemerkung_dd, "hfm_abklatsch_bemerkung")
@@ -455,6 +492,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 setze_wert(c["abklatsch"], f"0010_abklatsch_{idx}", False)
                 setze_wert(c["tupfer"], f"0010_tupfer_{idx}", False)
 
+            # Einspielen Convenience
             setze_wert(og_cb, "og_cb", False)
             setze_wert(og_override_cb, "og_override", False)
             for i in range(1, 6):
@@ -527,7 +565,9 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         )
 
         # ==========================================
-        # DATEN SAMMELN
+        # DATENSAMMLER (Serialisierung für JSON/PDF)
+        # Liest alle UI-Controls aus und erzeugt ein flaches Dictionary,
+        # das vom PDF-Generator weiterverarbeitet wird.
         # ==========================================
         def hole_aktuelle_daten():
             def get_val(ctrl, default_val):
@@ -623,8 +663,11 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
         # ==========================================
         # DIE INTELLIGENTE PFLICHTFELD-PRÜFUNG
+        # Prüft alle Felder auf Plausibilität. Wird "Trotzdem speichern" 
+        # ignoriert die Prüfung diesen Bereich.
         # ==========================================
         def reset_fehler_markierungen():
+            """Setzt alle rot markierten Fehlerfelder wieder auf den Standardwert zurück."""
             for ctrl in markierte_fehler_controls:
                 if hasattr(ctrl, "border_color"):
                     ctrl.border_color = "white"
@@ -637,6 +680,10 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             markierte_fehler_controls.clear()
 
         def check_pflichtfelder():
+            """
+            Durchläuft alle Reiter und prüft, ob Pflichtfelder leer sind oder Haken fehlen.
+            Gibt eine Liste von Dictionaries mit den Fehlermeldungen und dem Fundort zurück.
+            """
             reset_fehler_markierungen() 
             errors = []
             
@@ -701,7 +748,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                     if not (se_temp_in.value or "").strip(): err("Scherbeneis: Temperatur fehlt", "tw", "eis", se_temp_in)
                     if not (se_zeit_in.value or "").strip(): err("Scherbeneis: Uhrzeit fehlt", "tw", "eis", se_zeit_in)
 
-            # --- HFM FLEISCH ---
+            # --- HFM FLEISCH (Generische Helper-Funktion) ---
             def check_hfm(cb_ctrl, override_cb, temp, h_t, h_m, l_s, l_r, c_s, c_r, mhd_s_t, mhd_s_m, mhd_r_t, mhd_r_m, name, tab):
                 if override_cb.value: return 
                 alle_felder = [f for f in [temp, h_t, h_m, l_s, l_r, c_s, c_r, mhd_s_t, mhd_s_m, mhd_r_t, mhd_r_m] if f is not None]
@@ -725,6 +772,8 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             check_hfm(hfm_fzg_cb, hfm_fzg_override_cb, hfm_fzg_temp_in, hfm_fzg_herst_tag_dd, hfm_fzg_herst_mon_dd, hfm_fzg_lief_in, None, hfm_fzg_charge_dd, None, None, None, hfm_fzg_mhd_tag_dd, hfm_fzg_mhd_mon_dd, "FZ Geflügel", "fzg")
 
             # --- HFM OKZ Prüfung (INTELLIGENT) ---
+            # Prüft, ob der Nutzer von den Standardwerten abgewichen ist, 
+            # um Fehlalarme bei komplett leeren Reitern zu vermeiden.
             if not hfm_okz_override_cb.value:
                 hfm_okz_modified = False
                 hfm_okz_valid_data = False
@@ -814,6 +863,8 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
         # ==========================================
         # TARGETED RESET LOGIK
+        # Löscht nur die Inhalte des aktuell geöffneten Tabs,
+        # ohne die restliche Tour zu verwerfen.
         # ==========================================
         def reset_form(e):
             reset_fehler_markierungen() 
@@ -903,6 +954,9 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             status_text.color = "#FF9800"
             page.update()
 
+        # ==========================================
+        # ZWISCHENSPEICHERN (Ohne PDF-Erzeugung)
+        # ==========================================
         def nur_speichern(e):
             fehler_container.visible = False
             status_text.value = ""
@@ -932,6 +986,10 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             except Exception as ex: 
                 status_text.value = "❌ Fehler"; status_text.color = "red"; zeige_fehler(ex)
         
+        # ==========================================
+        # ABSCHLUSS-SPEICHERUNG & PDF GENERIERUNG
+        # Hier triggert die intelligente Pflichtfeld-Prüfung.
+        # ==========================================
         def save_final(e):
             fehler_container.visible = False
             status_text.value = ""
@@ -939,6 +997,12 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
             errs = check_pflichtfelder()
             if errs:
+                # -------------------------------------------------------------
+                # INTELLIGENTER REITER-SPRUNG
+                # Wenn ein Fehler in Tab 3 passiert, der User aber auf Tab 1 ist,
+                # wechselt die App automatisch zum fehlerhaften Tab, um die rote
+                # Markierung sofort sichtbar zu machen.
+                # -------------------------------------------------------------
                 first_err = errs[0]
                 switch_tab(first_err["tab"], first_err["sub"])
                 
@@ -956,6 +1020,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 page.update()
                 return
 
+            # Sind alle Daten korrekt, wird gespeichert und an die pdf_generator.py gesendet
             try:
                 status_text.value = "⏳ PDF..."; status_text.color = "#FF9800"; page.update()
                 maerkte = lade_maerkte()
@@ -998,6 +1063,11 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             ])
         ], spacing=10)
 
+        # ==========================================
+        # TAB-ROUTING (ANSICHTEN WECHSELN)
+        # Baut die Ansicht dynamisch neu auf, wenn der User im 2x2 Raster
+        # oder in der Unter-Navigation klickt.
+        # ==========================================
         def switch_tab(tab_id, sub_tab_id=None):
             nonlocal top_nav, haupt_bereich
             current_tab_state[0] = tab_id
@@ -1011,6 +1081,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 ("og", "🥗 Convenience")
             ]
             
+            # Die Tab-Leiste wird als 2x2 Kachel-Raster gerendert (für Touchscreens optimiert)
             zeile1_controls = []
             zeile2_controls = []
             
@@ -1042,6 +1113,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 ], spacing=10, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
             )
             
+            # Die eigentlichen Tab-Inhalte werden in den View gepusht
             if tab_id == "stamm":
                 haupt_bereich.controls.extend([vorlagen_expansion, ft.Divider(color="white24"), ft.Text("Stammdaten", size=24, weight="bold", color="#FF9800", text_align=ft.TextAlign.CENTER), datum_row, adr_in, nr_in, auft_in, ag_dd, name_in, typ_dd, bem_in])
             elif tab_id == "tw":
