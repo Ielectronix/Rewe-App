@@ -80,15 +80,16 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         # ---------------------------------------------------------------------
         # UI-HELPER-FUNKTIONEN (Wrapper zur Einhaltung des DRY-Prinzips)
         # ---------------------------------------------------------------------
-        def tf(label, val, hint="", w=None, oc=None, ob=None, multiline=False):
-            """Erstellt ein standardisiertes TextField."""
+        def tf(label, val, hint="", w=None, oc=None, ob=None, of=None, multiline=False):
+            """Erstellt ein standardisiertes TextField. (of = on_focus Event)"""
             return ft.TextField(
                 label=label, value=val or "", hint_text=hint, 
                 multiline=multiline,
                 hint_style=ft.TextStyle(color="white54", size=12), 
                 color="#FF9800", text_style=ft.TextStyle(size=14, color="#FF9800"), 
                 label_style=ft.TextStyle(color="white", size=14), 
-                border_color="white", content_padding=15, width=w, on_change=oc, on_blur=ob
+                border_color="white", content_padding=15, width=w, 
+                on_change=oc, on_blur=ob, on_focus=of
             )
 
         def combo(label, val, opts, w=None, oc=None, multiline=True):
@@ -191,7 +192,16 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         
         adr_in = tf("Adresse Markt", aktuelle_daten.get("adresse", ""), multiline=True)
         nr_in = tf("Marktnummer", aktuelle_daten.get("marktnummer", ""))
-        auft_in = tf("Auftragsnummer", aktuelle_daten.get("auftragsnummer", ""), "Etikettenummer: XX-XXXXXXX")
+        
+        # Auto-Fill Logik für die Auftragsnummer beim Reinklicken
+        def auft_focus(e):
+            if not e.control.value:  # Nur ausfüllen, wenn das Feld komplett leer ist
+                akt_jahr_kurz = datetime.datetime.now().strftime("%y") # Holt das Jahr 2-stellig (z.B. "26")
+                e.control.value = f"{akt_jahr_kurz}-"
+                e.control.update()
+
+        auft_in = tf("Auftragsnummer", aktuelle_daten.get("auftragsnummer", ""), "Etikettenummer: XX-XXXXXXX", of=auft_focus)
+        
         name_in = tf("Name Probenehmer", aktuelle_daten.get("mitarbeiter_name", ""))
         bem_in = tf("Zusätzliche Bemerkung", aktuelle_daten.get("bemerkung", ""), multiline=True)
         ag_dd = combo("Auftraggeber", aktuelle_daten.get("auftraggeber", "03509 - REWE Hackfleischmonitoring"), ["03509 - REWE Hackfleischmonitoring", "3001767 - REWE Dortmund (Hackfleischmonitoring)"])
@@ -303,7 +313,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         hfm_fzg_temp_in = tf("Probenahmetemperatur\n(max. +4 °C)", aktuelle_daten.get("hfm_fzg_temp", ""), ob=format_temp)
         hfm_fzg_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("hfm_fzg_bemerkung", ""), ["", "Keine Besonderheiten"])
 
-        # Dynamische Erstellung von 10 OKZ-Proben-Blöcken
         hfm_okz_cb = cb("Abklatschproben HFM", aktuelle_daten.get("hfm_abklatsch_cb", False), bold=True)
         hfm_okz_override_cb = cb("Trotzdem speichern", aktuelle_daten.get("hfm_abklatsch_override", False))
         hfm_okz_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("hfm_abklatsch_bemerkung", ""), ["", "Keine Besonderheiten"])
@@ -314,11 +323,12 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             idx = f"{i:02d}"
             okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0010_status_{idx}", "R+D"), ["R+D", "R", "P", "-"]), "objekt": combo("Objekt", aktuelle_daten.get(f"0010_objekt_{idx}") or okz_def[i]["o"], okz_obj_opts), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0010_ort_{idx}", "Kühlraum"), ["Kühlraum", "Produktionsbereich", "Theke"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0010_abklatsch_{idx}", okz_def[i]["a"])), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0010_tupfer_{idx}", okz_def[i]["t"]))}
 
-        # --- CONVENIENCE (OG) ---
+        # ==========================================
+        # CONVENIENCE (OG)
+        # ==========================================
         og_cb = cb("Obst-/Gemüse Convenience", aktuelle_daten.get("og_cb", False), bold=True)
         og_override_cb = cb("Trotzdem speichern", aktuelle_daten.get("og_override", False))
         
-        # Dynamische Erstellung von 5 Teilproben
         og_controls = {}
         for i in range(1, 6):
             idx = f"{i:02d}"
