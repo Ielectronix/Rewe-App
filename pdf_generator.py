@@ -89,11 +89,13 @@ def sammle_alle_daten(daten):
     w = {}
 
     def get_val(key, default=""):
+        """Sicheres Auslesen von Werten aus dem App-Dictionary."""
         v = daten.get(key)
         if v is None or str(v).strip() == "": return str(default)
         return str(v)
 
     def check(key, pdf_id):
+        """Mappt Booleans (True/False) der App auf die PDF-Checkbox-IDs."""
         w[pdf_id] = bool(daten.get(key))
 
     # --- KATEGORIE: STAMMDATEN ---
@@ -253,10 +255,12 @@ def sammle_alle_daten(daten):
             pdf_idx = f"{start_idx + i - 1:02d}" 
             app_idx = f"{i:02d}" 
             
-            w[f"dd_{prefix}_{pdf_idx}_ZS-001880"] = get_val(f"{prefix}_status_{app_idx}", "R+D")
-            obj = get_val(f"{prefix}_objekt_{app_idx}")
-            if obj: w[f"dd_{prefix}_{pdf_idx}_ZS-1419"] = obj
-            w[f"dd_{prefix}_{pdf_idx}_ZS-001792"] = get_val(f"{prefix}_ort_{app_idx}")
+            # WICHTIG (IT): Hier wird .get(..., "") ohne Fallback genutzt. 
+            # Das stellt sicher, dass vom Nutzer geleerte Felder (Leerstring "") 
+            # auch als Leerstring in die PDF übertragen werden und alte Werte überschreiben.
+            w[f"dd_{prefix}_{pdf_idx}_ZS-001880"] = daten.get(f"{prefix}_status_{app_idx}", "")
+            w[f"dd_{prefix}_{pdf_idx}_ZS-1419"] = daten.get(f"{prefix}_objekt_{app_idx}", "")
+            w[f"dd_{prefix}_{pdf_idx}_ZS-001792"] = daten.get(f"{prefix}_ort_{app_idx}", "")
             
             check(f"{prefix}_abklatsch_{app_idx}", f"cb_{prefix}_{pdf_idx}_ZS-002294")
             check(f"{prefix}_tupfer_{app_idx}", f"cb_{prefix}_{pdf_idx}_ZS-002295")
@@ -373,7 +377,9 @@ def erstelle_bericht(daten):
                 # ROUTINE 2: TEXTFELD-FALLBACK (Sicherheits-Injektion für fehlerhafte LIMS-Formulare)
                 elif f_id in mapping and not isinstance(mapping[f_id], bool):
                     val = str(mapping[f_id])
-                    if val and val != "..":
+                    # WICHTIG (IT): Erlaubt das explizite Überschreiben mit leeren Strings (""),
+                    # um ungewollte LIMS-Defaultwerte im REWE PDF-Template zu löschen.
+                    if val != "..":  
                         current_obj.update({NameObject("/V"): create_string_object(val)})
                         # Alte Vorkomprimierungen (/AP) verwerfen, damit der Viewer den Text neu rendert
                         if "/AP" in annot:
