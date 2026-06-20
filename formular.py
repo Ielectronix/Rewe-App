@@ -318,10 +318,19 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         hfm_okz_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("hfm_abklatsch_bemerkung", ""), ["", "Keine Besonderheiten"])
         okz_obj_opts = ["", "Fleischwolf-Auflage", "Fleischwolf-Lochscheibe", "Fleischwolf-Auswurf", "Fleischwolf-Spirale", "Wand am Fleischwolf", "Hackstecher", "Schaufel", "Thekenschale", "Messer", "Schneidebrett", "Auflage Knochensäge", "Tisch", "Fleischwanne", "Kühlhausgriff", "Schüssel", "Seifenspender"]
         okz_def = {1: {"o": "Fleischwolf-Auflage", "a": True, "t": False}, 2: {"o": "Fleischwolf-Auswurf", "a": True, "t": True}, 3: {"o": "Thekenschale", "a": True, "t": False}, 4: {"o": "Hackstecher", "a": True, "t": True}, 5: {"o": "Messer", "a": True, "t": False}, 6: {"o": "Schneidebrett", "a": True, "t": False}, 7: {"o": "Wand am Fleischwolf", "a": True, "t": True}, 8: {"o": "", "a": False, "t": False}, 9: {"o": "", "a": False, "t": False}, 10: {"o": "", "a": False, "t": False}}
+        
+        # WICHTIG (Für IT): .get() ohne Fallback "or", damit ein vom Nutzer bewusst gelöschtes (leeres) Feld nicht 
+        # aus Versehen beim Neu-Laden der UI wieder mit dem okz_def Standardwert (z.B. "Messer") überschrieben wird.
         okz_controls = {}
         for i in range(1, 11):
             idx = f"{i:02d}"
-            okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0010_status_{idx}", "R+D"), ["R+D", "R", "P", "-"]), "objekt": combo("Objekt", aktuelle_daten.get(f"0010_objekt_{idx}") or okz_def[i]["o"], okz_obj_opts), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0010_ort_{idx}", "Kühlraum"), ["Kühlraum", "Produktionsbereich", "Theke"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0010_abklatsch_{idx}", okz_def[i]["a"])), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0010_tupfer_{idx}", okz_def[i]["t"]))}
+            okz_controls[idx] = {
+                "status": combo("Status", aktuelle_daten.get(f"0010_status_{idx}", "R+D"), ["R+D", "R", "P", "-"]), 
+                "objekt": combo("Objekt", aktuelle_daten.get(f"0010_objekt_{idx}", okz_def[i]["o"]), okz_obj_opts), 
+                "ort": combo("Probenahmeort", aktuelle_daten.get(f"0010_ort_{idx}", "Kühlraum"), ["Kühlraum", "Produktionsbereich", "Theke"]), 
+                "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0010_abklatsch_{idx}", okz_def[i]["a"])), 
+                "tupfer": cb("Tupfer", aktuelle_daten.get(f"0010_tupfer_{idx}", okz_def[i]["t"]))
+            }
 
         # ==========================================
         # CONVENIENCE (OG)
@@ -351,10 +360,18 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         
         og_okz_opts = ["", "Schneidebrett", "Messer", "Saftpresse Auffanggitter", "Saftpresse Rückwand", "Saftpresse Auslass", "Waagenauflage", "Schüssel", "Löffel", "GN-Behälter"]
         og_okz_def = {1: {"o": "Schneidebrett", "a": True, "t": True}, 2: {"o": "Messer", "a": True, "t": True}, 3: {"o": "Waagenauflage", "a": True, "t": False}, 4: {"o": "", "a": False, "t": False}, 5: {"o": "", "a": False, "t": False}}
+        
+        # WICHTIG (Für IT): .get() ohne Fallback "or", wie oben bei HFM OKZ.
         og_okz_controls = {}
         for i in range(1, 6):
             idx = f"{i:02d}"
-            og_okz_controls[idx] = {"status": combo("Status", aktuelle_daten.get(f"0011_status_{idx}", "R+D"), ["R+D", "R", "P", "-"]), "objekt": combo("Objekt", aktuelle_daten.get(f"0011_objekt_{idx}") or og_okz_def[i]["o"], og_okz_opts), "ort": combo("Probenahmeort", aktuelle_daten.get(f"0011_ort_{idx}", "Produktionsbereich"), ["Kühlraum", "Produktionsbereich", "Theke"]), "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0011_abklatsch_{idx}", og_okz_def[i]["a"])), "tupfer": cb("Tupfer", aktuelle_daten.get(f"0011_tupfer_{idx}", og_okz_def[i]["t"]))}
+            og_okz_controls[idx] = {
+                "status": combo("Status", aktuelle_daten.get(f"0011_status_{idx}", "R+D"), ["R+D", "R", "P", "-"]), 
+                "objekt": combo("Objekt", aktuelle_daten.get(f"0011_objekt_{idx}", og_okz_def[i]["o"]), og_okz_opts), 
+                "ort": combo("Probenahmeort", aktuelle_daten.get(f"0011_ort_{idx}", "Produktionsbereich"), ["Kühlraum", "Produktionsbereich", "Theke"]), 
+                "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0011_abklatsch_{idx}", og_okz_def[i]["a"])), 
+                "tupfer": cb("Tupfer", aktuelle_daten.get(f"0011_tupfer_{idx}", og_okz_def[i]["t"]))
+            }
 
         # ==========================================
         # VORLAGEN UI-KOMPONENTE
@@ -496,9 +513,9 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             setze_wert(hfm_okz_override_cb, "hfm_abklatsch_override", False)
             setze_wert(hfm_okz_bemerkung_dd, "hfm_abklatsch_bemerkung")
             for idx, c in okz_controls.items():
-                c["status"].value = v.get(f"0010_status_{idx}", "R+D")
+                c["status"].value = v.get(f"0010_status_{idx}", "")
                 setze_wert(c["objekt"], f"0010_objekt_{idx}")
-                c["ort"].value = v.get(f"0010_ort_{idx}", "Kühlraum")
+                c["ort"].value = v.get(f"0010_ort_{idx}", "")
                 setze_wert(c["abklatsch"], f"0010_abklatsch_{idx}", False)
                 setze_wert(c["tupfer"], f"0010_tupfer_{idx}", False)
 
@@ -522,9 +539,9 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             setze_wert(og_okz_bemerkung_dd, "og_abklatsch_bemerkung_1")
             setze_wert(og_okz_anmerkung_in, "og_abklatsch_bemerkung_2")
             for idx, c in og_okz_controls.items():
-                c["status"].value = v.get(f"0011_status_{idx}", "R+D")
+                c["status"].value = v.get(f"0011_status_{idx}", "")
                 setze_wert(c["objekt"], f"0011_objekt_{idx}")
-                c["ort"].value = v.get(f"0011_ort_{idx}", "Produktionsbereich")
+                c["ort"].value = v.get(f"0011_ort_{idx}", "")
                 setze_wert(c["abklatsch"], f"0011_abklatsch_{idx}", False)
                 setze_wert(c["tupfer"], f"0011_tupfer_{idx}", False)
 
@@ -651,10 +668,13 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 "og_abklatsch_bemerkung_1": og_okz_bemerkung_dd.value, "og_abklatsch_bemerkung_2": og_okz_anmerkung_in.value,
             }
 
+            # WICHTIG (Für IT): Hier wird bei OKZ-Feldern bewusst KEIN get_val() mehr genutzt! 
+            # Wenn der Nutzer das Feld in der App leert, ist c["objekt"].value = "". Das MUSS erhalten bleiben
+            # und darf nicht mit dem okz_def Standard wieder aufgefüllt werden.
             for idx, c in okz_controls.items(): 
-                d[f"0010_status_{idx}"] = get_val(c["status"], "R+D")
-                d[f"0010_objekt_{idx}"] = get_val(c["objekt"], okz_def[int(idx)]["o"])
-                d[f"0010_ort_{idx}"] = c["ort"].value
+                d[f"0010_status_{idx}"] = c["status"].value if c["status"].value is not None else ""
+                d[f"0010_objekt_{idx}"] = c["objekt"].value if c["objekt"].value is not None else ""
+                d[f"0010_ort_{idx}"] = c["ort"].value if c["ort"].value is not None else ""
                 d[f"0010_abklatsch_{idx}"] = bool(c["abklatsch"].value)
                 d[f"0010_tupfer_{idx}"] = bool(c["tupfer"].value)
 
@@ -663,9 +683,9 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 d[f"og_name_{idx}"] = c["name"].value; d[f"og_ort_{idx}"] = c["ort"].value; d[f"og_inhalt_{idx}"] = c["inhalt"].value; d[f"og_verp_{idx}"] = c["verpackung"].value; d[f"og_temp_{idx}"] = c["temp"].value; d[f"og_herst_{idx}"] = get_date_str(c["h_t"].value, c["h_m"].value, c["h_j"].value); d[f"og_verb_{idx}"] = get_date_str(c["v_t"].value, c["v_m"].value, c["v_j"].value)
             
             for idx, c in og_okz_controls.items(): 
-                d[f"0011_status_{idx}"] = get_val(c["status"], "R+D")
-                d[f"0011_objekt_{idx}"] = get_val(c["objekt"], og_okz_def[int(idx)]["o"])
-                d[f"0011_ort_{idx}"] = c["ort"].value
+                d[f"0011_status_{idx}"] = c["status"].value if c["status"].value is not None else ""
+                d[f"0011_objekt_{idx}"] = c["objekt"].value if c["objekt"].value is not None else ""
+                d[f"0011_ort_{idx}"] = c["ort"].value if c["ort"].value is not None else ""
                 d[f"0011_abklatsch_{idx}"] = bool(c["abklatsch"].value)
                 d[f"0011_tupfer_{idx}"] = bool(c["tupfer"].value)
 
