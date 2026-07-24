@@ -1,3 +1,4 @@
+
 """
 main.py
 =======
@@ -24,7 +25,7 @@ GESENDET_FILE = "gesendet_log.json"
 def main(page: ft.Page):
     # Basis-Konfiguration der Flet-App (Helles Design)
     page.title = "Rewe Monitoring"
-    page.bgcolor = "white"  # <-- Hier ist der Fix für Android!
+    page.bgcolor = "white"
     page.scroll = "auto"
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER 
 
@@ -193,7 +194,8 @@ def main(page: ft.Page):
             else:
                 for i, m in aktive_touren:
                     txt = m.get("adresse") or m.get("marktnummer") or "Tour"
-                    ansicht.controls.append(ft.Container(bgcolor="#f9f9f9", padding=15, border_radius=15, border=ft.border.all(1, "#cccccc"), content=ft.Row([
+                    # Hier wurde der 'border'-Parameter entfernt, um Android-Abstürze zu verhindern
+                    ansicht.controls.append(ft.Container(bgcolor="#f9f9f9", padding=15, border_radius=15, content=ft.Row([
                         ft.Text(txt, color="black", weight="bold", size=12, expand=True, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS),
                         small_btn("✏️", lambda e, idx=i: zeige_maske_ui(page, ansicht, None, zeige_dashboard, None, idx), "#2196F3"),
                         small_btn("🗑️", lambda e, idx=i: (maerkte.pop(idx), speichere_maerkte(maerkte), zeige_dashboard()), "#F44336")
@@ -224,7 +226,8 @@ def main(page: ft.Page):
                     btn_color = "#006400" if ist_gesendet else "#2196F3"
                     senden_btn = ft.ElevatedButton(content=ft.Text(btn_text, size=12, weight="bold"), bgcolor="#ffffff", color=btn_color, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=15), padding=8, side=ft.BorderSide(width=1.5, color=btn_color)))
                     
-                    container = ft.Container(bgcolor="#f9f9f9", padding=10, border_radius=15, border=ft.border.all(1, "#cccccc"))
+                    # Hier wurde der 'border'-Parameter entfernt
+                    container = ft.Container(bgcolor="#f9f9f9", padding=10, border_radius=15)
                     
                     async def teilen_jetzt(e):
                         text_ctrl.value = f"{dateiname} ✅"; text_ctrl.color = "#006400"; text_ctrl.update()
@@ -287,7 +290,8 @@ def main(page: ft.Page):
                 ansicht.controls.append(ft.Text("Erledigte Touren (Zur Nachbearbeitung)", size=16, weight="bold", color="#006400", text_align="center"))
                 for i, m in erledigte_touren:
                     txt = m.get("adresse") or m.get("marktnummer") or "Tour"
-                    ansicht.controls.append(ft.Container(bgcolor="#e8f5e9", padding=15, border_radius=15, border=ft.border.all(1, "#cccccc"), content=ft.Row([
+                    # Hier wurde der 'border'-Parameter entfernt
+                    ansicht.controls.append(ft.Container(bgcolor="#e8f5e9", padding=15, border_radius=15, content=ft.Row([
                         ft.Text(f"✅ {txt}", color="black", weight="bold", size=12, expand=True, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS),
                         small_btn("✏️", lambda e, idx=i: zeige_maske_ui(page, ansicht, None, zeige_archiv, None, idx), "#2196F3"),
                         small_btn("🗑️", lambda e, idx=i: (maerkte.pop(idx), speichere_maerkte(maerkte), zeige_archiv()), "#F44336")
@@ -352,7 +356,8 @@ def main(page: ft.Page):
                                 if share_obj: await share_obj.share_files([ft.ShareFile.from_path(p)], text="REWE Bericht")
                             
                             senden_btn.on_click = teilen_archiv
-                            ansicht.controls.append(ft.Container(bgcolor="#f9f9f9", padding=10, border_radius=15, border=ft.border.all(1, "#cccccc"), content=ft.Row([text_ctrl, senden_btn])))
+                            # Hier wurde der 'border'-Parameter entfernt
+                            ansicht.controls.append(ft.Container(bgcolor="#f9f9f9", padding=10, border_radius=15, content=ft.Row([text_ctrl, senden_btn])))
                         
                         if titel_angelegt:
                             ansicht.controls.append(ft.Divider(color="#cccccc"))
