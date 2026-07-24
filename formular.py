@@ -22,7 +22,6 @@ from pdf_generator import erstelle_bericht
 # LOKALE VORLAGEN-VERWALTUNG (Schnellauswahl)
 # =========================================================================
 def lade_vorlagen_lokal():
-    """Lädt gespeicherte Vorlagen aus der lokalen JSON-Datei."""
     try:
         if os.path.exists("tour_vorlagen.json"):
             with open("tour_vorlagen.json", "r", encoding="utf-8") as f: return json.load(f)
@@ -30,7 +29,6 @@ def lade_vorlagen_lokal():
     return {}
 
 def speichere_vorlagen_lokal(daten):
-    """Speichert das aktuelle Vorlagen-Dictionary sicher in der JSON-Datei."""
     try:
         with open("tour_vorlagen.json", "w", encoding="utf-8") as f: json.dump(daten, f, ensure_ascii=False, indent=4)
     except: pass
@@ -39,9 +37,7 @@ def speichere_vorlagen_lokal(daten):
 # HAUPT-UI-FUNKTION
 # =========================================================================
 def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboard, zeige_fehler, markt_index):
-    # Container für den dynamischen Inhalt der Reiter
     haupt_bereich = ft.Column(spacing=15, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
-    # Obere Navigationsleiste für die Haupt-Reiter
     top_nav = ft.Row(wrap=True, alignment=ft.MainAxisAlignment.CENTER, spacing=5)
     
     current_tab_state = ["stamm"]
@@ -69,9 +65,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         heute_str = datetime.datetime.now().strftime('%d.%m.%Y')
         aktuelle_daten = maerkte[markt_index] if (markt_index is not None and markt_index < len(maerkte)) else {"datum": heute_str, "mitarbeiter_name": f"{v} {z}".strip()}
 
-        # ---------------------------------------------------------------------
-        # UI-HELPER-FUNKTIONEN
-        # ---------------------------------------------------------------------
         def tf(label, val, hint="", w=None, oc=None, ob=None, of=None, multiline=False):
             return ft.TextField(
                 label=label, value=val or "", hint_text=hint, 
@@ -112,9 +105,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         def emoji_btn(text, oc, farbe):
             return ft.ElevatedButton(content=ft.Text(text, size=14, weight="bold"), on_click=oc, bgcolor="#ffffff", color=farbe, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=15, side=ft.BorderSide(width=1.5, color=farbe)))
 
-        # ---------------------------------------------------------------------
-        # FORMATIERUNGS-FUNKTIONEN
-        # ---------------------------------------------------------------------
         def parse_datum(d, dt="", dm="", dj=""):
             if not d: return dt, dm, dj
             p = d.split(".")
@@ -158,11 +148,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             if not val or len(val.split(".")) != 3 or val == "..": return "", "", jtoday
             return val.split(".")[0], val.split(".")[1], val.split(".")[2]
 
-        # ==========================================
-        # INITIALISIERUNG DER UI-KONTROLLELEMENTE
-        # ==========================================
-        
-        # --- STAMMDATEN ---
         d_tag, d_mon, d_jahr = parse_datum(aktuelle_daten.get("datum", heute_str), heute_str.split(".")[0], heute_str.split(".")[1], heute_str.split(".")[2])
         tag_dd, mon_dd, jahr_dd = combo("Tag", d_tag, tage_opts), combo("Mon", d_mon, mon_opts), combo("Jahr", d_jahr, jahr_opts)
         datum_row = ft.Column([ft.Text("Datum der Probenahme", color="black", weight="bold", size=16), d_row(tag_dd, mon_dd, jahr_dd)])
@@ -182,7 +167,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         ag_dd = combo("Auftraggeber", aktuelle_daten.get("auftraggeber", "03509 - REWE Hackfleischmonitoring"), ["03509 - REWE Hackfleischmonitoring", "3001767 - REWE Dortmund (Hackfleischmonitoring)"])
         typ_dd = combo("Typ der Probenahme", aktuelle_daten.get("typ_probenahme", "Standard"), ["Standard", "Nachkontrolle", "Mehrwöchig"])
 
-        # --- TRINKWASSER & SCHERBENEIS ---
         tw_kalt_cb = cb("Trinkwasser kalt", aktuelle_daten.get("tw_kalt", False), bold=True)
         tw_override_cb = cb("Trotzdem speichern", aktuelle_daten.get("tw_override", False))
         tw_zeit_in, tw_temp_in, tw_tempkonst_in = tf("Probenahmezeit", aktuelle_daten.get("tw_zeit", ""), ob=format_zeit), tf("Temp Probenahme", aktuelle_daten.get("tw_temp", ""), ob=format_temp), tf("Temp Konstante", aktuelle_daten.get("tw_tempkonst", ""), ob=format_temp)
@@ -221,7 +205,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         se_temp_in = tf("Probenahmetemperatur", aktuelle_daten.get("se_temp", ""), ob=format_temp)
         se_bemerkung_dd = combo("Bemerkungen", aktuelle_daten.get("se_bemerkung", ""), ["", "Keine Besonderheiten"])
 
-        # --- FLEISCH (HFM) ---
         hfm_hack_cb = cb("Hackfleisch gemischt", aktuelle_daten.get("hfm_hack_cb", False), bold=True)
         hfm_hack_override_cb = cb("Trotzdem speichern", aktuelle_daten.get("hfm_hack_override", False))
         hfm_hack_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("hfm_hack_entnahmeort", "Kühlraum"), ort_opts)
@@ -303,9 +286,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 "tupfer": cb("Tupfer", aktuelle_daten.get(f"0010_tupfer_{idx}", okz_def[i]["t"]))
             }
 
-        # ==========================================
-        # CONVENIENCE (OG)
-        # ==========================================
         og_cb = cb("Obst-/Gemüse Convenience", aktuelle_daten.get("og_cb", False), bold=True)
         og_override_cb = cb("Trotzdem speichern", aktuelle_daten.get("og_override", False))
         
@@ -343,9 +323,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 "tupfer": cb("Tupfer", aktuelle_daten.get(f"0011_tupfer_{idx}", og_okz_def[i]["t"]))
             }
 
-        # ==========================================
-        # VORLAGEN UI-KOMPONENTE
-        # ==========================================
         alle_vorlagen = lade_vorlagen_lokal()
         vorlagen_status = ft.Text("", weight="bold", size=14) 
         
@@ -555,9 +532,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             ]
         )
 
-        # ==========================================
-        # DATENSAMMLER
-        # ==========================================
         def hole_aktuelle_daten():
             def get_val(ctrl, default_val):
                 if ctrl is None or ctrl.value is None or str(ctrl.value).strip() == "": return str(default_val)
@@ -650,9 +624,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
             return d
 
-        # ==========================================
-        # DIE INTELLIGENTE PFLICHTFELD-PRÜFUNG
-        # ==========================================
         def reset_fehler_markierungen():
             for ctrl in markierte_fehler_controls:
                 if hasattr(ctrl, "border_color"):
@@ -834,9 +805,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
             return errors
 
-        # ==========================================
-        # TARGETED RESET LOGIK
-        # ==========================================
         def reset_form(e):
             reset_fehler_markierungen() 
             
@@ -925,9 +893,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             status_text.color = "#006400"
             page.update()
 
-        # ==========================================
-        # ZWISCHENSPEICHERN
-        # ==========================================
         def nur_speichern(e):
             fehler_container.visible = False
             status_text.value = ""
@@ -937,6 +902,10 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 status_text.value = "⏳ Speichere..."; status_text.color = "#006400"; page.update()
                 maerkte = lade_maerkte()
                 d = hole_aktuelle_daten()
+                
+                # WICHTIG: Erhält den aktuellen Status. War sie erledigt, bleibt sie erledigt.
+                # War sie frisch, bleibt sie frisch und vorn im Dashboard.
+                d["erledigt"] = aktuelle_daten.get("erledigt", False)
                 
                 tour_aktualisiert = False
                 if nr_in.value.strip(): 
@@ -957,9 +926,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             except Exception as ex: 
                 status_text.value = "❌ Fehler"; status_text.color = "red"; zeige_fehler(ex)
         
-        # ==========================================
-        # ABSCHLUSS-SPEICHERUNG & PDF GENERIERUNG
-        # ==========================================
         def save_final(e):
             fehler_container.visible = False
             status_text.value = ""
@@ -988,6 +954,9 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 status_text.value = "⏳ PDF..."; status_text.color = "#006400"; page.update()
                 maerkte = lade_maerkte()
                 d = hole_aktuelle_daten()
+                
+                # WICHTIG: Markiert die Tour nach dem PDF-Druck als Erledigt (wandert ins Archiv)
+                d["erledigt"] = True 
                 
                 tour_aktualisiert = False
                 if nr_in.value.strip(): 
@@ -1026,9 +995,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             ])
         ], spacing=10)
 
-        # ==========================================
-        # TAB-ROUTING (ANSICHTEN WECHSELN)
-        # ==========================================
         def switch_tab(tab_id, sub_tab_id=None):
             nonlocal top_nav, haupt_bereich
             current_tab_state[0] = tab_id
