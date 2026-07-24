@@ -222,18 +222,16 @@ def main(page: ft.Page):
                 heute_pdfs = []
                 for base in such_ordner_liste:
                     ziel_ordner = os.path.join(base, heute_ordner)
-                    # Suche im Tagesordner UND im Hauptverzeichnis
                     for ordner in list(set([ziel_ordner, base])):
                         if not os.path.exists(ordner): continue
                         for f in os.listdir(ordner):
                             if f.lower().endswith(".pdf"):
                                 pfad = os.path.normpath(os.path.join(ordner, f))
                                 
-                                # HIER IST DER FEHLER BEHOBEN: Es wird keine Dateigröße mehr blind gelöscht!
-                                
                                 von_heute = False
-                                # Prüft, ob es im heutigen Ordner ist oder das Datum im Namen trägt
-                                if heute_ordner in pfad or heute_de in f:
+                                if ordner == ziel_ordner:
+                                    von_heute = True
+                                elif heute_de in f or heute_ordner in f:
                                     von_heute = True
                                 else:
                                     try:
@@ -242,20 +240,16 @@ def main(page: ft.Page):
                                             von_heute = True
                                     except: pass
 
-                                # Wenn es im Basis-Ordner liegt und wir das Datum nicht sicher kennen, lieber anzeigen
-                                if not von_heute and ordner == base:
-                                    von_heute = True
-
                                 if von_heute:
                                     try: mtime = os.path.getmtime(pfad)
                                     except: mtime = 0
                                     heute_pdfs.append({"f": f, "pfad": pfad, "mtime": mtime})
 
-                # --- DUPLIKAT FILTER ---
+                # --- SICHERER DUPLIKAT-FILTER ---
+                # Blendet Duplikate nur visuell aus, statt sie hart von Android zu löschen
                 gruppen = {}
                 for item in heute_pdfs:
-                    name = item["f"][:-4] # .pdf abschneiden
-                    # Bereinigt Zeitstempel und Kopie-Zahlen um zusammengehörige Dateien zu erkennen
+                    name = item["f"].lower().replace(".pdf", "")
                     name = re.sub(r'\s*\(\d+\)$', '', name)
                     name = re.sub(r'_[0-9]{6}$', '', name)
                     name = re.sub(r'-[0-9]{6}$', '', name)
@@ -268,23 +262,10 @@ def main(page: ft.Page):
 
                 bereinigte_pdfs = []
                 for basis, dateien in gruppen.items():
-                    # Sortiert nach Zeitstempel/Namen, um die Neueste ganz vorn zu haben
+                    # Sortiert nach Zeitstempel, um die Neueste ganz vorn zu haben
                     dateien.sort(key=lambda x: (x["mtime"], x["f"]), reverse=True)
+                    # Wir fügen NUR die erste (neueste) Datei der Ansicht hinzu
                     bereinigte_pdfs.append(dateien[0])
-                    
-                    # Löscht alle älteren Versionen dieser speziellen Tour vom Gerät
-                    for alt in dateien[1:]:
-                        try:
-                            os.remove(alt["pfad"])
-                            if alt["pfad"] in aktuelles_gesendet_set:
-                                aktuelles_gesendet_set.remove(alt["pfad"])
-                        except: pass
-                
-                try:
-                    with open(GESENDET_FILE, "w", encoding="utf-8") as f_log:
-                        json.dump(list(aktuelles_gesendet_set), f_log, ensure_ascii=False, indent=4)
-                except: pass
-                # -----------------------
 
                 def erstelle_eintrag(dateiname, pfad):
                     ist_gesendet = pfad in aktuelles_gesendet_set
@@ -309,7 +290,6 @@ def main(page: ft.Page):
                             for m in maerkte:
                                 nr = str(m.get("marktnummer", "")).strip()
                                 auftr = str(m.get("auftragsnummer", "")).strip()
-                                # Schiebt die Tour ins Archiv, wenn sie im Dateinamen gefunden wird
                                 if (nr and nr in dateiname) or (auftr and auftr in dateiname):
                                     if not m.get("erledigt", False):
                                         m["erledigt"] = True
@@ -341,10 +321,6 @@ def main(page: ft.Page):
                     if f in gesehene_dateien: continue
                     gesehene_dateien.add(f)
                     
-                    # WICHTIG: Überspringt Dateien von HEUTE, die bereits gesendet WURDEN
-                    if pfad in aktuelles_gesendet_set: 
-                        continue
-
                     pdfs_gefunden = True
                     ansicht.controls.append(erstelle_eintrag(f, pfad))
                 
@@ -403,12 +379,9 @@ def main(page: ft.Page):
                         for f in p_list:
                             pfad = os.path.normpath(os.path.join(ordner, f))
                             
-                            # Auch hier die Fehlerquelle behoben (Größen-Löschung weg)
-
                             ist_gesendet = pfad in aktuelles_gesendet_set
                             ordner_datum_str = os.path.basename(ordner)
                             
-                            # Verhindert, dass ungesendete PDFs von heute schon im Archiv auftauchen
                             if ordner_datum_str == heute_str and not ist_gesendet:
                                 continue
 
