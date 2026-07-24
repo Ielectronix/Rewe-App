@@ -903,8 +903,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 maerkte = lade_maerkte()
                 d = hole_aktuelle_daten()
                 
-                # WICHTIG: Erhält den aktuellen Status. War sie erledigt, bleibt sie erledigt.
-                # War sie frisch, bleibt sie frisch und vorn im Dashboard.
                 d["erledigt"] = aktuelle_daten.get("erledigt", False)
                 
                 tour_aktualisiert = False
@@ -955,8 +953,9 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 maerkte = lade_maerkte()
                 d = hole_aktuelle_daten()
                 
-                # WICHTIG: Markiert die Tour nach dem PDF-Druck als Erledigt (wandert ins Archiv)
-                d["erledigt"] = True 
+                # WICHTIG: Erhält den aktuellen Status. Die Tour wird ERST ins Archiv verschoben, 
+                # wenn sie im Postausgang wirklich gesendet wurde!
+                d["erledigt"] = aktuelle_daten.get("erledigt", False)
                 
                 tour_aktualisiert = False
                 if nr_in.value.strip(): 
