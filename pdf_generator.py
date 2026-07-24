@@ -23,6 +23,12 @@ from pypdf import PdfReader, PdfWriter
 from pypdf.generic import NameObject, DictionaryObject, create_string_object, BooleanObject
 
 # =========================================================================
+# ABSOLUTER BASIS-PFAD (Wichtig für Android / serious_python)
+# Ermittelt den genauen Ordner, in dem dieses Skript gerade liegt.
+# =========================================================================
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# =========================================================================
 # INTERNAL HELPER FUNCTIONS (Datenbereinigung & Konvertierung)
 # =========================================================================
 
@@ -304,8 +310,10 @@ def sammle_alle_daten(daten):
 # Lädt die leere Vorlage und erzeugt die finale LIMS-konforme PDF.
 # =========================================================================
 def erstelle_bericht(daten):
-    # Zugriff auf das neue, vollständige Masterdokument (keine Splitting-Reste mehr)
-    master_pfad = os.path.join("assets", "Rewe_PDF.pdf")
+    # =========================================================
+    # HIER IST DER FIX: Nutzt jetzt den sicheren absoluten Pfad!
+    # =========================================================
+    master_pfad = os.path.join(BASE_DIR, "assets", "Rewe_PDF.pdf")
     
     if not os.path.exists(master_pfad): return f"FEHLER: {master_pfad} fehlt!"
 
