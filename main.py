@@ -24,7 +24,7 @@ GESENDET_FILE = "gesendet_log.json"
 def main(page: ft.Page):
     # Basis-Konfiguration der Flet-App (Helles Design)
     page.title = "Rewe Monitoring"
-    page.bgcolor = ft.colors.WHITE
+    page.bgcolor = "white"  # <-- Hier ist der Fix für Android!
     page.scroll = "auto"
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER 
 
@@ -78,7 +78,6 @@ def main(page: ft.Page):
                         if os.path.isdir(ordner_pfad) and ordner != "temp":
                             try:
                                 ordner_datum = datetime.datetime.strptime(ordner, '%Y-%m-%d')
-                                # ÄNDERUNG: Jetzt 30 Tage
                                 if (heute - ordner_datum).days > 30: 
                                     shutil.rmtree(ordner_pfad)
                             except: pass
@@ -96,7 +95,6 @@ def main(page: ft.Page):
                 if datum_str:
                     try:
                         tour_datum = datetime.datetime.strptime(datum_str, '%d.%m.%Y')
-                        # ÄNDERUNG: Jetzt 30 Tage
                         if (heute - tour_datum).days > 30: 
                             behalten = False
                             geaendert = True
@@ -296,7 +294,6 @@ def main(page: ft.Page):
                     ])))
                 ansicht.controls.append(ft.Divider(color="#cccccc"))
             
-            # ÄNDERUNG: Überschrift auf 30 Tage angepasst
             ansicht.controls.append(ft.Text("Archivierte PDF Berichte (Letzte 30 Tage)", size=18, weight="bold", color="black", text_align="center"))
             
             bereinige_archiv()
@@ -304,7 +301,6 @@ def main(page: ft.Page):
             such_ordner = []
             heute = datetime.datetime.now()
             
-            # ÄNDERUNG: Erzeugt jetzt Daten für die letzten 31 Tage (0 bis 30)
             gueltige_datums = [(heute - datetime.timedelta(days=i)).strftime('%Y-%m-%d') for i in range(31)]
             
             for base in get_erweiterte_bases():
