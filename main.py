@@ -13,7 +13,7 @@ import datetime
 import shutil
 import json 
 import asyncio
-import re  # WICHTIG: Wird für den neuen Duplikat-Filter benötigt
+import re
 
 # =========================================================================
 # GLOBALE PFADE & KONSTANTEN
@@ -211,14 +211,14 @@ def main(page: ft.Page):
                 ansicht.controls.append(nav_leiste("senden"))
                 ansicht.controls.append(ft.Text("Postausgang (Heute)", size=20, weight="bold", color="black", text_align="center"))
                 
-                heute_datum = datetime.datetime.now().date()
-                heute_ordner = heute_datum.strftime('%Y-%m-%d')
+                heute = datetime.datetime.now()
+                heute_ordner = heute.strftime('%Y-%m-%d')
+                heute_de = heute.strftime('%d.%m.%Y')
                 pdfs_gefunden = False
                 such_ordner_liste = get_erweiterte_bases()
                 aktuelles_gesendet_set = lade_gesendet() 
                 gesehene_dateien = set()
 
-                # --- NEU: LOGIK ZUR DUPLIKAT-BEREINIGUNG ---
                 heute_pdfs = []
                 for base in such_ordner_liste:
                     ziel_ordner = os.path.join(base, heute_ordner)
@@ -227,25 +227,39 @@ def main(page: ft.Page):
                         for f in os.listdir(ordner):
                             if f.lower().endswith(".pdf"):
                                 pfad = os.path.normpath(os.path.join(ordner, f))
+                                
                                 try:
-                                    file_date = datetime.datetime.fromtimestamp(os.path.getmtime(pfad)).date()
-                                    if file_date == heute_datum:
-                                        if os.path.getsize(pfad) < 2048: 
-                                            os.remove(pfad)
-                                        else:
-                                            heute_pdfs.append({"f": f, "pfad": pfad, "mtime": os.path.getmtime(pfad)})
+                                    if os.path.getsize(pfad) < 2048: 
+                                        os.remove(pfad)
+                                        continue 
                                 except: pass
 
-                # Gruppieren nach "Basis-Namen" der PDFs
+                                # SICHARER ANDROID CHECK: Schaut nur auf Ordnername oder Text im Dateinamen
+                                von_heute = False
+                                if ordner == ziel_ordner:
+                                    von_heute = True
+                                elif heute_de in f:
+                                    von_heute = True
+                                else:
+                                    try:
+                                        file_date = datetime.datetime.fromtimestamp(os.path.getmtime(pfad)).date()
+                                        if file_date == heute.date():
+                                            von_heute = True
+                                    except: pass
+
+                                if von_heute:
+                                    mtime = 0
+                                    try: mtime = os.path.getmtime(pfad)
+                                    except: pass
+                                    heute_pdfs.append({"f": f, "pfad": pfad, "mtime": mtime})
+
+                # NEU: Gruppieren nach Basis-Namen (Duplikat-Erkennung)
                 gruppen = {}
                 for item in heute_pdfs:
                     name = item["f"].lower().replace(".pdf", "")
-                    # Entfernt Windows/Android typische Kopie-Zahlen wie " (1)"
-                    name = re.sub(r'\s\(\d+\)$', '', name)
-                    # Entfernt Zeitstempel (z.B. _153022 oder -153022)
+                    name = re.sub(r'\s*\(\d+\)$', '', name)
                     name = re.sub(r'_[0-9]{6}$', '', name)
                     name = re.sub(r'-[0-9]{6}$', '', name)
-                    # Entfernt Zeitstempel mit Trennzeichen (z.B. _15-30-22)
                     name = re.sub(r'_[0-9]{2}-[0-9]{2}-[0-9]{2}$', '', name)
                     name = re.sub(r'_[0-9]{2}_[0-9]{2}_[0-9]{2}$', '', name)
                     
@@ -253,14 +267,13 @@ def main(page: ft.Page):
                         gruppen[name] = []
                     gruppen[name].append(item)
 
-                # Nur die neueste PDF Datei jeder Gruppe behalten, den Rest direkt in den Müll
                 bereinigte_pdfs = []
                 for basis, dateien in gruppen.items():
-                    # Nach Zeitstempel sortieren (neueste oben)
-                    dateien.sort(key=lambda x: x["mtime"], reverse=True)
+                    # Sortiert nach Zeitstempel/Namen, um die neuste Datei zu behalten
+                    dateien.sort(key=lambda x: (x["mtime"], x["f"]), reverse=True)
                     bereinigte_pdfs.append(dateien[0])
                     
-                    # Die älteren Versionen dieser Tour endgültig löschen
+                    # Alte Berichte dieser Tour in den Müll werfen
                     for alt in dateien[1:]:
                         try:
                             os.remove(alt["pfad"])
@@ -268,12 +281,10 @@ def main(page: ft.Page):
                                 aktuelles_gesendet_set.remove(alt["pfad"])
                         except: pass
                 
-                # Aktualisiert die Datei der gesendeten Berichte, falls veraltete Einträge drin waren
                 try:
                     with open(GESENDET_FILE, "w", encoding="utf-8") as f_log:
                         json.dump(list(aktuelles_gesendet_set), f_log, ensure_ascii=False, indent=4)
                 except: pass
-                # -----------------------------------------------------------
 
                 def erstelle_eintrag(dateiname, pfad):
                     ist_gesendet = pfad in aktuelles_gesendet_set
@@ -309,7 +320,6 @@ def main(page: ft.Page):
                     container.content = ft.Row([text_ctrl, senden_btn, small_btn("🗑️", loeschen, "#F44336")])
                     return container
 
-                # Das Menü mit den sauberen, gefilterten Dateien anzeigen
                 for item in bereinigte_pdfs:
                     f = item["f"]
                     pfad = item["pfad"]
@@ -318,7 +328,7 @@ def main(page: ft.Page):
                     pdfs_gefunden = True
                     ansicht.controls.append(erstelle_eintrag(f, pfad))
                 
-                if not pdfs_gefunden: ansicht.controls.append(ft.Text("Keine Berichte von heute gefunden.", color="grey", text_align="center"))
+                if not pdfs_gefunden: ansicht.controls.append(ft.Text("Keine Berichte gefunden.", color="grey", text_align="center"))
                 page.add(ft.SafeArea(ansicht)); page.update()
             except Exception as e:
                 page.add(ft.Text(f"CRASH Postausgang: {e}", color="red", weight="bold")); page.update()
