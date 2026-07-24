@@ -222,23 +222,18 @@ def main(page: ft.Page):
                 heute_pdfs = []
                 for base in such_ordner_liste:
                     ziel_ordner = os.path.join(base, heute_ordner)
+                    # Suche im Tagesordner UND im Hauptverzeichnis
                     for ordner in list(set([ziel_ordner, base])):
                         if not os.path.exists(ordner): continue
                         for f in os.listdir(ordner):
                             if f.lower().endswith(".pdf"):
                                 pfad = os.path.normpath(os.path.join(ordner, f))
                                 
-                                try:
-                                    if os.path.getsize(pfad) < 2048: 
-                                        os.remove(pfad)
-                                        continue 
-                                except: pass
-
-                                # SICHARER ANDROID CHECK: Schaut nur auf Ordnername oder Text im Dateinamen
+                                # HIER IST DER FEHLER BEHOBEN: Es wird keine Dateigröße mehr blind gelöscht!
+                                
                                 von_heute = False
-                                if ordner == ziel_ordner:
-                                    von_heute = True
-                                elif heute_de in f:
+                                # Prüft, ob es im heutigen Ordner ist oder das Datum im Namen trägt
+                                if heute_ordner in pfad or heute_de in f:
                                     von_heute = True
                                 else:
                                     try:
@@ -247,16 +242,20 @@ def main(page: ft.Page):
                                             von_heute = True
                                     except: pass
 
+                                # Wenn es im Basis-Ordner liegt und wir das Datum nicht sicher kennen, lieber anzeigen
+                                if not von_heute and ordner == base:
+                                    von_heute = True
+
                                 if von_heute:
-                                    mtime = 0
                                     try: mtime = os.path.getmtime(pfad)
-                                    except: pass
+                                    except: mtime = 0
                                     heute_pdfs.append({"f": f, "pfad": pfad, "mtime": mtime})
 
-                # NEU: Gruppieren nach Basis-Namen (Duplikat-Erkennung)
+                # --- DUPLIKAT FILTER ---
                 gruppen = {}
                 for item in heute_pdfs:
-                    name = item["f"].lower().replace(".pdf", "")
+                    name = item["f"][:-4] # .pdf abschneiden
+                    # Bereinigt Zeitstempel und Kopie-Zahlen um zusammengehörige Dateien zu erkennen
                     name = re.sub(r'\s*\(\d+\)$', '', name)
                     name = re.sub(r'_[0-9]{6}$', '', name)
                     name = re.sub(r'-[0-9]{6}$', '', name)
@@ -269,11 +268,11 @@ def main(page: ft.Page):
 
                 bereinigte_pdfs = []
                 for basis, dateien in gruppen.items():
-                    # Sortiert nach Zeitstempel/Namen, um die neuste Datei zu behalten
+                    # Sortiert nach Zeitstempel/Namen, um die Neueste ganz vorn zu haben
                     dateien.sort(key=lambda x: (x["mtime"], x["f"]), reverse=True)
                     bereinigte_pdfs.append(dateien[0])
                     
-                    # Alte Berichte dieser Tour in den Müll werfen
+                    # Löscht alle älteren Versionen dieser speziellen Tour vom Gerät
                     for alt in dateien[1:]:
                         try:
                             os.remove(alt["pfad"])
@@ -285,6 +284,7 @@ def main(page: ft.Page):
                     with open(GESENDET_FILE, "w", encoding="utf-8") as f_log:
                         json.dump(list(aktuelles_gesendet_set), f_log, ensure_ascii=False, indent=4)
                 except: pass
+                # -----------------------
 
                 def erstelle_eintrag(dateiname, pfad):
                     ist_gesendet = pfad in aktuelles_gesendet_set
@@ -302,6 +302,21 @@ def main(page: ft.Page):
                         
                         markiere_als_gesendet(pfad)
                         aktuelles_gesendet_set.add(pfad)
+
+                        try:
+                            maerkte = lade_maerkte()
+                            tour_geaendert = False
+                            for m in maerkte:
+                                nr = str(m.get("marktnummer", "")).strip()
+                                auftr = str(m.get("auftragsnummer", "")).strip()
+                                # Schiebt die Tour ins Archiv, wenn sie im Dateinamen gefunden wird
+                                if (nr and nr in dateiname) or (auftr and auftr in dateiname):
+                                    if not m.get("erledigt", False):
+                                        m["erledigt"] = True
+                                        tour_geaendert = True
+                            if tour_geaendert:
+                                speichere_maerkte(maerkte)
+                        except: pass
                         
                         await asyncio.sleep(0.3)
                         if share_obj: await share_obj.share_files([ft.ShareFile.from_path(pfad)], text="REWE Bericht")
@@ -325,10 +340,15 @@ def main(page: ft.Page):
                     pfad = item["pfad"]
                     if f in gesehene_dateien: continue
                     gesehene_dateien.add(f)
+                    
+                    # WICHTIG: Überspringt Dateien von HEUTE, die bereits gesendet WURDEN
+                    if pfad in aktuelles_gesendet_set: 
+                        continue
+
                     pdfs_gefunden = True
                     ansicht.controls.append(erstelle_eintrag(f, pfad))
                 
-                if not pdfs_gefunden: ansicht.controls.append(ft.Text("Keine Berichte gefunden.", color="grey", text_align="center"))
+                if not pdfs_gefunden: ansicht.controls.append(ft.Text("Keine offenen Berichte gefunden.", color="grey", text_align="center"))
                 page.add(ft.SafeArea(ansicht)); page.update()
             except Exception as e:
                 page.add(ft.Text(f"CRASH Postausgang: {e}", color="red", weight="bold")); page.update()
@@ -358,6 +378,7 @@ def main(page: ft.Page):
             pdfs_gefunden = False
             such_ordner = []
             heute = datetime.datetime.now()
+            heute_str = heute.strftime('%Y-%m-%d')
             
             gueltige_datums = [(heute - datetime.timedelta(days=i)).strftime('%Y-%m-%d') for i in range(31)]
             
@@ -382,12 +403,14 @@ def main(page: ft.Page):
                         for f in p_list:
                             pfad = os.path.normpath(os.path.join(ordner, f))
                             
-                            try:
-                                if os.path.getsize(pfad) < 2048:
-                                    os.remove(pfad)
-                                    continue
-                            except Exception:
-                                pass
+                            # Auch hier die Fehlerquelle behoben (Größen-Löschung weg)
+
+                            ist_gesendet = pfad in aktuelles_gesendet_set
+                            ordner_datum_str = os.path.basename(ordner)
+                            
+                            # Verhindert, dass ungesendete PDFs von heute schon im Archiv auftauchen
+                            if ordner_datum_str == heute_str and not ist_gesendet:
+                                continue
 
                             if f in gesehene_dateien_archiv: continue
                             gesehene_dateien_archiv.add(f)
@@ -398,7 +421,6 @@ def main(page: ft.Page):
                                 ansicht.controls.append(ft.Text(f"📅 {d.strftime('%d.%m.%Y')}", color="#006400", weight="bold", size=14))
                                 titel_angelegt = True
 
-                            ist_gesendet = pfad in aktuelles_gesendet_set
                             text_ctrl = ft.Text(f"{f} ✅" if ist_gesendet else f, color="#006400" if ist_gesendet else "black", size=13, expand=True, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS)
                             btn_text, btn_color = ("✅ Gesendet", "#006400") if ist_gesendet else ("📤 Senden", "#2196F3")
                             senden_btn = ft.ElevatedButton(content=ft.Text(btn_text, size=12, weight="bold"), bgcolor="#ffffff", color=btn_color, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=15), padding=8, side=ft.BorderSide(width=1.5, color=btn_color)))
@@ -406,7 +428,24 @@ def main(page: ft.Page):
                             async def teilen_archiv(e, p=pfad, tc=text_ctrl, btn=senden_btn, dateiname=f):
                                 tc.value = f"{dateiname} ✅"; tc.color = "#006400"; tc.update()
                                 btn.content.value = "✅ Gesendet"; btn.color = "#006400"; btn.style.side = ft.BorderSide(width=1.5, color="#006400"); btn.update()
-                                markiere_als_gesendet(p); await asyncio.sleep(0.3)
+                                markiere_als_gesendet(p)
+                                aktuelles_gesendet_set.add(p)
+
+                                try:
+                                    maerkte = lade_maerkte()
+                                    tour_geaendert = False
+                                    for m in maerkte:
+                                        nr = str(m.get("marktnummer", "")).strip()
+                                        auftr = str(m.get("auftragsnummer", "")).strip()
+                                        if (nr and nr in dateiname) or (auftr and auftr in dateiname):
+                                            if not m.get("erledigt", False):
+                                                m["erledigt"] = True
+                                                tour_geaendert = True
+                                    if tour_geaendert:
+                                        speichere_maerkte(maerkte)
+                                except: pass
+
+                                await asyncio.sleep(0.3)
                                 if share_obj: await share_obj.share_files([ft.ShareFile.from_path(p)], text="REWE Bericht")
                             
                             senden_btn.on_click = teilen_archiv
