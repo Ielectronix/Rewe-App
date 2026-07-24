@@ -20,7 +20,6 @@ from pdf_generator import erstelle_bericht
 
 # =========================================================================
 # LOKALE VORLAGEN-VERWALTUNG (Schnellauswahl)
-# Speichert wiederkehrende Formular-Eingaben lokal in einer JSON-Datei ab.
 # =========================================================================
 def lade_vorlagen_lokal():
     """Lädt gespeicherte Vorlagen aus der lokalen JSON-Datei."""
@@ -38,7 +37,6 @@ def speichere_vorlagen_lokal(daten):
 
 # =========================================================================
 # HAUPT-UI-FUNKTION
-# Wird von der main.py aufgerufen, um die Eingabemaske zu zeichnen.
 # =========================================================================
 def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboard, zeige_fehler, markt_index):
     # Container für den dynamischen Inhalt der Reiter
@@ -46,17 +44,13 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
     # Obere Navigationsleiste für die Haupt-Reiter
     top_nav = ft.Row(wrap=True, alignment=ft.MainAxisAlignment.CENTER, spacing=5)
     
-    # State-Management-Workaround für verschachtelte Funktionen (Closures in Python)
     current_tab_state = ["stamm"]
     current_sub_tab_state = [""]
-    # Speichert UI-Elemente, die fehlerhaft waren, um sie später wieder weiß zu färben
     markierte_fehler_controls = [] 
     
-    # Container für die Fehlermeldungen am unteren Bildschirmrand
     fehler_container = ft.Column(spacing=5, visible=False, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
-    status_text = ft.Text("", color="#FF9800", weight="bold", size=18, text_align=ft.TextAlign.CENTER)
+    status_text = ft.Text("", color="#006400", weight="bold", size=18, text_align=ft.TextAlign.CENTER)
 
-    # Konstanten für Dropdown-Menüs zur Vermeidung von Redundanz
     tage_opts = [""]+[f"{i:02d}" for i in range(1,32)]
     mon_opts = [""]+[f"{i:02d}" for i in range(1,13)]
     jahr_opts = [""]+[str(i) for i in range(2024,2035)]
@@ -67,37 +61,29 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
     verp_opts = ["", "steriler Probenbecher", "steriler Probenbeutel", "Transportverpackung", "Kunststoffbecher mit Anrolldeckel u. etikett", "Pappschale mit Kunststofffolie umwickelt", "tiefgezogene Kunststoffschale mit Anrollfolie", "Styroporschale mit Kunststofffolie umwickelt", "SB-Kunststoffverpackung"]
 
     try:
-        # Basis-Setup des Views
         ansicht.controls.clear()
         ansicht.horizontal_alignment = ft.CrossAxisAlignment.STRETCH 
         
-        # Daten des aktuellen Marktes und Benutzers laden
         maerkte = lade_maerkte()
         v, z = lade_benutzer()
         heute_str = datetime.datetime.now().strftime('%d.%m.%Y')
         aktuelle_daten = maerkte[markt_index] if (markt_index is not None and markt_index < len(maerkte)) else {"datum": heute_str, "mitarbeiter_name": f"{v} {z}".strip()}
 
         # ---------------------------------------------------------------------
-        # UI-HELPER-FUNKTIONEN (Wrapper zur Einhaltung des DRY-Prinzips)
+        # UI-HELPER-FUNKTIONEN
         # ---------------------------------------------------------------------
         def tf(label, val, hint="", w=None, oc=None, ob=None, of=None, multiline=False):
-            """Erstellt ein standardisiertes TextField. (of = on_focus Event)"""
             return ft.TextField(
                 label=label, value=val or "", hint_text=hint, 
                 multiline=multiline,
-                hint_style=ft.TextStyle(color="white54", size=12), 
-                color="#FF9800", text_style=ft.TextStyle(size=14, color="#FF9800"), 
-                label_style=ft.TextStyle(color="white", size=14), 
-                border_color="white", content_padding=15, width=w, 
+                hint_style=ft.TextStyle(color="grey", size=12), 
+                color="#006400", text_style=ft.TextStyle(size=14, color="#006400", weight="bold"), 
+                label_style=ft.TextStyle(color="black", size=14), 
+                border_color="grey", content_padding=15, width=w, 
                 on_change=oc, on_blur=ob, on_focus=of
             )
 
         def combo(label, val, opts, w=None, oc=None, multiline=True):
-            """
-            Erstellt ein suchbares/schreibbares Dropdown-Menü.
-            Flet's natives Dropdown ist oft schwerfällig auf Mobile, daher dieser
-            hybride Ansatz aus TextField und PopupMenuButton.
-            """
             is_date = label in ["Tag", "Mon", "Jahr"]
             pad = 5 if is_date else 15
             txt_size = 14
@@ -108,28 +94,26 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             c = ft.TextField(
                 label=label, value=echter_wert, 
                 multiline=False if is_date else multiline,
-                color="#FF9800", text_style=ft.TextStyle(size=txt_size, color="#FF9800"), 
-                label_style=ft.TextStyle(color="white", size=lbl_size), 
-                border_color="white", dense=True, content_padding=pad, width=w, on_change=oc
+                color="#006400", text_style=ft.TextStyle(size=txt_size, color="#006400", weight="bold"), 
+                label_style=ft.TextStyle(color="black", size=lbl_size), 
+                border_color="grey", dense=True, content_padding=pad, width=w, on_change=oc
             )
-            items = [ft.PopupMenuItem(content=ft.Text(o, size=14), on_click=lambda e, opt=o: (setattr(c, 'value', opt), c.update())) for o in opts]
+            items = [ft.PopupMenuItem(content=ft.Text(o, size=14, color="black"), on_click=lambda e, opt=o: (setattr(c, 'value', opt), c.update())) for o in opts]
             
             c.suffix = ft.PopupMenuButton(
                 items=items, 
-                content=ft.Container(content=ft.Text("▼", color="white", size=icon_sz), padding=pad)
+                content=ft.Container(content=ft.Text("▼", color="black", size=icon_sz), padding=pad)
             )
             return c
             
         def action_btn_form(text, oc, farbe):
-            """Erstellt die großen Haupt-Aktionsbuttons (Speichern, Bericht, etc.)."""
-            return ft.ElevatedButton(content=ft.Text(text, size=16, weight="bold"), on_click=oc, bgcolor="#0b1a0b", color=farbe, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=20, side=ft.BorderSide(width=2, color=farbe)))
+            return ft.ElevatedButton(content=ft.Text(text, size=16, weight="bold"), on_click=oc, bgcolor="#ffffff", color=farbe, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=20, side=ft.BorderSide(width=2, color=farbe)))
             
         def emoji_btn(text, oc, farbe):
-            """Erstellt kleinere Aktionsbuttons für z.B. Vorlagenverwaltung."""
-            return ft.ElevatedButton(content=ft.Text(text, size=14, weight="bold"), on_click=oc, bgcolor="#1a1a1a", color=farbe, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=15, side=ft.BorderSide(width=1.5, color=farbe)))
+            return ft.ElevatedButton(content=ft.Text(text, size=14, weight="bold"), on_click=oc, bgcolor="#ffffff", color=farbe, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=15, side=ft.BorderSide(width=1.5, color=farbe)))
 
         # ---------------------------------------------------------------------
-        # FORMATIERUNGS-FUNKTIONEN FÜR EINGABEFELDER (Live-Überprüfung)
+        # FORMATIERUNGS-FUNKTIONEN
         # ---------------------------------------------------------------------
         def parse_datum(d, dt="", dm="", dj=""):
             if not d: return dt, dm, dj
@@ -141,35 +125,30 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             return f"{t}.{m}.{j}" if (t or m or j) else ""
 
         def format_zeit(e):
-            """Formatiert '1430' automatisch zu '14:30'."""
             val = e.control.value or ""
             zahlen = "".join([c for c in val if c.isdigit()])[:4]
             neu = zahlen[:2] + ":" + zahlen[2:] if len(zahlen) >= 3 else zahlen
             if e.control.value != neu: e.control.value = neu; e.control.update()
 
         def format_temp(e):
-            """Hängt automatisch ' °C' an die Eingabe an."""
             val = (e.control.value or "").strip().replace(" °C", "").replace("°C", "").strip()
             if val:
                 e.control.value = val + " °C"
                 e.control.update()
 
         def format_gramm(e):
-            """Hängt automatisch ' g' an, sofern noch nicht vorhanden."""
             val = (e.control.value or "").strip()
             if val and not val.lower().endswith("g") and not val.lower().endswith("ml"):
                 e.control.value = val + " g"; e.control.update()
 
         def cb(label, val, oc=None, bold=False):
-            """Erstellt eine Checkbox im Flet-Format."""
             return ft.Checkbox(
                 label=label, value=bool(val), on_change=oc, 
-                label_style=ft.TextStyle(color="white", size=16 if bold else 14, weight="bold" if bold else "normal"), 
-                fill_color="#FF9800", check_color="black"
+                label_style=ft.TextStyle(color="black", size=16 if bold else 14, weight="bold" if bold else "normal"), 
+                fill_color="#006400", check_color="white"
             )
 
         def d_row(t_dd, m_dd, j_dd):
-            """Baut die 3-teilige Datumszeile (Tag, Monat, Jahr)."""
             return ft.Row([ft.Container(content=t_dd, expand=1), ft.Container(content=m_dd, expand=1), ft.Container(content=j_dd, expand=1)], spacing=5)
 
         htoday, mtoday, jtoday = heute_str.split(".")[0], heute_str.split(".")[1], heute_str.split(".")[2]
@@ -181,27 +160,23 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
         # ==========================================
         # INITIALISIERUNG DER UI-KONTROLLELEMENTE
-        # Jedes Input-Feld wird hier instanziiert und mit gespeicherten
-        # Daten gefüllt, sofern es sich um das Editieren einer bestehenden Tour handelt.
         # ==========================================
         
         # --- STAMMDATEN ---
         d_tag, d_mon, d_jahr = parse_datum(aktuelle_daten.get("datum", heute_str), heute_str.split(".")[0], heute_str.split(".")[1], heute_str.split(".")[2])
         tag_dd, mon_dd, jahr_dd = combo("Tag", d_tag, tage_opts), combo("Mon", d_mon, mon_opts), combo("Jahr", d_jahr, jahr_opts)
-        datum_row = ft.Column([ft.Text("Datum der Probenahme", color="#2196F3", weight="bold", size=16), d_row(tag_dd, mon_dd, jahr_dd)])
+        datum_row = ft.Column([ft.Text("Datum der Probenahme", color="black", weight="bold", size=16), d_row(tag_dd, mon_dd, jahr_dd)])
         
         adr_in = tf("Adresse Markt", aktuelle_daten.get("adresse", ""), multiline=True)
         nr_in = tf("Marktnummer", aktuelle_daten.get("marktnummer", ""))
         
-        # Auto-Fill Logik für die Auftragsnummer beim Reinklicken
         def auft_focus(e):
-            if not e.control.value:  # Nur ausfüllen, wenn das Feld komplett leer ist
-                akt_jahr_kurz = datetime.datetime.now().strftime("%y") # Holt das Jahr 2-stellig (z.B. "26")
+            if not e.control.value: 
+                akt_jahr_kurz = datetime.datetime.now().strftime("%y") 
                 e.control.value = f"{akt_jahr_kurz}-"
                 e.control.update()
 
         auft_in = tf("Auftragsnummer", aktuelle_daten.get("auftragsnummer", ""), "Etikettenummer: XX-XXXXXXX", of=auft_focus)
-        
         name_in = tf("Name Probenehmer", aktuelle_daten.get("mitarbeiter_name", ""))
         bem_in = tf("Zusätzliche Bemerkung", aktuelle_daten.get("bemerkung", ""), multiline=True)
         ag_dd = combo("Auftraggeber", aktuelle_daten.get("auftraggeber", "03509 - REWE Hackfleischmonitoring"), ["03509 - REWE Hackfleischmonitoring", "3001767 - REWE Dortmund (Hackfleischmonitoring)"])
@@ -210,7 +185,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         # --- TRINKWASSER & SCHERBENEIS ---
         tw_kalt_cb = cb("Trinkwasser kalt", aktuelle_daten.get("tw_kalt", False), bold=True)
         tw_override_cb = cb("Trotzdem speichern", aktuelle_daten.get("tw_override", False))
-        
         tw_zeit_in, tw_temp_in, tw_tempkonst_in = tf("Probenahmezeit", aktuelle_daten.get("tw_zeit", ""), ob=format_zeit), tf("Temp Probenahme", aktuelle_daten.get("tw_temp", ""), ob=format_temp), tf("Temp Konstante", aktuelle_daten.get("tw_tempkonst", ""), ob=format_temp)
         tw_desinf_dd = combo("Desinfektion", aktuelle_daten.get("tw_desinf", "Abflammen"), ["Abflammen", "Sprühdesinfektion", "ohne Desinfektion"])
         tw_zapf_dd = combo("Zapfstelle", aktuelle_daten.get("tw_zapf", "Spülbecken"), ["Spülbecken", "Handwaschbecken"])
@@ -224,7 +198,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         tw_verpackung_dd = combo("Verpackung", aktuelle_daten.get("tw_verpackung", "500ml Kunststoff-Flasche mit Natriumthiosulfat"), ["", "500ml Kunststoff-Flasche mit Natriumthiosulfat", "steriler Probenbecher", "steriler Probenbeutel"])
         tw_entnahmeort_dd = combo("Entnahmeort", aktuelle_daten.get("tw_entnahmeort", "Metzgerei"), ort_opts)
         tw_bemerkung_dd = combo("TW Bemerkung", aktuelle_daten.get("tw_bemerkung_2", ""), ["", "Keine Besonderheiten"])
-        
         cb_pn, cb_zwei, cb_sensor, cb_knie = cb("PN-Hahn", aktuelle_daten.get("tw_cb_pn", False)), cb("Zweigriff", aktuelle_daten.get("tw_cb_zwei", False)), cb("Sensor", aktuelle_daten.get("tw_cb_sensor", False)), cb("Knie", aktuelle_daten.get("tw_cb_knie", False))
         cb_ein, cb_ein_g, cb_eck = cb("Einhebel", aktuelle_daten.get("tw_cb_ein", False)), cb("Eingriff", aktuelle_daten.get("tw_cb_ein_g", False)), cb("Eckventil", aktuelle_daten.get("tw_cb_eck", False))
         cb_auff_ja, cb_auff_nein, cb_auff_perl = cb("ja", aktuelle_daten.get("tw_auff_ja", False)), cb("nein", aktuelle_daten.get("tw_auff_nein", False)), cb("Perlator nicht entfernbar", aktuelle_daten.get("tw_auff_perlator", False))
@@ -319,8 +292,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         okz_obj_opts = ["", "Fleischwolf-Auflage", "Fleischwolf-Lochscheibe", "Fleischwolf-Auswurf", "Fleischwolf-Spirale", "Wand am Fleischwolf", "Hackstecher", "Schaufel", "Thekenschale", "Messer", "Schneidebrett", "Auflage Knochensäge", "Tisch", "Fleischwanne", "Kühlhausgriff", "Schüssel", "Seifenspender"]
         okz_def = {1: {"o": "Fleischwolf-Auflage", "a": True, "t": False}, 2: {"o": "Fleischwolf-Auswurf", "a": True, "t": True}, 3: {"o": "Thekenschale", "a": True, "t": False}, 4: {"o": "Hackstecher", "a": True, "t": True}, 5: {"o": "Messer", "a": True, "t": False}, 6: {"o": "Schneidebrett", "a": True, "t": False}, 7: {"o": "Wand am Fleischwolf", "a": True, "t": True}, 8: {"o": "", "a": False, "t": False}, 9: {"o": "", "a": False, "t": False}, 10: {"o": "", "a": False, "t": False}}
         
-        # WICHTIG (Für IT): .get() ohne Fallback "or", damit ein vom Nutzer bewusst gelöschtes (leeres) Feld nicht 
-        # aus Versehen beim Neu-Laden der UI wieder mit dem okz_def Standardwert (z.B. "Messer") überschrieben wird.
         okz_controls = {}
         for i in range(1, 11):
             idx = f"{i:02d}"
@@ -361,7 +332,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         og_okz_opts = ["", "Schneidebrett", "Messer", "Saftpresse Auffanggitter", "Saftpresse Rückwand", "Saftpresse Auslass", "Waagenauflage", "Schüssel", "Löffel", "GN-Behälter"]
         og_okz_def = {1: {"o": "Schneidebrett", "a": True, "t": True}, 2: {"o": "Messer", "a": True, "t": True}, 3: {"o": "Waagenauflage", "a": True, "t": False}, 4: {"o": "", "a": False, "t": False}, 5: {"o": "", "a": False, "t": False}}
         
-        # WICHTIG (Für IT): .get() ohne Fallback "or", wie oben bei HFM OKZ.
         og_okz_controls = {}
         for i in range(1, 6):
             idx = f"{i:02d}"
@@ -382,13 +352,12 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         vl_dd = ft.Dropdown(
             options=[ft.dropdown.Option(k) for k in alle_vorlagen.keys()], 
             hint_text="Vorlage wählen...", dense=True, content_padding=15, 
-            color="#FF9800", text_style=ft.TextStyle(color="#FF9800", size=14), 
-            border_color="white" 
+            color="#006400", text_style=ft.TextStyle(color="#006400", size=14, weight="bold"), 
+            border_color="black" 
         )
         vl_name_in = tf("Als neue Vorlage speichern", "")
 
         def lade_v(e):
-            """Füllt alle Felder der App mit den gespeicherten Daten einer Vorlage."""
             if not vl_dd.value: return
             v = alle_vorlagen.get(vl_dd.value, {})
             
@@ -407,7 +376,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             setze_wert(typ_dd, "typ_probenahme")
             setze_wert(bem_in, "bemerkung")
 
-            # Einspielen der Trinkwasser-Daten
             setze_wert(tw_kalt_cb, "tw_kalt", False)
             setze_wert(tw_override_cb, "tw_override", False)
             setze_wert(tw_zeit_in, "tw_zeit")
@@ -447,7 +415,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             setze_wert(tw_entnahmeort_dd, "tw_entnahmeort")
             setze_wert(tw_bemerkung_dd, "tw_bemerkung_2")
 
-            # Einspielen der Scherbeneis-Daten
             setze_wert(se_kalt_cb, "se_kalt", False)
             setze_wert(se_override_cb, "se_override", False)
             setze_wert(se_zeit_in, "se_zeit")
@@ -475,7 +442,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 ht, hm, hj = parse_datum(v.get(f"{prefix}_herstelldatum", ""))
                 htag_c.value, hmon_c.value, hjahr_c.value = ht, hm, hj or jtoday
 
-            # Einspielen Hack, Mett, FZS, FZG
             set_hfm_base(hfm_hack_cb, hfm_hack_override_cb, hfm_hack_entnahmeort_dd, hfm_hack_inhalt_in, hfm_hack_verpackung_dd, hfm_hack_temp_in, hfm_hack_bemerkung_dd, hfm_hack_herst_tag_dd, hfm_hack_herst_mon_dd, hfm_hack_herst_jahr_dd, "hfm_hack")
             setze_wert(hfm_hack_lief_schwein_in, "hfm_hack_lief_schwein")
             setze_wert(hfm_hack_charge_schwein_dd, "hfm_hack_charge_schwein")
@@ -508,7 +474,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             mt, mm, mj = parse_datum(v.get("hfm_fzg_mhd", ""), "", "", jtoday)
             hfm_fzg_mhd_tag_dd.value, hfm_fzg_mhd_mon_dd.value, hfm_fzg_mhd_jahr_dd.value = mt, mm, mj
 
-            # Einspielen OKZ HFM
             setze_wert(hfm_okz_cb, "hfm_abklatsch_cb", False)
             setze_wert(hfm_okz_override_cb, "hfm_abklatsch_override", False)
             setze_wert(hfm_okz_bemerkung_dd, "hfm_abklatsch_bemerkung")
@@ -519,7 +484,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 setze_wert(c["abklatsch"], f"0010_abklatsch_{idx}", False)
                 setze_wert(c["tupfer"], f"0010_tupfer_{idx}", False)
 
-            # Einspielen Convenience
             setze_wert(og_cb, "og_cb", False)
             setze_wert(og_override_cb, "og_override", False)
             for i in range(1, 6):
@@ -566,15 +530,15 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             vl_dd.options = [ft.dropdown.Option(k) for k in alle_vorlagen.keys()]
             vl_dd.update() 
             vorlagen_status.value = f"✅ Vorlage gespeichert!"
-            vorlagen_status.color = "#FF9800"
+            vorlagen_status.color = "#006400"
             vl_name_in.value = ""
             page.update()
 
         vorlagen_expansion = ft.ExpansionTile(
-            title=ft.Text("📋 Vorlagen (Schnellauswahl)", weight="bold", color="white", size=18),
-            collapsed_text_color="white", text_color="#4CAF50",
+            title=ft.Text("📋 Vorlagen (Schnellauswahl)", weight="bold", color="black", size=18),
+            collapsed_text_color="black", text_color="#006400",
             controls=[
-                ft.Container(bgcolor="#002b00", padding=15, border_radius=10, content=ft.Column(
+                ft.Container(bgcolor="#f9f9f9", padding=15, border_radius=10, content=ft.Column(
                     horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
                     controls=[
                         vorlagen_status,
@@ -585,16 +549,14 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                         ], spacing=10),
                         ft.Container(height=5),
                         vl_name_in,
-                        emoji_btn("💾 Als Neu Speichern", save_v, "#FF9800")
+                        emoji_btn("💾 Als Neu Speichern", save_v, "#006400")
                     ]
                 ))
             ]
         )
 
         # ==========================================
-        # DATENSAMMLER (Serialisierung für JSON/PDF)
-        # Liest alle UI-Controls aus und erzeugt ein flaches Dictionary,
-        # das vom PDF-Generator weiterverarbeitet wird.
+        # DATENSAMMLER
         # ==========================================
         def hole_aktuelle_daten():
             def get_val(ctrl, default_val):
@@ -668,9 +630,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 "og_abklatsch_bemerkung_1": og_okz_bemerkung_dd.value, "og_abklatsch_bemerkung_2": og_okz_anmerkung_in.value,
             }
 
-            # WICHTIG (Für IT): Hier wird bei OKZ-Feldern bewusst KEIN get_val() mehr genutzt! 
-            # Wenn der Nutzer das Feld in der App leert, ist c["objekt"].value = "". Das MUSS erhalten bleiben
-            # und darf nicht mit dem okz_def Standard wieder aufgefüllt werden.
             for idx, c in okz_controls.items(): 
                 d[f"0010_status_{idx}"] = c["status"].value if c["status"].value is not None else ""
                 d[f"0010_objekt_{idx}"] = c["objekt"].value if c["objekt"].value is not None else ""
@@ -693,27 +652,20 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
         # ==========================================
         # DIE INTELLIGENTE PFLICHTFELD-PRÜFUNG
-        # Prüft alle Felder auf Plausibilität. Wird "Trotzdem speichern" 
-        # ignoriert die Prüfung diesen Bereich.
         # ==========================================
         def reset_fehler_markierungen():
-            """Setzt alle rot markierten Fehlerfelder wieder auf den Standardwert zurück."""
             for ctrl in markierte_fehler_controls:
                 if hasattr(ctrl, "border_color"):
-                    ctrl.border_color = "white"
+                    ctrl.border_color = "grey"
                 if isinstance(ctrl, ft.Checkbox):
                     old_size = ctrl.label_style.size if ctrl.label_style else 16
                     old_weight = ctrl.label_style.weight if ctrl.label_style else "bold"
-                    ctrl.label_style = ft.TextStyle(color="white", size=old_size, weight=old_weight)
+                    ctrl.label_style = ft.TextStyle(color="black", size=old_size, weight=old_weight)
                 try: ctrl.update()
                 except: pass
             markierte_fehler_controls.clear()
 
         def check_pflichtfelder():
-            """
-            Durchläuft alle Reiter und prüft, ob Pflichtfelder leer sind oder Haken fehlen.
-            Gibt eine Liste von Dictionaries mit den Fehlermeldungen und dem Fundort zurück.
-            """
             reset_fehler_markierungen() 
             errors = []
             
@@ -736,7 +688,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             def markiere_extra(ctrl):
                 highlight_ctrl(ctrl)
 
-            # --- Stammdaten ---
             if not (nr_in.value or "").strip(): err("Stammdaten: Marktnummer fehlt", "stamm", None, nr_in)
             if not (adr_in.value or "").strip(): err("Stammdaten: Adresse fehlt", "stamm", None, adr_in)
             if not (auft_in.value or "").strip(): err("Stammdaten: Auftragsnummer fehlt", "stamm", None, auft_in)
@@ -749,7 +700,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                     err(f"{feld_name}: Tag und Monat müssen angegeben werden", tab, sub_tab, t_ctrl)
                     markiere_extra(m_ctrl)
 
-            # --- Trinkwasser ---
             if not tw_override_cb.value:
                 tw_daten = any([(tw_temp_in.value or "").strip(), (tw_zeit_in.value or "").strip()])
                 if tw_daten and not tw_kalt_cb.value: 
@@ -769,7 +719,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                             if c.value: markiere_extra(c)
                         err("Trinkwasser: Es darf nur EINE Entnahmestelle angekreuzt sein!", "tw", "wasser", cb_pn)
 
-            # --- Scherbeneis ---
             if not se_override_cb.value:
                 se_daten = any([(se_temp_in.value or "").strip(), (se_zeit_in.value or "").strip()])
                 if se_daten and not se_kalt_cb.value: 
@@ -778,7 +727,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                     if not (se_temp_in.value or "").strip(): err("Scherbeneis: Temperatur fehlt", "tw", "eis", se_temp_in)
                     if not (se_zeit_in.value or "").strip(): err("Scherbeneis: Uhrzeit fehlt", "tw", "eis", se_zeit_in)
 
-            # --- HFM FLEISCH (Generische Helper-Funktion) ---
             def check_hfm(cb_ctrl, override_cb, temp, h_t, h_m, l_s, l_r, c_s, c_r, mhd_s_t, mhd_s_m, mhd_r_t, mhd_r_m, name, tab):
                 if override_cb.value: return 
                 alle_felder = [f for f in [temp, h_t, h_m, l_s, l_r, c_s, c_r, mhd_s_t, mhd_s_m, mhd_r_t, mhd_r_m] if f is not None]
@@ -801,9 +749,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             check_hfm(hfm_fzs_cb, hfm_fzs_override_cb, hfm_fzs_temp_in, hfm_fzs_herst_tag_dd, hfm_fzs_herst_mon_dd, hfm_fzs_lief_in, None, hfm_fzs_charge_dd, None, None, None, hfm_fzs_mhd_tag_dd, hfm_fzs_mhd_mon_dd, "FZ Schwein", "fzs")
             check_hfm(hfm_fzg_cb, hfm_fzg_override_cb, hfm_fzg_temp_in, hfm_fzg_herst_tag_dd, hfm_fzg_herst_mon_dd, hfm_fzg_lief_in, None, hfm_fzg_charge_dd, None, None, None, hfm_fzg_mhd_tag_dd, hfm_fzg_mhd_mon_dd, "FZ Geflügel", "fzg")
 
-            # --- HFM OKZ Prüfung (INTELLIGENT) ---
-            # Prüft, ob der Nutzer von den Standardwerten abgewichen ist, 
-            # um Fehlalarme bei komplett leeren Reitern zu vermeiden.
             if not hfm_okz_override_cb.value:
                 hfm_okz_modified = False
                 hfm_okz_valid_data = False
@@ -837,7 +782,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                         elif (has_a or has_t) and not obj_val:
                             err(f"HFM OKZ (Probe {i}): Haken gesetzt, aber Objekt fehlt!", "hfm", "okz", c["objekt"])
 
-            # --- CONVENIENCE (OG) TEILPROBEN ---
             if not og_override_cb.value:
                 og_daten_vorhanden = False
                 for i in range(1, 6):
@@ -855,7 +799,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                             if not (c["temp"].value or "").strip(): err(f"OG (Probe {i}): Temperatur fehlt", "og", "teil", c["temp"])
                             check_datum_komplett(c["h_t"], c["h_m"], f"OG (Probe {i}): Herstellungsdatum", "og", "teil")
 
-            # --- CONVENIENCE OKZ Prüfung (INTELLIGENT) ---
             if not og_okz_override_cb.value:
                 og_okz_modified = False
                 og_okz_valid_data = False
@@ -893,8 +836,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
         # ==========================================
         # TARGETED RESET LOGIK
-        # Löscht nur die Inhalte des aktuell geöffneten Tabs,
-        # ohne die restliche Tour zu verwerfen.
         # ==========================================
         def reset_form(e):
             reset_fehler_markierungen() 
@@ -981,11 +922,11 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
             fehler_container.visible = False
             status_text.value = "🔄 REITER GELEERT!"
-            status_text.color = "#FF9800"
+            status_text.color = "#006400"
             page.update()
 
         # ==========================================
-        # ZWISCHENSPEICHERN (Ohne PDF-Erzeugung)
+        # ZWISCHENSPEICHERN
         # ==========================================
         def nur_speichern(e):
             fehler_container.visible = False
@@ -993,7 +934,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             page.update()
 
             try:
-                status_text.value = "⏳ Speichere..."; status_text.color = "#FF9800"; page.update()
+                status_text.value = "⏳ Speichere..."; status_text.color = "#006400"; page.update()
                 maerkte = lade_maerkte()
                 d = hole_aktuelle_daten()
                 
@@ -1012,13 +953,12 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                         maerkte.append(d)
                         
                 speichere_maerkte(maerkte)
-                status_text.value = "✅ Gespeichert!"; status_text.color = "#FF9800"; page.update()
+                status_text.value = "✅ Gespeichert!"; status_text.color = "#006400"; page.update()
             except Exception as ex: 
                 status_text.value = "❌ Fehler"; status_text.color = "red"; zeige_fehler(ex)
         
         # ==========================================
         # ABSCHLUSS-SPEICHERUNG & PDF GENERIERUNG
-        # Hier triggert die intelligente Pflichtfeld-Prüfung.
         # ==========================================
         def save_final(e):
             fehler_container.visible = False
@@ -1027,12 +967,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
 
             errs = check_pflichtfelder()
             if errs:
-                # -------------------------------------------------------------
-                # INTELLIGENTER REITER-SPRUNG
-                # Wenn ein Fehler in Tab 3 passiert, der User aber auf Tab 1 ist,
-                # wechselt die App automatisch zum fehlerhaften Tab, um die rote
-                # Markierung sofort sichtbar zu machen.
-                # -------------------------------------------------------------
                 first_err = errs[0]
                 switch_tab(first_err["tab"], first_err["sub"])
                 
@@ -1040,7 +974,7 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 fehler_container.controls.append(ft.Text("⚠️ BITTE PRÜFEN (Fehler sind rot markiert):", color="red", weight="bold", size=16))
                 
                 for i, err_item in enumerate(errs):
-                    fehler_container.controls.append(ft.Text(f"{i+1}. {err_item['msg']}", color="#ffcccc", size=14))
+                    fehler_container.controls.append(ft.Text(f"{i+1}. {err_item['msg']}", color="red", size=14))
                 
                 fehler_container.visible = True
                 try: fehler_container.update()
@@ -1050,9 +984,8 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 page.update()
                 return
 
-            # Sind alle Daten korrekt, wird gespeichert und an die pdf_generator.py gesendet
             try:
-                status_text.value = "⏳ PDF..."; status_text.color = "#FF9800"; page.update()
+                status_text.value = "⏳ PDF..."; status_text.color = "#006400"; page.update()
                 maerkte = lade_maerkte()
                 d = hole_aktuelle_daten()
                 
@@ -1088,15 +1021,13 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 ft.Container(content=action_btn_form("🔄 Reset", reset_form, "#9C27B0"), expand=1),
             ]),
             ft.Row([
-                ft.Container(content=action_btn_form("💾 Speichern", nur_speichern, "#FF9800"), expand=1),
+                ft.Container(content=action_btn_form("💾 Speichern", nur_speichern, "#006400"), expand=1),
                 ft.Container(content=action_btn_form("📄 Bericht", save_final, "#2196F3"), expand=1),
             ])
         ], spacing=10)
 
         # ==========================================
         # TAB-ROUTING (ANSICHTEN WECHSELN)
-        # Baut die Ansicht dynamisch neu auf, wenn der User im 2x2 Raster
-        # oder in der Unter-Navigation klickt.
         # ==========================================
         def switch_tab(tab_id, sub_tab_id=None):
             nonlocal top_nav, haupt_bereich
@@ -1111,7 +1042,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 ("og", "🥗 Convenience")
             ]
             
-            # Die Tab-Leiste wird als 2x2 Kachel-Raster gerendert (für Touchscreens optimiert)
             zeile1_controls = []
             zeile2_controls = []
             
@@ -1120,13 +1050,13 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 btn = ft.ElevatedButton(
                     content=ft.Text(tname, size=13, weight="bold", text_align=ft.TextAlign.CENTER),
                     on_click=lambda e, t=tid: switch_tab(t),
-                    bgcolor="#004400" if is_act else "#1a1a1a",
-                    color="white",
+                    bgcolor="#c8e6c9" if is_act else "#f0f0f0",
+                    color="black",
                     height=65, 
                     style=ft.ButtonStyle(
                         shape=ft.RoundedRectangleBorder(radius=10), 
                         padding=5, 
-                        side=ft.BorderSide(width=1.5, color="#4CAF50")
+                        side=ft.BorderSide(width=1.5, color="#006400")
                     )
                 )
                 btn_container = ft.Container(content=btn, expand=1)
@@ -1143,11 +1073,10 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 ], spacing=10, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
             )
             
-            # Die eigentlichen Tab-Inhalte werden in den View gepusht
             if tab_id == "stamm":
-                haupt_bereich.controls.extend([vorlagen_expansion, ft.Divider(color="white24"), ft.Text("Stammdaten", size=24, weight="bold", color="#FF9800", text_align=ft.TextAlign.CENTER), datum_row, adr_in, nr_in, auft_in, ag_dd, name_in, typ_dd, bem_in])
+                haupt_bereich.controls.extend([vorlagen_expansion, ft.Divider(color="#cccccc"), ft.Text("Stammdaten", size=24, weight="bold", color="black", text_align=ft.TextAlign.CENTER), datum_row, adr_in, nr_in, auft_in, ag_dd, name_in, typ_dd, bem_in])
             elif tab_id == "tw":
-                tab_title = ft.Text("Trinkwasser & Eis", size=24, weight="bold", color="#FF9800", text_align=ft.TextAlign.CENTER)
+                tab_title = ft.Text("Trinkwasser & Eis", size=24, weight="bold", color="black", text_align=ft.TextAlign.CENTER)
                 sub_nav = ft.Row(wrap=True, alignment=ft.MainAxisAlignment.CENTER)
                 haupt_bereich.controls.extend([tab_title, sub_nav])
                 def sw_tw(sub):
@@ -1156,18 +1085,18 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                     sub_nav.controls.clear()
                     for sid, sname in [("wasser", "𚚰 Trinkwasser"), ("eis", "❄️ Scherbeneis")]:
                         is_active = (sid == sub)
-                        btn = ft.ElevatedButton(sname, on_click=lambda e, s=sid: sw_tw(s), bgcolor="#004400" if is_active else "#1a1a1a", color="white", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=12, side=ft.BorderSide(width=1.5, color="#4CAF50")))
+                        btn = ft.ElevatedButton(sname, on_click=lambda e, s=sid: sw_tw(s), bgcolor="#c8e6c9" if is_active else "#f0f0f0", color="black", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=12, side=ft.BorderSide(width=1.5, color="#006400")))
                         sub_nav.controls.append(btn)
                     if sub == "wasser":
                         tab_title.value = "Trinkwasser"
-                        haupt_bereich.controls.extend([ft.Row([tw_kalt_cb, tw_override_cb], wrap=True), tw_zeit_in, tw_temp_in, tw_tempkonst_in, ft.Divider(color="white24"), ft.Text("Probenahme / Zapfstelle:", color="#2196F3", weight="bold"), tw_entnahmeort_dd, tw_zapf_dd, tw_zapf_sonst_dd, tw_desinf_dd, ft.Row([cb_pn, cb_zwei, cb_sensor, cb_knie], wrap=True), ft.Row([cb_ein, cb_ein_g, cb_eck], wrap=True), ft.Divider(color="white24"), ft.Text("Sensorik & Analytik:", color="#2196F3", weight="bold"), tw_inaktiv_dd, tw_kurz1_dd, tw_kurz2_dd, tw_kurz3_dd, tw_kurz4_dd, ft.Divider(color="white24"), ft.Text("Auffälligkeiten:", color="#2196F3", weight="bold"), ft.Row([cb_auff_ja, cb_auff_nein], wrap=True), cb_auff_perl, cb_auff_verkalk, cb_auff_verbrueh, cb_auff_durchlauf, cb_auff_unterbau, cb_auff_eck_zu, cb_auff_nichtmoeglich, cb_auff_dusche, cb_auff_handbrause, cb_auff_sonst, tw_auff_sonstiges_in, ft.Divider(color="white24"), tw_zweck_dd, tw_inhalt_in, tw_verpackung_dd, tw_bemerkung_dd])
+                        haupt_bereich.controls.extend([ft.Row([tw_kalt_cb, tw_override_cb], wrap=True), tw_zeit_in, tw_temp_in, tw_tempkonst_in, ft.Divider(color="#cccccc"), ft.Text("Probenahme / Zapfstelle:", color="black", weight="bold"), tw_entnahmeort_dd, tw_zapf_dd, tw_zapf_sonst_dd, tw_desinf_dd, ft.Row([cb_pn, cb_zwei, cb_sensor, cb_knie], wrap=True), ft.Row([cb_ein, cb_ein_g, cb_eck], wrap=True), ft.Divider(color="#cccccc"), ft.Text("Sensorik & Analytik:", color="black", weight="bold"), tw_inaktiv_dd, tw_kurz1_dd, tw_kurz2_dd, tw_kurz3_dd, tw_kurz4_dd, ft.Divider(color="#cccccc"), ft.Text("Auffälligkeiten:", color="black", weight="bold"), ft.Row([cb_auff_ja, cb_auff_nein], wrap=True), cb_auff_perl, cb_auff_verkalk, cb_auff_verbrueh, cb_auff_durchlauf, cb_auff_unterbau, cb_auff_eck_zu, cb_auff_nichtmoeglich, cb_auff_dusche, cb_auff_handbrause, cb_auff_sonst, tw_auff_sonstiges_in, ft.Divider(color="#cccccc"), tw_zweck_dd, tw_inhalt_in, tw_verpackung_dd, tw_bemerkung_dd])
                     elif sub == "eis":
                         tab_title.value = "Scherbeneis"
-                        haupt_bereich.controls.extend([ft.Row([se_kalt_cb, se_override_cb], wrap=True), se_zeit_in, se_zapf_dd, ft.Text("Technik:", color="#2196F3", weight="bold"), ft.Row([se_cb_eiswanne, se_cb_fallprobe], wrap=True), se_tech_sonst_in, se_desinf_dd, ft.Text("Auffälligkeiten:", color="#2196F3", weight="bold"), se_cb_ozon, se_auff_sonst_in, se_inhalt_in, se_verpackung_dd, se_entnahmeort_dd, se_temp_in, se_bemerkung_dd])
+                        haupt_bereich.controls.extend([ft.Row([se_kalt_cb, se_override_cb], wrap=True), se_zeit_in, se_zapf_dd, ft.Text("Technik:", color="black", weight="bold"), ft.Row([se_cb_eiswanne, se_cb_fallprobe], wrap=True), se_tech_sonst_in, se_desinf_dd, ft.Text("Auffälligkeiten:", color="black", weight="bold"), se_cb_ozon, se_auff_sonst_in, se_inhalt_in, se_verpackung_dd, se_entnahmeort_dd, se_temp_in, se_bemerkung_dd])
                     if page: page.update()
                 sw_tw(sub_tab_id if sub_tab_id else "wasser")
             elif tab_id == "hfm":
-                tab_title = ft.Text("HFM Fleisch", size=24, weight="bold", color="#FF9800", text_align=ft.TextAlign.CENTER)
+                tab_title = ft.Text("HFM Fleisch", size=24, weight="bold", color="black", text_align=ft.TextAlign.CENTER)
                 sub_nav = ft.Row(wrap=True, alignment=ft.MainAxisAlignment.CENTER)
                 haupt_bereich.controls.extend([tab_title, sub_nav])
                 def sw_hfm(sub):
@@ -1176,31 +1105,31 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                     sub_nav.controls.clear()
                     for sid, sname in [("hack","🥩 Hack"), ("mett","🍖 Mett"), ("fzs","🐷 FZS"), ("fzg","🐔 FZG"), ("okz","🔬 OKZ")]:
                         is_sub_act = (sid == sub)
-                        btn = ft.ElevatedButton(sname, on_click=lambda e, s=sid: sw_hfm(s), bgcolor="#004400" if is_sub_act else "#1a1a1a", color="white", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=5, side=ft.BorderSide(width=1, color="#4CAF50")))
+                        btn = ft.ElevatedButton(sname, on_click=lambda e, s=sid: sw_hfm(s), bgcolor="#c8e6c9" if is_sub_act else "#f0f0f0", color="black", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=5, side=ft.BorderSide(width=1, color="#006400")))
                         sub_nav.controls.append(btn)
                     if sub == "hack":
                         tab_title.value = "HFM Fleisch Hackfleisch"
-                        haupt_bereich.controls.extend([ft.Row([hfm_hack_cb, hfm_hack_override_cb], wrap=True), hfm_hack_entnahmeort_dd, ft.Text("Herstellungsdatum:", color="#2196F3", weight="bold"), d_row(hfm_hack_herst_tag_dd, hfm_hack_herst_mon_dd, hfm_hack_herst_jahr_dd), hfm_hack_inhalt_in, hfm_hack_verpackung_dd, hfm_hack_lief_schwein_in, hfm_hack_lief_rind_in, ft.Text("MHD (Schwein):", color="#2196F3", weight="bold"), d_row(hfm_hack_mhd_s_tag_dd, hfm_hack_mhd_s_mon_dd, hfm_hack_mhd_s_jahr_dd), ft.Text("MHD (Rind):", color="#2196F3", weight="bold"), d_row(hfm_hack_mhd_r_tag_dd, hfm_hack_mhd_r_mon_dd, hfm_hack_mhd_r_jahr_dd), hfm_hack_charge_schwein_dd, hfm_hack_charge_rind_dd, hfm_hack_temp_in, hfm_hack_bemerkung_dd])
+                        haupt_bereich.controls.extend([ft.Row([hfm_hack_cb, hfm_hack_override_cb], wrap=True), hfm_hack_entnahmeort_dd, ft.Text("Herstellungsdatum:", color="black", weight="bold"), d_row(hfm_hack_herst_tag_dd, hfm_hack_herst_mon_dd, hfm_hack_herst_jahr_dd), hfm_hack_inhalt_in, hfm_hack_verpackung_dd, hfm_hack_lief_schwein_in, hfm_hack_lief_rind_in, ft.Text("MHD (Schwein):", color="black", weight="bold"), d_row(hfm_hack_mhd_s_tag_dd, hfm_hack_mhd_s_mon_dd, hfm_hack_mhd_s_jahr_dd), ft.Text("MHD (Rind):", color="black", weight="bold"), d_row(hfm_hack_mhd_r_tag_dd, hfm_hack_mhd_r_mon_dd, hfm_hack_mhd_r_jahr_dd), hfm_hack_charge_schwein_dd, hfm_hack_charge_rind_dd, hfm_hack_temp_in, hfm_hack_bemerkung_dd])
                     elif sub == "mett":
                         tab_title.value = "HFM Fleisch Mett"
-                        haupt_bereich.controls.extend([ft.Row([hfm_mett_cb, hfm_mett_override_cb], wrap=True), hfm_mett_entnahmeort_dd, ft.Text("Herstellungsdatum:", color="#2196F3", weight="bold"), d_row(hfm_mett_herst_tag_dd, hfm_mett_herst_mon_dd, hfm_mett_herst_jahr_dd), hfm_mett_inhalt_in, hfm_mett_verpackung_dd, hfm_mett_lief_in, ft.Text("MHD:", color="#2196F3", weight="bold"), d_row(hfm_mett_mhd_tag_dd, hfm_mett_mhd_mon_dd, hfm_mett_mhd_jahr_dd), hfm_mett_charge_dd, hfm_mett_temp_in, hfm_mett_bemerkung_dd])
+                        haupt_bereich.controls.extend([ft.Row([hfm_mett_cb, hfm_mett_override_cb], wrap=True), hfm_mett_entnahmeort_dd, ft.Text("Herstellungsdatum:", color="black", weight="bold"), d_row(hfm_mett_herst_tag_dd, hfm_mett_herst_mon_dd, hfm_mett_herst_jahr_dd), hfm_mett_inhalt_in, hfm_mett_verpackung_dd, hfm_mett_lief_in, ft.Text("MHD:", color="black", weight="bold"), d_row(hfm_mett_mhd_tag_dd, hfm_mett_mhd_mon_dd, hfm_mett_mhd_jahr_dd), hfm_mett_charge_dd, hfm_mett_temp_in, hfm_mett_bemerkung_dd])
                     elif sub == "fzs":
                         tab_title.value = "HFM Fleisch Schweine Zubereitung"
-                        haupt_bereich.controls.extend([ft.Row([hfm_fzs_cb, hfm_fzs_override_cb], wrap=True), hfm_fzs_entnahmeort_dd, hfm_fzs_produkt_in, hfm_fzs_marinade_in, ft.Text("Herstellungsdatum:", color="#2196F3", weight="bold"), d_row(hfm_fzs_herst_tag_dd, hfm_fzs_herst_mon_dd, hfm_fzs_herst_jahr_dd), hfm_fzs_inhalt_in, hfm_fzs_verpackung_dd, hfm_fzs_lief_in, ft.Text("MHD:", color="#2196F3", weight="bold"), d_row(hfm_fzs_mhd_tag_dd, hfm_fzs_mhd_mon_dd, hfm_fzs_mhd_jahr_dd), hfm_fzs_charge_dd, hfm_fzs_temp_in, hfm_fzs_bemerkung_dd])
+                        haupt_bereich.controls.extend([ft.Row([hfm_fzs_cb, hfm_fzs_override_cb], wrap=True), hfm_fzs_entnahmeort_dd, hfm_fzs_produkt_in, hfm_fzs_marinade_in, ft.Text("Herstellungsdatum:", color="black", weight="bold"), d_row(hfm_fzs_herst_tag_dd, hfm_fzs_herst_mon_dd, hfm_fzs_herst_jahr_dd), hfm_fzs_inhalt_in, hfm_fzs_verpackung_dd, hfm_fzs_lief_in, ft.Text("MHD:", color="black", weight="bold"), d_row(hfm_fzs_mhd_tag_dd, hfm_fzs_mhd_mon_dd, hfm_fzs_mhd_jahr_dd), hfm_fzs_charge_dd, hfm_fzs_temp_in, hfm_fzs_bemerkung_dd])
                     elif sub == "fzg":
                         tab_title.value = "HFM Fleisch Geflügel Zubereitung"
-                        haupt_bereich.controls.extend([ft.Row([hfm_fzg_cb, hfm_fzg_override_cb], wrap=True), hfm_fzg_entnahmeort_dd, hfm_fzg_produkt_in, hfm_fzg_marinade_in, ft.Text("Herstellungsdatum:", color="#2196F3", weight="bold"), d_row(hfm_fzg_herst_tag_dd, hfm_fzg_herst_mon_dd, hfm_fzg_herst_jahr_dd), hfm_fzg_inhalt_in, hfm_fzg_verpackung_dd, hfm_fzg_lief_in, ft.Text("MHD:", color="#2196F3", weight="bold"), d_row(hfm_fzg_mhd_tag_dd, hfm_fzg_mhd_mon_dd, hfm_fzg_mhd_jahr_dd), hfm_fzg_charge_dd, hfm_fzg_temp_in, hfm_fzg_bemerkung_dd])
+                        haupt_bereich.controls.extend([ft.Row([hfm_fzg_cb, hfm_fzg_override_cb], wrap=True), hfm_fzg_entnahmeort_dd, hfm_fzg_produkt_in, hfm_fzg_marinade_in, ft.Text("Herstellungsdatum:", color="black", weight="bold"), d_row(hfm_fzg_herst_tag_dd, hfm_fzg_herst_mon_dd, hfm_fzg_herst_jahr_dd), hfm_fzg_inhalt_in, hfm_fzg_verpackung_dd, hfm_fzg_lief_in, ft.Text("MHD:", color="black", weight="bold"), d_row(hfm_fzg_mhd_tag_dd, hfm_fzg_mhd_mon_dd, hfm_fzg_mhd_jahr_dd), hfm_fzg_charge_dd, hfm_fzg_temp_in, hfm_fzg_bemerkung_dd])
                     elif sub == "okz":
                         tab_title.value = "HFM OKZ"
-                        haupt_bereich.controls.extend([ft.Row([hfm_okz_cb, hfm_okz_override_cb], wrap=True), ft.Divider(color="white24")])
+                        haupt_bereich.controls.extend([ft.Row([hfm_okz_cb, hfm_okz_override_cb], wrap=True), ft.Divider(color="#cccccc")])
                         for i in range(1, 11):
                             c = okz_controls[f"{i:02d}"]
-                            haupt_bereich.controls.extend([ft.Text(f"Probe {i}", color="#FF9800", weight="bold"), ft.Row([ft.Container(content=c["status"], expand=1), ft.Container(content=c["objekt"], expand=3)]), c["ort"], ft.Row([ft.Container(content=c["abklatsch"], expand=1), ft.Container(content=c["tupfer"], expand=1)]), ft.Divider(color="white24")])
+                            haupt_bereich.controls.extend([ft.Text(f"Probe {i}", color="#006400", weight="bold"), ft.Row([ft.Container(content=c["status"], expand=1), ft.Container(content=c["objekt"], expand=3)]), c["ort"], ft.Row([ft.Container(content=c["abklatsch"], expand=1), ft.Container(content=c["tupfer"], expand=1)]), ft.Divider(color="#cccccc")])
                         haupt_bereich.controls.append(hfm_okz_bemerkung_dd)
                     if page: page.update()
                 sw_hfm(sub_tab_id if sub_tab_id else "hack")
             elif tab_id == "og":
-                tab_title = ft.Text("Convenience", size=24, weight="bold", color="#FF9800", text_align=ft.TextAlign.CENTER)
+                tab_title = ft.Text("Convenience", size=24, weight="bold", color="black", text_align=ft.TextAlign.CENTER)
                 sub_nav = ft.Row(wrap=True, alignment=ft.MainAxisAlignment.CENTER)
                 haupt_bereich.controls.extend([tab_title, sub_nav])
                 def sw_og(sub):
@@ -1209,36 +1138,36 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                     sub_nav.controls.clear()
                     for sid, sname in [("teil", "🥗 Proben"), ("okz", "🔬 OKZ")]:
                         is_sub_act = (sid == sub)
-                        btn = ft.ElevatedButton(sname, on_click=lambda e, s=sid: sw_og(s), bgcolor="#004400" if is_sub_act else "#1a1a1a", color="white", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=8, side=ft.BorderSide(width=1.5, color="#4CAF50")))
+                        btn = ft.ElevatedButton(sname, on_click=lambda e, s=sid: sw_og(s), bgcolor="#c8e6c9" if is_sub_act else "#f0f0f0", color="black", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=8, side=ft.BorderSide(width=1.5, color="#006400")))
                         sub_nav.controls.append(btn)
                     if sub == "teil":
                         tab_title.value = "Convenience"
-                        haupt_bereich.controls.extend([ft.Row([og_cb, og_override_cb], wrap=True), ft.Divider(color="white24")])
+                        haupt_bereich.controls.extend([ft.Row([og_cb, og_override_cb], wrap=True), ft.Divider(color="#cccccc")])
                         for i in range(1, 6):
                             c = og_controls[i]
                             haupt_bereich.controls.extend([
-                                ft.Text(f"Teilprobe {i}", color="#2196F3", weight="bold", size=20), 
+                                ft.Text(f"Teilprobe {i}", color="black", weight="bold", size=20), 
                                 c["name"], c["ort"], 
-                                ft.Text("Herstellungsdatum:", color="#2196F3", weight="bold"), d_row(c["h_t"], c["h_m"], c["h_j"]), 
-                                ft.Text("Verbrauchsdatum:", color="#2196F3", weight="bold"), d_row(c["v_t"], c["v_m"], c["v_j"]), 
+                                ft.Text("Herstellungsdatum:", color="black", weight="bold"), d_row(c["h_t"], c["h_m"], c["h_j"]), 
+                                ft.Text("Verbrauchsdatum:", color="black", weight="bold"), d_row(c["v_t"], c["v_m"], c["v_j"]), 
                                 c["inhalt"], c["verpackung"], c["temp"], 
                                 ft.Container(height=15),
-                                ft.Divider(color="white24"),
+                                ft.Divider(color="#cccccc"),
                                 ft.Container(height=15)
                             ])
                     elif sub == "okz":
                         tab_title.value = "Convenience OKZ"
-                        haupt_bereich.controls.extend([ft.Row([og_okz_cb, og_okz_override_cb], wrap=True), ft.Divider(color="white24")])
+                        haupt_bereich.controls.extend([ft.Row([og_okz_cb, og_okz_override_cb], wrap=True), ft.Divider(color="#cccccc")])
                         for i in range(1, 6):
                             c = og_okz_controls[f"{i:02d}"]
-                            if i == 2: haupt_bereich.controls.append(ft.Text("💡 Info: Bei Saftpresse bitte hier auswählen.", color="white54", italic=True, size=14))
-                            haupt_bereich.controls.extend([ft.Text(f"Probe {i}", color="#FF9800", weight="bold"), ft.Row([ft.Container(content=c["status"], expand=1), ft.Container(content=c["objekt"], expand=3)]), c["ort"], ft.Row([ft.Container(content=c["abklatsch"], expand=1), ft.Container(content=c["tupfer"], expand=1)]), ft.Divider(color="white24")])
-                        haupt_bereich.controls.extend([ft.Text("💡 Wichtig: Wird die Saftpresse beprobt, muss zwingend auch das Messer aufgenommen werden!", color="#FF9800", weight="bold"), og_okz_bemerkung_dd, og_okz_anmerkung_in])
+                            if i == 2: haupt_bereich.controls.append(ft.Text("💡 Info: Bei Saftpresse bitte hier auswählen.", color="grey", italic=True, size=14))
+                            haupt_bereich.controls.extend([ft.Text(f"Probe {i}", color="#006400", weight="bold"), ft.Row([ft.Container(content=c["status"], expand=1), ft.Container(content=c["objekt"], expand=3)]), c["ort"], ft.Row([ft.Container(content=c["abklatsch"], expand=1), ft.Container(content=c["tupfer"], expand=1)]), ft.Divider(color="#cccccc")])
+                        haupt_bereich.controls.extend([ft.Text("💡 Wichtig: Wird die Saftpresse beprobt, muss zwingend auch das Messer aufgenommen werden!", color="#006400", weight="bold"), og_okz_bemerkung_dd, og_okz_anmerkung_in])
                     if page: page.update()
                 sw_og(sub_tab_id if sub_tab_id else "teil")
             if page: page.update()
 
-        ansicht.controls.extend([top_nav, ft.Divider(color="white24"), haupt_bereich, ft.Container(height=20), fehler_container, status_text, bottom_buttons])
+        ansicht.controls.extend([top_nav, ft.Divider(color="#cccccc"), haupt_bereich, ft.Container(height=20), fehler_container, status_text, bottom_buttons])
         switch_tab("stamm")
     except Exception as ex: 
         if zeige_fehler: zeige_fehler(ex)
