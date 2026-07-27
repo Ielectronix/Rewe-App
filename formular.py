@@ -105,6 +105,18 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         def emoji_btn(text, oc, farbe):
             return ft.ElevatedButton(content=ft.Text(text, size=14, weight="bold"), on_click=oc, bgcolor="#ffffff", color=farbe, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=15, side=ft.BorderSide(width=1.5, color=farbe)))
 
+        def mini_btn(text, oc, farbe="#006400"):
+            """Erstellt kompakte Buttons für die Schnellauswahl aller Status-Dropdowns."""
+            return ft.ElevatedButton(
+                content=ft.Text(text, size=12, weight="bold"), 
+                on_click=oc, bgcolor="#ffffff", color=farbe, 
+                style=ft.ButtonStyle(
+                    shape=ft.RoundedRectangleBorder(radius=6), 
+                    padding=8, 
+                    side=ft.BorderSide(width=1.5, color=farbe)
+                )
+            )
+
         def parse_datum(d, dt="", dm="", dj=""):
             if not d: return dt, dm, dj
             p = d.split(".")
@@ -322,6 +334,21 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 "abklatsch": cb("Abklatsch", aktuelle_daten.get(f"0011_abklatsch_{idx}", og_okz_def[i]["a"])), 
                 "tupfer": cb("Tupfer", aktuelle_daten.get(f"0011_tupfer_{idx}", og_okz_def[i]["t"]))
             }
+
+        # Helper-Funktionen zur Massen-Änderung aller Status-Dropdowns
+        def setze_alle_hfm_status(s_val):
+            for idx, c in okz_controls.items():
+                c["status"].value = s_val
+                try: c["status"].update()
+                except: pass
+            page.update()
+
+        def setze_alle_og_status(s_val):
+            for idx, c in og_okz_controls.items():
+                c["status"].value = s_val
+                try: c["status"].update()
+                except: pass
+            page.update()
 
         alle_vorlagen = lade_vorlagen_lokal()
         vorlagen_status = ft.Text("", weight="bold", size=14) 
@@ -953,8 +980,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 maerkte = lade_maerkte()
                 d = hole_aktuelle_daten()
                 
-                # WICHTIG: Erhält den aktuellen Status. Die Tour wird ERST ins Archiv verschoben, 
-                # wenn sie im Postausgang wirklich gesendet wurde!
                 d["erledigt"] = aktuelle_daten.get("erledigt", False)
                 
                 tour_aktualisiert = False
@@ -1086,10 +1111,31 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                         haupt_bereich.controls.extend([ft.Row([hfm_fzg_cb, hfm_fzg_override_cb], wrap=True), hfm_fzg_entnahmeort_dd, hfm_fzg_produkt_in, hfm_fzg_marinade_in, ft.Text("Herstellungsdatum:", color="black", weight="bold"), d_row(hfm_fzg_herst_tag_dd, hfm_fzg_herst_mon_dd, hfm_fzg_herst_jahr_dd), hfm_fzg_inhalt_in, hfm_fzg_verpackung_dd, hfm_fzg_lief_in, ft.Text("MHD:", color="black", weight="bold"), d_row(hfm_fzg_mhd_tag_dd, hfm_fzg_mhd_mon_dd, hfm_fzg_mhd_jahr_dd), hfm_fzg_charge_dd, hfm_fzg_temp_in, hfm_fzg_bemerkung_dd])
                     elif sub == "okz":
                         tab_title.value = "HFM OKZ"
-                        haupt_bereich.controls.extend([ft.Row([hfm_okz_cb, hfm_okz_override_cb], wrap=True), ft.Divider(color="#cccccc")])
+                        
+                        # SCHNELLWAHL-LEISTE FÜR HFM STATUS
+                        hfm_massen_bar = ft.Row([
+                            ft.Text("⚡ Alle Status:", weight="bold", size=13, color="black"),
+                            mini_btn("R+D", lambda e: setze_alle_hfm_status("R+D")),
+                            mini_btn("R", lambda e: setze_alle_hfm_status("R")),
+                            mini_btn("P", lambda e: setze_alle_hfm_status("P")),
+                            mini_btn("-", lambda e: setze_alle_hfm_status("-")),
+                        ], wrap=True, alignment=ft.MainAxisAlignment.START, spacing=6)
+
+                        haupt_bereich.controls.extend([
+                            ft.Row([hfm_okz_cb, hfm_okz_override_cb], wrap=True), 
+                            hfm_massen_bar,
+                            ft.Divider(color="#cccccc")
+                        ])
+                        
                         for i in range(1, 11):
                             c = okz_controls[f"{i:02d}"]
-                            haupt_bereich.controls.extend([ft.Text(f"Probe {i}", color="#006400", weight="bold"), ft.Row([ft.Container(content=c["status"], expand=1), ft.Container(content=c["objekt"], expand=3)]), c["ort"], ft.Row([ft.Container(content=c["abklatsch"], expand=1), ft.Container(content=c["tupfer"], expand=1)]), ft.Divider(color="#cccccc")])
+                            haupt_bereich.controls.extend([
+                                ft.Text(f"Probe {i}", color="#006400", weight="bold"), 
+                                ft.Row([ft.Container(content=c["status"], expand=1), ft.Container(content=c["objekt"], expand=3)]), 
+                                c["ort"], 
+                                ft.Row([ft.Container(content=c["abklatsch"], expand=1), ft.Container(content=c["tupfer"], expand=1)]), 
+                                ft.Divider(color="#cccccc")
+                            ])
                         haupt_bereich.controls.append(hfm_okz_bemerkung_dd)
                     if page: page.update()
                 sw_hfm(sub_tab_id if sub_tab_id else "hack")
@@ -1122,11 +1168,32 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                             ])
                     elif sub == "okz":
                         tab_title.value = "Convenience OKZ"
-                        haupt_bereich.controls.extend([ft.Row([og_okz_cb, og_okz_override_cb], wrap=True), ft.Divider(color="#cccccc")])
+                        
+                        # SCHNELLWAHL-LEISTE FÜR CONVENIENCE STATUS
+                        og_massen_bar = ft.Row([
+                            ft.Text("⚡ Alle Status:", weight="bold", size=13, color="black"),
+                            mini_btn("R+D", lambda e: setze_alle_og_status("R+D")),
+                            mini_btn("R", lambda e: setze_alle_og_status("R")),
+                            mini_btn("P", lambda e: setze_alle_og_status("P")),
+                            mini_btn("-", lambda e: setze_alle_og_status("-")),
+                        ], wrap=True, alignment=ft.MainAxisAlignment.START, spacing=6)
+
+                        haupt_bereich.controls.extend([
+                            ft.Row([og_okz_cb, og_okz_override_cb], wrap=True), 
+                            og_massen_bar,
+                            ft.Divider(color="#cccccc")
+                        ])
+                        
                         for i in range(1, 6):
                             c = og_okz_controls[f"{i:02d}"]
                             if i == 2: haupt_bereich.controls.append(ft.Text("💡 Info: Bei Saftpresse bitte hier auswählen.", color="grey", italic=True, size=14))
-                            haupt_bereich.controls.extend([ft.Text(f"Probe {i}", color="#006400", weight="bold"), ft.Row([ft.Container(content=c["status"], expand=1), ft.Container(content=c["objekt"], expand=3)]), c["ort"], ft.Row([ft.Container(content=c["abklatsch"], expand=1), ft.Container(content=c["tupfer"], expand=1)]), ft.Divider(color="#cccccc")])
+                            haupt_bereich.controls.extend([
+                                ft.Text(f"Probe {i}", color="#006400", weight="bold"), 
+                                ft.Row([ft.Container(content=c["status"], expand=1), ft.Container(content=c["objekt"], expand=3)]), 
+                                c["ort"], 
+                                ft.Row([ft.Container(content=c["abklatsch"], expand=1), ft.Container(content=c["tupfer"], expand=1)]), 
+                                ft.Divider(color="#cccccc")
+                            ])
                         haupt_bereich.controls.extend([ft.Text("💡 Wichtig: Wird die Saftpresse beprobt, muss zwingend auch das Messer aufgenommen werden!", color="#006400", weight="bold"), og_okz_bemerkung_dd, og_okz_anmerkung_in])
                     if page: page.update()
                 sw_og(sub_tab_id if sub_tab_id else "teil")
