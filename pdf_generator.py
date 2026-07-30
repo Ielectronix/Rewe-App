@@ -24,7 +24,6 @@ from pypdf.generic import NameObject, DictionaryObject, create_string_object, Bo
 
 # =========================================================================
 # ABSOLUTER BASIS-PFAD (Wichtig für Android / serious_python)
-# Ermittelt den genauen Ordner, in dem dieses Skript gerade liegt.
 # =========================================================================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -262,8 +261,6 @@ def sammle_alle_daten(daten):
             app_idx = f"{i:02d}" 
             
             # WICHTIG (IT): Hier wird .get(..., "") ohne Fallback genutzt. 
-            # Das stellt sicher, dass vom Nutzer geleerte Felder (Leerstring "") 
-            # auch als Leerstring in die PDF übertragen werden und alte Werte überschreiben.
             w[f"dd_{prefix}_{pdf_idx}_ZS-001880"] = daten.get(f"{prefix}_status_{app_idx}", "")
             w[f"dd_{prefix}_{pdf_idx}_ZS-1419"] = daten.get(f"{prefix}_objekt_{app_idx}", "")
             w[f"dd_{prefix}_{pdf_idx}_ZS-001792"] = daten.get(f"{prefix}_ort_{app_idx}", "")
@@ -272,7 +269,8 @@ def sammle_alle_daten(daten):
             check(f"{prefix}_tupfer_{app_idx}", f"cb_{prefix}_{pdf_idx}_ZS-002295")
 
     # --- KATEGORIE: ABKLATSCHPROBEN FLEISCHWOLF (HFM OKZ) ---
-    check("hfm_okz_cb", "cb_0010_00")
+    # HIER IST DER FIX: Die korrekte Variable hfm_abklatsch_cb wird genutzt!
+    check("hfm_abklatsch_cb", "cb_0010_00")
     w["tf_0010_00"] = "Abklatschproben HFM"
     w["dd_0010_00_ZS-001796"] = get_val("hfm_abklatsch_bemerkung")
     map_abklatsch("0010", 1, 10)
@@ -310,9 +308,6 @@ def sammle_alle_daten(daten):
 # Lädt die leere Vorlage und erzeugt die finale LIMS-konforme PDF.
 # =========================================================================
 def erstelle_bericht(daten):
-    # =========================================================
-    # HIER IST DER FIX: Nutzt jetzt den sicheren absoluten Pfad!
-    # =========================================================
     master_pfad = os.path.join(BASE_DIR, "assets", "Rewe_PDF.pdf")
     
     if not os.path.exists(master_pfad): return f"FEHLER: {master_pfad} fehlt!"
