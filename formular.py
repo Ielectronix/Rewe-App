@@ -106,7 +106,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
             return ft.ElevatedButton(content=ft.Text(text, size=14, weight="bold"), on_click=oc, bgcolor="#ffffff", color=farbe, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=15, side=ft.BorderSide(width=1.5, color=farbe)))
 
         def mini_btn(text, oc, farbe="#006400"):
-            """Erstellt kompakte Buttons für die Schnellauswahl aller Status-Dropdowns."""
             return ft.ElevatedButton(
                 content=ft.Text(text, size=12, weight="bold"), 
                 on_click=oc, bgcolor="#ffffff", color=farbe, 
@@ -185,7 +184,10 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
         tw_desinf_dd = combo("Desinfektion", aktuelle_daten.get("tw_desinf", "Abflammen"), ["Abflammen", "Sprühdesinfektion", "ohne Desinfektion"])
         tw_zapf_dd = combo("Zapfstelle", aktuelle_daten.get("tw_zapf", "Spülbecken"), ["Spülbecken", "Handwaschbecken"])
         tw_zapf_sonst_dd = combo("Sonstiges Zapfstelle", aktuelle_daten.get("tw_zapf_sonst", ""), ["", "Schlaucharmatur", "Schlauchbrause", "Schlauch mit Brause"])
-        tw_inaktiv_dd = combo("Inaktivierung", current_val=aktuelle_daten.get("tw_inaktiv", "Na-Thiosulfat"), opts=["Na-Thiosulfat"])
+        
+        # HIER WURDE DER TIPPFEHLER BEHOBEN (current_val= entfernt)
+        tw_inaktiv_dd = combo("Inaktivierung", aktuelle_daten.get("tw_inaktiv", "Na-Thiosulfat"), ["Na-Thiosulfat"])
+        
         tw_kurz1_dd = combo("Farbe", aktuelle_daten.get("tw_kurz1", "1 - nicht wahrnehmbar"), ["1 - nicht wahrnehmbar", "2 - wahrnehmbar", "3 - deutlich wahrnehmbar"])
         tw_kurz2_dd = combo("Trübung", aktuelle_daten.get("tw_kurz2", "1 - nicht wahrnehmbar"), ["1 - nicht wahrnehmbar", "2 - wahrnehmbar", "3 - deutlich wahrnehmbar"])
         tw_kurz3_dd = combo("Bodensatz", aktuelle_daten.get("tw_kurz3", "1 - nicht wahrnehmbar"), ["1 - nicht wahrnehmbar", "2 - wahrnehmbar", "3 - deutlich wahrnehmbar"])
@@ -335,7 +337,6 @@ def zeige_maske_ui(page: ft.Page, ansicht: ft.Column, nav_leiste, zeige_dashboar
                 "tupfer": cb("Tupfer", aktuelle_daten.get(f"0011_tupfer_{idx}", og_okz_def[i]["t"]))
             }
 
-        # Helper-Funktionen zur Massen-Änderung aller Status-Dropdowns
         def setze_alle_hfm_status(s_val):
             for idx, c in okz_controls.items():
                 c["status"].value = s_val
